@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesion - RentPlay</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="auth-page">
+    <header class="header auth-header">
+        <div class="header-container auth-header-container">
+            <a href="home.html" class="logo auth-logo" aria-label="Ir al inicio">
+                <span class="logo-icon">
+                    <i class="fas fa-play"></i>
+                </span>
+                <span class="logo-text">rent<span class="logo-highlight">play</span></span>
+            </a>
+
+            <div class="auth-header-actions">
+                <button class="language-btn auth-language-btn" type="button" aria-label="Cambiar idioma">
+                    <span class="auth-flag" aria-hidden="true"></span>
+                </button>
+                <button class="user-btn auth-user-btn" type="button" aria-label="Perfil de usuario">
+                    <i class="far fa-user-circle"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section class="auth-shell">
+            <article class="auth-form-panel">
+                <h1 class="auth-title">INICIAR SESION</h1>
+                <p class="auth-subtitle">
+                    No tienes una cuenta aun?
+                    <a href="registro.html" class="auth-link">Registrate</a>
+                </p>
+
+                <form class="auth-form" data-auth-form="login" novalidate>
+                    <label class="sr-only" for="login-email">Correo electronico</label>
+                    <input id="login-email" class="auth-input" type="email" name="email" placeholder="Correo Electronico" autocomplete="email" required>
+
+                    <label class="sr-only" for="login-password">Contrasena</label>
+                    <input id="login-password" class="auth-input" type="password" name="password" placeholder="Contrasena" autocomplete="current-password" required>
+
+                    <a href="#" class="auth-forgot">Has olvidado tu contrasena?</a>
+
+                    <button type="submit" class="auth-submit">Iniciar Sesion</button>
+                </form>
+            </article>
+
+            <aside class="auth-hero-panel" aria-label="Mensaje de bienvenida">
+                <h2 class="auth-hero-title">¡Bienvenido de nuevo!</h2>
+                <p class="auth-hero-line">
+                    ¿Listo para darle al
+                    <span class="auth-hero-play" aria-hidden="true">
+                        <i class="fas fa-play"></i>
+                    </span>
+                    ?
+                </p>
+            </aside>
+        </section>
+    </main>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api-client.js"></script>
+    <script src="assets/js/auth.js"></script>
+</body>
+</html>

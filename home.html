@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio - Alquiler de Videojuegos</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-container">
+            <!-- Logo -->
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-play"></i>
+                </div>
+                <span class="logo-text">rent<span class="logo-highlight">play</span></span>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Buscar videojuegos...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="header-actions">
+                <button class="btn-primary">AÑADIR +</button>
+                <button class="language-btn">
+                    <img src="assets/images/spain-flag.png" alt="ES" class="flag-icon">
+                </button>
+                <button class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button class="user-btn">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="container">
+            <!-- NUEVOS JUEGOS SECTION -->
+            <section class="home-section">
+                <div class="section-header">
+                    <div class="section-info">
+                        <h2 class="section-title">NUEVOS JUEGOS</h2>
+                        <p class="section-description">Echa un vistazo a los últimos juegos añadidos a rentplay</p>
+                    </div>
+                    <button class="carousel-nav carousel-next" data-carousel="new-games">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="carousel-container" id="new-games">
+                    <div class="carousel-scroll">
+                        <!-- Juego 1 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">GTA VI</p>
+                        </div>
+
+                        <!-- Juego 2 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">DOOM Eternal</p>
+                        </div>
+
+                        <!-- Juego 3 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">Dark Souls II</p>
+                        </div>
+
+                        <!-- Juego 4 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">Stardew Valley</p>
+                        </div>
+
+                        <!-- Juego 5 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">The Last of Us II</p>
+                        </div>
+
+                        <!-- Juego 6 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">Terraria</p>
+                        </div>
+
+                        <!-- Juego 7 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">Uncharted 4</p>
+                        </div>
+
+                        <!-- Juego 8 -->
+                        <div class="game-item">
+                            <div class="game-image">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="game-item-label">Cyberpunk 2077</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PERFILES DESTACADOS SECTION -->
+            <section class="home-section">
+                <div class="section-header">
+                    <div class="section-info">
+                        <h2 class="section-title">PERFILES DESTACADOS</h2>
+                        <p class="section-description">Visita los perfiles mejor valorados de rentplay</p>
+                    </div>
+                    <button class="carousel-nav carousel-next" data-carousel="profiles">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="carousel-container" id="profiles">
+                    <div class="carousel-scroll">
+                        <!-- Perfil 1 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Juanje_dor34</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <span class="rating-count">45</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 2 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Xx_Anton_xX</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <span class="rating-count">42</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 3 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Davidpro21</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <span class="rating-count">58</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 4 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Navarete7</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <span class="rating-count">49</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 5 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Ratileonde</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <span class="rating-count">61</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 6 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">Alfrentio Jr</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <span class="rating-count">38</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 7 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">err4st00</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <span class="rating-count">72</span>
+                            </div>
+                        </div>
+
+                        <!-- Perfil 8 -->
+                        <div class="profile-item">
+                            <div class="profile-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="profile-name">GamerPro_88</h3>
+                            <div class="profile-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <span class="rating-count">53</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>Sobre RentPlay</h3>
+                <ul>
+                    <li><a href="#">Acerca de Nosotros</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Carreras</a></li>
+                    <li><a href="#">Prensa</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Ayuda</h3>
+                <ul>
+                    <li><a href="#">Centro de Ayuda</a></li>
+                    <li><a href="#">Preguntas Frecuentes</a></li>
+                    <li><a href="#">Contacto</a></li>
+                    <li><a href="#">Reporte de Problemas</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Legal</h3>
+                <ul>
+                    <li><a href="#">Términos de Servicio</a></li>
+                    <li><a href="#">Privacidad</a></li>
+                    <li><a href="#">Cookies</a></li>
+                    <li><a href="#">Aviso Legal</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Redes Sociales</h3>
+                <ul>
+                    <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+                    <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+                    <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+                    <li><a href="#"><i class="fab fa-youtube"></i> YouTube</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 - Módulo de Alquiler de Videojuegos (Trabajo Grupal). Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- MODALES (Para reutilizar) -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api-client.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>

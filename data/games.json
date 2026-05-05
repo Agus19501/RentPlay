@@ -1,0 +1,109 @@
+{
+  "appName": "RentPlay",
+  "version": "1.0.0",
+  "description": "Plataforma web de alquiler de videojuegos responsive",
+  "colors": {
+    "primary": "#ff6100",
+    "primaryHover": "#d45000",
+    "black": "#000000",
+    "darkGray": "#222222",
+    "mediumGray": "#2a2a2a",
+    "lightGray": "#3a3a3a"
+  },
+  "games": [
+    {
+      "id": 1,
+      "title": "Grand Theft Auto: Vice City",
+      "description": "Juego de mundo abierto ambientado en los años 80, con una ciudad llena de neones y estilo retro.",
+      "price": 19.99,
+      "rentalDays": 6,
+      "rating": 4.2,
+      "platform": "PlayStation 2",
+      "seller": {
+        "name": "Pepe_gom01",
+        "rating": 4.1,
+        "reviews": 245
+      },
+      "image": "assets/images/gta-vice-city.jpg",
+      "features": [
+        "Disco Original",
+        "Con Estuche",
+        "PlayStation 2"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "GTA: San Andreas",
+      "description": "Continúa la saga GTA con una aventura épica en el estado ficticio de San Andreas.",
+      "price": 15.99,
+      "rentalDays": 7,
+      "rating": 4.5,
+      "platform": "PlayStation 2",
+      "seller": {
+        "name": "GameKeeper_92",
+        "rating": 4.3,
+        "reviews": 189
+      },
+      "image": "assets/images/gta-san-andreas.jpg",
+      "features": [
+        "Disco Original",
+        "Con Estuche",
+        "PlayStation 2"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "GTA III",
+      "description": "El primer GTA 3D que revolucionó los videojuegos de acción.",
+      "price": 12.99,
+      "rentalDays": 5,
+      "rating": 4.3,
+      "platform": "PlayStation 2",
+      "seller": {
+        "name": "RetroGamer_88",
+        "rating": 4.4,
+        "reviews": 312
+      },
+      "image": "assets/images/gta-iii.jpg",
+      "features": [
+        "Disco Original",
+        "Con Manual",
+        "PlayStation 2"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Red Dead Redemption",
+      "description": "Una epopeya del viejo oeste llena de acción, drama y aventura.",
+      "price": 18.99,
+      "rentalDays": 10,
+      "rating": 4.7,
+      "platform": "Xbox 360",
+      "seller": {
+        "name": "WesternFan_21",
+        "rating": 4.6,
+        "reviews": 421
+      },
+      "image": "assets/images/rdr.jpg",
+      "features": [
+        "Disco Original",
+        "Con Estuche",
+        "Xbox 360"
+      ]
+    }
+  ],
+  "features": {
+    "responsive": true,
+    "darkMode": true,
+    "localStorage": true,
+    "searchable": true,
+    "wishlist": true,
+    "rentalHistory": true
+  },
+  "breakpoints": {
+    "desktop": "1024px",
+    "tablet": "768px",
+    "mobile": "480px",
+    "mobileXS": "320px"
+  }
+}

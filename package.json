@@ -1,0 +1,15 @@
+{
+  "name": "rentplay",
+  "version": "1.0.0",
+  "description": "Plataforma de alquiler de videojuegos",
+  "main": "index.html",
+  "scripts": {
+    "build": "npm install"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^2.4.0"
+  }
+}

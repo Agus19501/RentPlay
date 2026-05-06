@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { apiRequest, clearSession, getSession, saveSession } from './api.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
@@ -41,6 +41,8 @@ function formatPrice(value) {
 function App() {
   const [session, setSession] = useState(getSession());
   const [lang, setLang] = useState('ES');
+  const location = useLocation();
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
 
   useEffect(() => {
     const onStorage = () => setSession(getSession());
@@ -59,8 +61,8 @@ function App() {
 
   return (
     <div className="app-shell">
-      <Header lang={lang} setLang={setLang} session={session} onLogout={() => updateSession(null)} />
-      <main className="app-main">
+      {!isAuthRoute && <Header lang={lang} setLang={setLang} session={session} onLogout={() => updateSession(null)} />}
+      <main className={isAuthRoute ? 'app-main auth-route-main' : 'app-main'}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home lang={lang} />} />
@@ -79,7 +81,7 @@ function App() {
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </main>
-      <Footer lang={lang} />
+      {!isAuthRoute && <Footer lang={lang} />}
     </div>
   );
 }
@@ -134,83 +136,120 @@ function AuthPage({ mode, onAuth, session }) {
 
   return (
     <div className="auth-page">
-      <div className="container auth-layout">
-        <section className="auth-card">
-          <p className="auth-eyebrow">{copy.eyebrow}</p>
-          <p className="auth-switch">
-            {copy.helperPrefix} <Link to={mode === 'register' ? '/login' : '/register'}>{copy.helperLink}</Link>
-          </p>
+      <header className="header auth-header">
+        <div className="header-container auth-header-container">
+          <button className="logo auth-logo" type="button" onClick={() => navigate('/home')} aria-label="Ir al inicio">
+            <span className="logo-icon"><span className="play-svg">▶</span></span>
+            <span className="logo-text">rent<span className="logo-highlight">play</span></span>
+          </button>
 
-          <form className="auth-form" onSubmit={submit}>
-            <input
-              className="auth-input"
-              type="email"
-              value={form.email}
-              onChange={(event) => setForm({ ...form, email: event.target.value })}
-              placeholder="Correo Electrónico"
-              autoComplete="email"
-              required
-            />
+          <div className="auth-header-actions">
+            <button className="language-btn auth-language-btn" type="button" aria-label="Cambiar idioma">
+              <span className="auth-flag" aria-hidden="true"></span>
+            </button>
+            <button className="user-btn auth-user-btn" type="button" aria-label="Perfil de usuario" onClick={() => navigate('/login')}>
+              <span>◌</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-            {mode === 'register' && (
+      <main className="auth-main">
+        <section className="auth-shell">
+          <article className="auth-form-panel">
+            <h1 className="auth-title">{mode === 'register' ? 'CREAR UNA CUENTA' : 'INICIAR SESION'}</h1>
+            <p className="auth-subtitle">
+              {copy.helperPrefix}{' '}
+              <Link to={mode === 'register' ? '/login' : '/register'} className="auth-link">
+                {copy.helperLink}
+              </Link>
+            </p>
+
+            <form className="auth-form" onSubmit={submit} noValidate>
+              <label className="sr-only" htmlFor={`${mode}-email`}>Correo electronico</label>
               <input
+                id={`${mode}-email`}
                 className="auth-input"
-                type="text"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                placeholder="Nombre"
-                autoComplete="name"
+                type="email"
+                value={form.email}
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
+                placeholder="Correo Electronico"
+                autoComplete="email"
                 required
               />
-            )}
 
-            <input
-              className="auth-input"
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              placeholder="Contraseña"
-              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              required
-            />
+              {mode === 'register' && (
+                <>
+                  <label className="sr-only" htmlFor={`${mode}-name`}>Nombre</label>
+                  <input
+                    id={`${mode}-name`}
+                    className="auth-input"
+                    type="text"
+                    value={form.name}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    placeholder="Nombre"
+                    autoComplete="name"
+                    required
+                  />
+                </>
+              )}
 
-            {mode === 'register' && (
-              <>
-                <input
-                  className="auth-input"
-                  type="password"
-                  value={form.passwordRepeat}
-                  onChange={(event) => setForm({ ...form, passwordRepeat: event.target.value })}
-                  placeholder="Repetir Contraseña"
-                  autoComplete="new-password"
-                  required
-                />
+              <label className="sr-only" htmlFor={`${mode}-password`}>Contrasena</label>
+              <input
+                id={`${mode}-password`}
+                className="auth-input"
+                type="password"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                placeholder="Contrasena"
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                required
+              />
 
-                <label className="terms-row">
-                  <input type="checkbox" checked={form.acceptTerms} onChange={(event) => setForm({ ...form, acceptTerms: event.target.checked })} />
-                  <span>Acepto los <a href="#">términos</a> del servicio</span>
-                </label>
-              </>
-            )}
+              {mode === 'register' && (
+                <>
+                  <label className="sr-only" htmlFor={`${mode}-password-repeat`}>Repetir contrasena</label>
+                  <input
+                    id={`${mode}-password-repeat`}
+                    className="auth-input"
+                    type="password"
+                    value={form.passwordRepeat}
+                    onChange={(event) => setForm({ ...form, passwordRepeat: event.target.value })}
+                    placeholder="Repetir Contrasena"
+                    autoComplete="new-password"
+                    required
+                  />
 
-            {mode === 'login' && <button type="button" className="forgot-link">¿Has olvidado tu contraseña?</button>}
+                  <div className="auth-terms-row">
+                    <label className="auth-checkbox">
+                      <input type="checkbox" checked={form.acceptTerms} onChange={(event) => setForm({ ...form, acceptTerms: event.target.checked })} />
+                      <span className="auth-checkmark" aria-hidden="true"></span>
+                    </label>
+                    <span className="auth-terms-text">Acepto los <a href="#" className="auth-link">terminos</a> del servicio</span>
+                  </div>
+                </>
+              )}
 
-            <button className="auth-submit" type="submit" disabled={busy}>
-              {busy ? 'Procesando...' : mode === 'register' ? 'Crear una cuenta' : 'Iniciar Sesión'}
-            </button>
-          </form>
+              {mode === 'login' && <a href="#" className="auth-forgot">Has olvidado tu contrasena?</a>}
 
-          {message && <p className="feedback">{message}</p>}
+              <button className="auth-submit" type="submit" disabled={busy}>
+                {busy ? 'Procesando...' : mode === 'register' ? 'Crear una cuenta' : 'Iniciar Sesion'}
+              </button>
+            </form>
+
+            {message && <p className="feedback">{message}</p>}
+          </article>
+
+          <aside className="auth-hero-panel" aria-label="Mensaje de bienvenida">
+            <h2 className="auth-hero-title">{copy.title}</h2>
+            <p className="auth-hero-line">
+              ¿Listo para darle al
+              <span className="auth-hero-play" aria-hidden="true">▶</span>
+              ?
+            </p>
+          </aside>
         </section>
-
-        <aside className="auth-hero">
-          <h1>{copy.title}</h1>
-          <p className="auth-hero-line">{copy.lines[0]}</p>
-          <p className="auth-hero-line">
-            {copy.lines[1]} <span className="auth-play">▶</span> {copy.lines[2]}
-          </p>
-        </aside>
-      </div>
+      </main>
     </div>
   );
 }

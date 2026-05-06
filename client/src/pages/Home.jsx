@@ -1,118 +1,88 @@
-import React, { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaStar, FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import './Home.css';
+import { FaChevronLeft, FaChevronRight, FaImage, FaStar, FaUserCircle } from 'react-icons/fa';
 
-const Home = ({ lang }) => {
+const GAME_TITLES = ['GTA VI', 'DOOM Eternal', 'Dark Souls II', 'Stardew Valley', 'The Last of Us II', 'Terraria', 'Uncharted 4', 'Cyberpunk 2077'];
+const PROFILE_NAMES = ['Juanje_dor34', 'Xx_Anton_xX', 'Davidpro21', 'Navarete7', 'Ratileonde', 'Alfrentio Jr', 'err4st00', 'GamerPro_88', 'Lara_Gamer', 'Alex_99', 'Marta_Play', 'Gamer_Vlc', 'Sofia_Pixel', 'Rafa_Kill', 'Lucas_Indie'];
+
+const Home = () => {
   const navigate = useNavigate();
   const gamesRef = useRef(null);
   const profilesRef = useRef(null);
-  const rentedRef = useRef(null);
+  const [showLeft, setShowLeft] = useState({ games: false, profiles: false });
 
-  const [showLeft, setShowLeft] = useState({ games: false, profiles: false, rented: false });
-
-  const translations = {
-    ES: {
-      newGames: "NUEVOS JUEGOS",
-      newGamesSub: "Echa un vistazo a los últimos juegos añadidos",
-      profiles: "PERFILES DESTACADOS",
-      profilesSub: "Visita los perfiles mejor valorados",
-      rented: "MIS JUEGOS ALQUILADOS",
-      rentedSub: "Tu biblioteca actual",
-      rentTag: "Alquilado"
-    },
-    EN: {
-      newGames: "NEW GAMES",
-      newGamesSub: "Check out the latest games added",
-      profiles: "FEATURED PROFILES",
-      profilesSub: "Visit the top-rated profiles",
-      rented: "MY RENTED GAMES",
-      rentedSub: "Your current library",
-      rentTag: "Rented"
-    }
-  };
-
-  const t = translations[lang];
+  const games = useMemo(() => GAME_TITLES.map((title, index) => ({ id: index + 1, title })), []);
+  const profiles = useMemo(() => PROFILE_NAMES.map((name, index) => ({ id: index + 1, name })), []);
 
   const handleScrollDetect = (key, ref) => {
-    const isScrolled = ref.current.scrollLeft > 10;
-    setShowLeft(prev => ({ ...prev, [key]: isScrolled }));
+    const isScrolled = (ref.current?.scrollLeft || 0) > 10;
+    setShowLeft((prev) => ({ ...prev, [key]: isScrolled }));
   };
 
   const executeScroll = (ref, direction) => {
-    const offset = direction === 'left' ? -500 : 500;
-    ref.current.scrollBy({ left: offset, behavior: 'smooth' });
+    ref.current?.scrollBy({ left: direction === 'left' ? -500 : 500, behavior: 'smooth' });
   };
-
-  const games = Array.from({ length: 15 }, (_, i) => ({
-    id: i + 1,
-    title: ["GTA Vice City", "DOOM", "Dark Souls II", "Stardew Valley", "The Last of Us II", "Terraria", "Uncharted 4", "Elden Ring", "Halo Infinite", "Spider-Man", "God of War", "Minecraft", "Cyberpunk 2077", "Resident Evil 4", "Final Fantasy VII"][i] || `Juego Extra ${i + 1}`,
-    category: ["Acción", "Shooter", "RPG", "Simulación", "Aventura"][i % 5]
-  }));
-
-  const profiles = Array.from({ length: 15 }, (_, i) => ({
-    id: i + 1,
-    name: ["Juanje_dor34", "Xx_Anton_xX", "Davidpro21", "Lara_Gamer", "Alex_99", "Marta_Play", "Gamer_Vlc", "Nacho_Retro", "Sofia_Pixel", "Rafa_Kill", "Lucas_Indie", "Elena_G", "Pablo_Z", "Celia_Dev", "Victor_X"][i] || `Usuario_${i + 1}`,
-    rating: (Math.random() * (5 - 3) + 3).toFixed(1)
-  }));
 
   return (
     <div className="home-page">
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">{t.newGames}</h2>
-          <p className="section-subtitle">{t.newGamesSub}</p>
+          <div className="section-info">
+            <h2 className="section-title">NUEVOS JUEGOS</h2>
+            <p className="section-description">Echa un vistazo a los últimos juegos añadidos a rentplay</p>
+          </div>
+          <button className="carousel-nav carousel-next" data-carousel="new-games" type="button" onClick={() => executeScroll(gamesRef, 'right')}>
+            <FaChevronRight />
+          </button>
         </div>
-        <div className="content-relative-wrapper">
-          {showLeft.games && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(gamesRef, 'left')}><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={gamesRef} onScroll={() => handleScrollDetect('games', gamesRef)}>
-            {games.map(game => (
-              <div key={game.id} className="item-card" onClick={() => navigate('/comparativa')}>
-                <div className="rect-placeholder"><span>{game.category}</span></div>
-                <p className="item-label">{game.title}</p>
+
+        <div className="carousel-container" id="new-games">
+          {showLeft.games && (
+            <button className="carousel-nav" type="button" onClick={() => executeScroll(gamesRef, 'left')} style={{ position: 'absolute', left: 0, top: '50%', zIndex: 2 }}>
+              <FaChevronLeft />
+            </button>
+          )}
+          <div className="carousel-scroll" ref={gamesRef} onScroll={() => handleScrollDetect('games', gamesRef)}>
+            {games.map((game) => (
+              <div key={game.id} className="game-item" onClick={() => navigate('/ver-juego')} role="button" tabIndex={0}>
+                <div className="game-image"><FaImage /></div>
+                <p className="game-item-label">{game.title}</p>
               </div>
             ))}
           </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(gamesRef, 'right')}><FaChevronRight /></button>
         </div>
       </section>
 
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">{t.profiles}</h2>
-          <p className="section-subtitle">{t.profilesSub}</p>
-        </div>
-        <div className="content-relative-wrapper">
-          {showLeft.profiles && <button className="nav-btn left-btn profile-btn-pos" onClick={() => executeScroll(profilesRef, 'left')}><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={profilesRef} onScroll={() => handleScrollDetect('profiles', profilesRef)}>
-            {profiles.map(p => (
-              <div key={p.id} className="item-card" onClick={() => navigate('/perfil_otro')}>
-                <div className="circle-placeholder" />
-                <p className="item-label">{p.name}</p>
-                <div className="rating-tag"><FaStar /> {p.rating}</div>
-              </div>
-            ))}
+          <div className="section-info">
+            <h2 className="section-title">PERFILES DESTACADOS</h2>
+            <p className="section-description">Visita los perfiles mejor valorados de rentplay</p>
           </div>
-          <button className="nav-btn right-btn profile-btn-pos" onClick={() => executeScroll(profilesRef, 'right')}><FaChevronRight /></button>
+          <button className="carousel-nav carousel-next" data-carousel="profiles" type="button" onClick={() => executeScroll(profilesRef, 'right')}>
+            <FaChevronRight />
+          </button>
         </div>
-      </section>
 
-      <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">{t.rented}</h2>
-          <p className="section-subtitle">{t.rentedSub}</p>
-        </div>
-        <div className="content-relative-wrapper">
-          {showLeft.rented && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(rentedRef, 'left')}><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={rentedRef} onScroll={() => handleScrollDetect('rented', rentedRef)}>
-            {games.map(game => (
-              <div key={`rented-${game.id}`} className="item-card" onClick={() => navigate('/comparativa')}>
-                <div className="rect-placeholder rented-mode"><div className="rent-overlay">{t.rentTag}</div></div>
-                <p className="item-label">{game.title}</p>
+        <div className="carousel-container" id="profiles">
+          {showLeft.profiles && (
+            <button className="carousel-nav" type="button" onClick={() => executeScroll(profilesRef, 'left')} style={{ position: 'absolute', left: 0, top: '50%', zIndex: 2 }}>
+              <FaChevronLeft />
+            </button>
+          )}
+          <div className="carousel-scroll" ref={profilesRef} onScroll={() => handleScrollDetect('profiles', profilesRef)}>
+            {profiles.map((profile, index) => (
+              <div key={profile.id} className="profile-item" onClick={() => navigate('/ajustes')} role="button" tabIndex={0}>
+                <div className="profile-avatar"><FaUserCircle /></div>
+                <h3 className="profile-name">{profile.name}</h3>
+                <div className="profile-rating">
+                  <FaStar /><FaStar /><FaStar /><FaStar />
+                  {index % 3 === 0 ? <FaStar /> : <FaStar style={{ opacity: 0.4 }} />}
+                  <span className="rating-count">{35 + index * 3}</span>
+                </div>
               </div>
             ))}
           </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(rentedRef, 'right')}><FaChevronRight /></button>
         </div>
       </section>
     </div>

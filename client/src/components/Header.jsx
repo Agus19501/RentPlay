@@ -69,7 +69,7 @@ const Header = ({ lang, setLang }) => {
         </div>
 
         <nav className="header-actions">
-          <button className="btn-add" onClick={() => navigate('/register')}>
+          <button className="btn-add" onClick={() => navigate('/subir-juego')}>
             <span className="action-text">{current.add}</span> <FaPlus />
           </button>
 
@@ -78,7 +78,7 @@ const Header = ({ lang, setLang }) => {
             <span className="action-text">{current.langLabel}</span>
           </button>
 
-          <button className="icon-btn action-item" onClick={() => navigate('/rentals')}>
+          <button className="icon-btn action-item" onClick={() => navigate('/chats')}>
             <span className="icon-wrapper"><FaPaperPlane /></span>
             <span className="action-text">{current.chats}</span>
           </button>
@@ -91,10 +91,10 @@ const Header = ({ lang, setLang }) => {
 
             {showProfileMenu && (
               <div className="profile-dropdown">
-                <div className="dropdown-item" onClick={() => navigate('/rentals')}><FaUser /> {current.myProfile}</div>
-                <div className="dropdown-item" onClick={() => navigate('/filtros')}><FaCog /> {current.settings}</div>
+                <div className="dropdown-item" onClick={() => navigate('/perfil_propio')}><FaUser /> {current.myProfile}</div>
+                <div className="dropdown-item" onClick={() => navigate('/ajustes')}><FaCog /> {current.settings}</div>
                 <div className="dropdown-divider"></div>
-                <div className="dropdown-item logout" onClick={() => navigate('/login')}><FaSignOutAlt /> {current.logout}</div>
+                <div className="dropdown-item logout" onClick={() => { setShowProfileMenu(false); navigate('/login'); }}><FaSignOutAlt /> {current.logout}</div>
               </div>
             )}
           </div>

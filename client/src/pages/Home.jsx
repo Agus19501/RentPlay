@@ -93,7 +93,9 @@ const Home = ({ lang }) => {
             {status === 'error' && <p className="section-subtitle">No se pudo cargar el catálogo.</p>}
             {games.map((game) => (
               <div key={game.id} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Game'}</span></div>
+                <div className="rect-placeholder">
+                  <span>{game.platform || 'Game'}</span>
+                </div>
                 <p className="item-label">{game.title}</p>
               </div>
             ))}

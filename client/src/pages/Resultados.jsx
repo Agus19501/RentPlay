@@ -92,7 +92,7 @@ const Resultados = ({ lang }) => {
             {status === 'error' && <p className="section-subtitle">No se pudo cargar el catálogo.</p>}
             {searchRowGames.map((game) => (
               <div key={`s1-${game.id}`} className="item-card" onClick={() => navigate(`/comparativa?gameId=${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Game'}</span></div>
+                <div className="rect-placeholder resultados-placeholder"><span>{game.platform || 'Game'}</span></div>
                 <p className="item-label">{game.title}</p>
               </div>
             ))}
@@ -100,12 +100,12 @@ const Resultados = ({ lang }) => {
           <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'right')} type="button"><FaChevronRight /></button>
         </div>
 
-        <div className="content-relative-wrapper" style={{ marginTop: '30px' }}>
+        <div className="content-relative-wrapper resultados-spacer">
           {showLeft.search2 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'left')} type="button"><FaChevronLeft /></button>}
           <div className="scroll-area" ref={searchRef2} onScroll={() => handleScrollDetect('search2', searchRef2)}>
             {searchRowGames.slice().reverse().map((game) => (
               <div key={`s2-${game.id}`} className="item-card" onClick={() => navigate(`/comparativa?gameId=${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Game'}</span></div>
+                <div className="rect-placeholder resultados-placeholder"><span>{game.platform || 'Game'}</span></div>
                 <p className="item-label">{game.title}</p>
               </div>
             ))}
@@ -126,7 +126,7 @@ const Resultados = ({ lang }) => {
           <div className="scroll-area" ref={relatedRef} onScroll={() => handleScrollDetect('related', relatedRef)}>
             {searchRowGames.map((game) => (
               <div key={`related-${game.id}`} className="item-card" onClick={() => navigate(`/comparativa?gameId=${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Game'}</span></div>
+                <div className="rect-placeholder resultados-placeholder"><span>{game.platform || 'Game'}</span></div>
                 <p className="item-label">{game.title}</p>
               </div>
             ))}

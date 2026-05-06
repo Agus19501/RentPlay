@@ -8,6 +8,23 @@ import Filtros from './pages/Filtros.jsx';
 import Resultados from './pages/Resultados.jsx';
 import Comparativa from './pages/Comparativa.jsx';
 
+const authCopy = {
+  login: {
+    eyebrow: 'INICIAR SESIÓN',
+    helperPrefix: '¿No tienes una cuenta aún?',
+    helperLink: 'Registrate',
+    title: '¡Bienvenido de nuevo!',
+    lines: ['¿Listo para', 'darle al', '?']
+  },
+  register: {
+    eyebrow: 'CREAR UNA CUENTA',
+    helperPrefix: '¿Ya tienes una cuenta?',
+    helperLink: 'Accede',
+    title: '¡Bienvenido a RentPlay!',
+    lines: ['¿Listo para', 'darle al', '?']
+  }
+};
+
 function formatPrice(value) {
   return new Intl.NumberFormat('es-ES', {
     style: 'currency',
@@ -61,6 +78,7 @@ function AuthPage({ mode, onAuth, session }) {
   const [form, setForm] = useState({ email: '', name: '', password: '', passwordRepeat: '', acceptTerms: false });
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const copy = authCopy[mode] || authCopy.login;
 
   if (session) {
     return <Navigate to="/" replace />;
@@ -104,45 +122,84 @@ function AuthPage({ mode, onAuth, session }) {
   };
 
   return (
-    <div className="container auth-layout">
-      <section className="auth-card card">
-        <p className="eyebrow">{mode === 'register' ? 'Crear cuenta' : 'Acceso'}</p>
-        <h1>{mode === 'register' ? 'Registrate en RentPlay' : 'Inicia sesion en RentPlay'}</h1>
-        <form className="auth-form" onSubmit={submit}>
-          <label>
-            Correo
-            <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
-          </label>
-          {mode === 'register' && (
-            <>
-              <label>
-                Nombre
-                <input type="text" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-              </label>
-              <label>
-                Repetir contrasena
-                <input type="password" value={form.passwordRepeat} onChange={(event) => setForm({ ...form, passwordRepeat: event.target.value })} required />
-              </label>
-              <label className="terms-row">
-                <input type="checkbox" checked={form.acceptTerms} onChange={(event) => setForm({ ...form, acceptTerms: event.target.checked })} />
-                <span>Acepto los terminos del servicio</span>
-              </label>
-            </>
-          )}
-          <label>
-            Contrasena
-            <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
-          </label>
-          <button className="button button-primary" type="submit" disabled={busy}>
-            {busy ? 'Procesando...' : mode === 'register' ? 'Crear cuenta' : 'Entrar'}
-          </button>
-        </form>
-        {message && <p className="feedback">{message}</p>}
-      </section>
-      <aside className="auth-aside card">
-        <h2>Tu catalogo, tus alquileres, tu sesion.</h2>
-        <p>El frontend ya consume la API Node/Express y guarda la sesion en el navegador.</p>
-      </aside>
+    <div className="auth-page">
+      <div className="container auth-layout">
+        <section className="auth-card">
+          <p className="auth-eyebrow">{copy.eyebrow}</p>
+          <p className="auth-switch">
+            {copy.helperPrefix} <Link to={mode === 'register' ? '/login' : '/register'}>{copy.helperLink}</Link>
+          </p>
+
+          <form className="auth-form" onSubmit={submit}>
+            <input
+              className="auth-input"
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              placeholder="Correo Electrónico"
+              autoComplete="email"
+              required
+            />
+
+            {mode === 'register' && (
+              <input
+                className="auth-input"
+                type="text"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                placeholder="Nombre"
+                autoComplete="name"
+                required
+              />
+            )}
+
+            <input
+              className="auth-input"
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder="Contraseña"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              required
+            />
+
+            {mode === 'register' && (
+              <>
+                <input
+                  className="auth-input"
+                  type="password"
+                  value={form.passwordRepeat}
+                  onChange={(event) => setForm({ ...form, passwordRepeat: event.target.value })}
+                  placeholder="Repetir Contraseña"
+                  autoComplete="new-password"
+                  required
+                />
+
+                <label className="terms-row">
+                  <input type="checkbox" checked={form.acceptTerms} onChange={(event) => setForm({ ...form, acceptTerms: event.target.checked })} />
+                  <span>Acepto los <a href="#">términos</a> del servicio</span>
+                </label>
+              </>
+            )}
+
+            {mode === 'login' && <button type="button" className="forgot-link">¿Has olvidado tu contraseña?</button>}
+
+            <button className="auth-submit" type="submit" disabled={busy}>
+              {busy ? 'Procesando...' : mode === 'register' ? 'Crear una cuenta' : 'Iniciar Sesión'}
+            </button>
+          </form>
+
+          {message && <p className="feedback">{message}</p>}
+        </section>
+
+        <aside className="auth-hero">
+          <h1>{copy.title}</h1>
+          <p className="auth-hero-line">{copy.lines[0]}</p>
+          <p className="auth-hero-line">
+            {copy.lines[1]} <span className="auth-play">▶</span> {copy.lines[2]}
+          </p>
+        </aside>
+      </div>
     </div>
   );
 }

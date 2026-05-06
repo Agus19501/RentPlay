@@ -1,4 +1,14 @@
 .resultados-page {
   display: grid;
-  gap: 28px;
+  gap: 34px;
+}
+
+.resultados-spacer {
+  margin-top: 28px;
+}
+
+.resultados-placeholder {
+  background: #f7f7f7;
+  border-radius: 10px;
+  color: #fff;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../integrations/MAIN_Iker/assets/css/style.css';
+import '../assets/css/style.css';
 
 export default function VerJuego() {
   const [isRentalModalOpen, setRentalModalOpen] = useState(false);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../../integrations/MAIN_Iker/assets/css/style.css'; // Mantengo la ruta relativa hacia el CSS copiado
+import '../assets/css/style.css'; // Mantengo la ruta relativa hacia el CSS copiado
 
 export default function Ajustes() {
   const [theme, setTheme] = useState('dark');

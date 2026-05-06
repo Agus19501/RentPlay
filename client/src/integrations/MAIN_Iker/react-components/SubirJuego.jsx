@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../../integrations/MAIN_Iker/assets/css/style.css';
+import '../assets/css/style.css';
 
 export default function SubirJuego() {
   const [formData, setFormData] = useState({

@@ -8,6 +8,12 @@ import Filtros from './pages/Filtros.jsx';
 import Resultados from './pages/Resultados.jsx';
 import Comparativa from './pages/Comparativa.jsx';
 
+// Integración: componentes desde MAIN_Iker (se preservan estilos originales)
+import Ajustes from './integrations/MAIN_Iker/react-components/Ajustes.jsx';
+import MiAlquiler from './integrations/MAIN_Iker/react-components/MiAlquiler.jsx';
+import SubirJuego from './integrations/MAIN_Iker/react-components/SubirJuego.jsx';
+import VerJuego from './integrations/MAIN_Iker/react-components/VerJuego.jsx';
+
 const authCopy = {
   login: {
     eyebrow: 'INICIAR SESIÓN',
@@ -61,6 +67,11 @@ function App() {
           <Route path="/filtros" element={<Filtros lang={lang} />} />
           <Route path="/resultados" element={<Resultados lang={lang} />} />
           <Route path="/comparativa" element={<Comparativa lang={lang} />} />
+          {/* Rutas integradas desde MAIN_Iker (diseño preservado) */}
+          <Route path="/ajustes" element={<Ajustes />} />
+          <Route path="/mi-alquiler" element={<MiAlquiler />} />
+          <Route path="/subir-juego" element={<SubirJuego />} />
+          <Route path="/ver-juego" element={<VerJuego />} />
           <Route path="/login" element={<AuthPage mode="login" onAuth={updateSession} session={session} />} />
           <Route path="/register" element={<AuthPage mode="register" onAuth={updateSession} session={session} />} />
           <Route path="/games/:gameId" element={<GameDetailPage session={session} onAuth={updateSession} />} />

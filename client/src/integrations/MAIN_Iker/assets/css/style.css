@@ -1,0 +1,69 @@
+/* Copiado desde MAIN_Iker - estilo principal */
+
+/* ==========================================
+   IMPORTAR FUENTE CODEC PRO
+   ========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Codec+Pro:wght@400;500;600;700&display=swap');
+
+/* ==========================================
+   VARIABLES Y ESTILOS GLOBALES
+   ========================================== */
+
+:root {
+    --color-primary: #ff6100;
+    --color-primary-hover: #d45000;
+    --color-dark-bg: #222222;
+    --color-black: #000000;
+    --color-dark-gray: #2a2a2a;
+    --color-medium-gray: #3a3a3a;
+    --color-light-gray: #555555;
+    --color-text: #ffffff;
+    --color-text-muted: #999999;
+    --color-border: #444444;
+    
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    
+    --transition: all 0.3s ease;
+}
+
+[data-theme="light"] {
+    --color-dark-bg: #f4f6f8;
+    --color-black: #ffffff;
+    --color-dark-gray: #ffffff;
+    --color-medium-gray: #e6e6e6;
+    --color-light-gray: #d4d4d4;
+    --color-text: #111111;
+    --color-text-muted: #555555;
+    --color-border: #cccccc;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Codec Pro', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-dark-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Más reglas copiados... (archivo original completo) */

@@ -1,0 +1,135 @@
+.home-page {
+  display: grid;
+  gap: 28px;
+}
+
+.home-section {
+  display: grid;
+  gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.section-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.content-relative-wrapper {
+  position: relative;
+}
+
+.scroll-area {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 1fr);
+  gap: 16px;
+  overflow-x: auto;
+  padding: 8px 4px 14px;
+  scrollbar-width: thin;
+}
+
+.item-card {
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+}
+
+.rect-placeholder,
+.circle-placeholder {
+  background: linear-gradient(135deg, rgba(255, 122, 24, 0.28), rgba(94, 114, 228, 0.18));
+  border: 1px solid var(--line);
+}
+
+.rect-placeholder {
+  height: 220px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.92);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.circle-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+.item-label {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.rating-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffd36e;
+}
+
+.rented-mode {
+  position: relative;
+}
+
+.rent-overlay {
+  background: rgba(7, 8, 11, 0.68);
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(7, 8, 11, 0.9);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+
+.left-btn {
+  left: -10px;
+}
+
+.right-btn {
+  right: -10px;
+}
+
+@media (max-width: 760px) {
+  .section-header {
+    flex-direction: column;
+  }
+
+  .scroll-area {
+    grid-auto-columns: minmax(140px, 1fr);
+  }
+
+  .rect-placeholder {
+    height: 180px;
+  }
+
+  .circle-placeholder {
+    width: 100px;
+    height: 100px;
+  }
+}

@@ -1,21 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaChevronRight, FaChevronLeft } from 'react-icons/fa';
-import { apiRequest } from '../api.js';
 import './Comparativa.css';
 
 const Comparativa = ({ lang }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const searchRef1 = useRef(null);
   const searchRef2 = useRef(null);
   const relatedRef = useRef(null);
   const [showLeft, setShowLeft] = useState({ search1: false, search2: false, related: false });
-  const [game, setGame] = useState(null);
-  const [relatedGames, setRelatedGames] = useState([]);
-  const [status, setStatus] = useState('loading');
-
-  const gameId = searchParams.get('gameId');
 
   const translations = {
     ES: {
@@ -38,36 +31,6 @@ const Comparativa = ({ lang }) => {
 
   const t = translations[lang] || translations.ES;
 
-  useEffect(() => {
-    let active = true;
-
-    apiRequest('/api/games')
-      .then((data) => {
-        if (!active) {
-          return;
-        }
-
-        const catalog = data.games || [];
-        const selected = gameId ? catalog.find((item) => String(item.id) === String(gameId)) : catalog[0];
-        const related = catalog.filter((item) => !selected || item.id !== selected.id).slice(0, 15);
-
-        setGame(selected || null);
-        setRelatedGames(related);
-        setStatus(selected ? 'ready' : 'error');
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-
-        setStatus('error');
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [gameId]);
-
   const handleScrollDetect = (key, ref) => {
     const isScrolled = ref.current.scrollLeft > 10;
     setShowLeft((prev) => ({ ...prev, [key]: isScrolled }));
@@ -78,41 +41,39 @@ const Comparativa = ({ lang }) => {
     ref.current.scrollBy({ left: offset, behavior: 'smooth' });
   };
 
-  const offers = game
-    ? Array.from({ length: 15 }, (_, index) => ({
-        id: `${game.id}-${index}`,
-        title: game.title,
-        price: game.price,
-        duration: `${game.rentalDays} ${lang === 'ES' ? 'días' : 'days'}`,
-        platform: game.platform
-      }))
-    : [];
+  const unchartedGames = Array.from({ length: 15 }, (_, index) => ({
+    id: `uncharted-${index}`,
+    title: 'Uncharted 4',
+    price: t.price,
+    duration: t.duration
+  }));
+
+  const relatedGames = Array.from({ length: 15 }, (_, index) => ({
+    id: index + 1,
+    title: ['The Last of Us II', 'GTA Vice City', 'DOOM', 'Dark Souls II', 'Stardew Valley', 'Terraria', 'Elden Ring', 'Halo Infinite', 'Spider-Man', 'God of War', 'Minecraft', 'Cyberpunk 2077', 'Resident Evil 4', 'Final Fantasy VII', 'Hollow Knight'][index] || `Juego ${index + 1}`,
+    category: ['Acción', 'Shooter', 'RPG', 'Simulación', 'Aventura'][index % 5]
+  }));
 
   return (
     <div className="comparativa-page">
       <section className="home-section">
         <div className="section-header">
-          <div>
-            <h2 className="section-title">{game ? `${lang === 'ES' ? 'RESULTADOS PARA' : 'RESULTS FOR'} ${game.title}` : t.searchTitle}</h2>
-            <p className="section-subtitle">{game ? game.description : t.searchSub}</p>
-          </div>
+          <h2 className="section-title">{t.searchTitle}</h2>
+          <p className="section-subtitle">{t.searchSub}</p>
         </div>
-
-        {status === 'loading' && <p className="section-subtitle">Cargando comparativa...</p>}
-        {status === 'error' && <p className="section-subtitle">No se encontró el juego seleccionado.</p>}
 
         <div className="content-relative-wrapper">
           {showLeft.search1 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'left')} type="button"><FaChevronLeft /></button>}
           <div className="scroll-area" ref={searchRef1} onScroll={() => handleScrollDetect('search1', searchRef1)}>
-            {offers.map((offer) => (
-              <div key={`row1-${offer.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
+            {unchartedGames.map((game) => (
+              <div key={`row1-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
                 <div className="rect-placeholder">
                   <div className="offer-overlay">
-                    <p className="offer-price">{offer.price} EUR</p>
-                    <p className="offer-duration">{offer.duration}</p>
+                    <p className="offer-price">{game.price}</p>
+                    <p className="offer-duration">{game.duration}</p>
                   </div>
                 </div>
-                <p className="item-label">{offer.title}</p>
+                <p className="item-label">{game.title}</p>
               </div>
             ))}
           </div>
@@ -122,15 +83,15 @@ const Comparativa = ({ lang }) => {
         <div className="content-relative-wrapper" style={{ marginTop: '30px' }}>
           {showLeft.search2 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'left')} type="button"><FaChevronLeft /></button>}
           <div className="scroll-area" ref={searchRef2} onScroll={() => handleScrollDetect('search2', searchRef2)}>
-            {offers.map((offer) => (
-              <div key={`row2-${offer.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
+            {unchartedGames.map((game) => (
+              <div key={`row2-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
                 <div className="rect-placeholder">
                   <div className="offer-overlay">
-                    <p className="offer-price">{offer.price} EUR</p>
-                    <p className="offer-duration">{offer.duration}</p>
+                    <p className="offer-price">{game.price}</p>
+                    <p className="offer-duration">{game.duration}</p>
                   </div>
                 </div>
-                <p className="item-label">{offer.title}</p>
+                <p className="item-label">{game.title}</p>
               </div>
             ))}
           </div>
@@ -140,17 +101,15 @@ const Comparativa = ({ lang }) => {
 
       <section className="home-section">
         <div className="section-header">
-          <div>
-            <h2 className="section-title">{t.relatedTitle}</h2>
-            <p className="section-subtitle">{t.relatedSub}</p>
-          </div>
+          <h2 className="section-title">{t.relatedTitle}</h2>
+          <p className="section-subtitle">{t.relatedSub}</p>
         </div>
         <div className="content-relative-wrapper">
           {showLeft.related && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(relatedRef, 'left')} type="button"><FaChevronLeft /></button>}
           <div className="scroll-area" ref={relatedRef} onScroll={() => handleScrollDetect('related', relatedRef)}>
             {relatedGames.map((game) => (
-              <div key={`rel-${game.id}`} className="item-card" onClick={() => navigate(`/comparativa?gameId=${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Game'}</span></div>
+              <div key={`rel-${game.id}`} className="item-card" onClick={() => navigate('/comparativa')} role="button" tabIndex={0}>
+                <div className="rect-placeholder"><span>{game.category}</span></div>
                 <p className="item-label">{game.title}</p>
               </div>
             ))}

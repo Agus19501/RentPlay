@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import { apiRequest } from '../api.js';
 import './Filtros.css';
 
 const Filtros = ({ lang }) => {
@@ -10,43 +9,6 @@ const Filtros = ({ lang }) => {
   const [lanzamiento, setLanzamiento] = useState({ min: 1970, max: 2026 });
   const [selectedGenreId, setSelectedGenreId] = useState(null);
   const [selectedDev, setSelectedDev] = useState(null);
-  const [catalog, setCatalog] = useState([]);
-
-  useEffect(() => {
-    let active = true;
-
-    apiRequest('/api/games')
-      .then((data) => {
-        if (!active) {
-          return;
-        }
-
-        setCatalog(data.games || []);
-
-        const prices = (data.games || []).map((game) => Number(game.price)).filter((value) => Number.isFinite(value));
-        const years = (data.games || []).map((game) => {
-          const match = String(game.title || '').match(/(19\d{2}|20\d{2})/);
-          return match ? Number(match[1]) : null;
-        }).filter((value) => Number.isFinite(value));
-
-        if (prices.length > 0) {
-          setPrecio({ min: Math.max(1, Math.floor(Math.min(...prices))), max: Math.ceil(Math.max(...prices)) });
-        }
-
-        if (years.length > 0) {
-          setLanzamiento({ min: Math.min(...years), max: Math.max(...years) });
-        }
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const t = {
     ES: {
@@ -81,19 +43,21 @@ const Filtros = ({ lang }) => {
       eur: 'EUR',
       ejemplo: 'Example'
     }
-  }[lang] || {
-    title: 'FILTROS DE BÚSQUEDA'
-  };
+  }[lang];
 
-  const handleRange = (event, type, edge) => {
-    const value = parseInt(event.target.value, 10);
-    const setter = type === 'precio' ? setPrecio : type === 'alquiler' ? setAlquiler : setLanzamiento;
-    const state = type === 'precio' ? precio : type === 'alquiler' ? alquiler : lanzamiento;
+  const handleRange = (e, type, edge) => {
+    const val = parseInt(e.target.value, 10);
+    const setter = (type === 'precio' ? setPrecio : type === 'alquiler' ? setAlquiler : setLanzamiento);
+    const state = (type === 'precio' ? precio : type === 'alquiler' ? alquiler : lanzamiento);
 
     if (edge === 'min') {
-      if (value <= state.max) setter({ ...state, min: value });
-    } else if (value >= state.min) {
-      setter({ ...state, max: value });
+      if (val <= state.max) {
+        setter({ ...state, min: val });
+      }
+    } else {
+      if (val >= state.min) {
+        setter({ ...state, max: val });
+      }
     }
   };
 
@@ -105,17 +69,15 @@ const Filtros = ({ lang }) => {
   };
   const formatLanzamiento = () => (lanzamiento.min === lanzamiento.max ? `${lanzamiento.min}` : `${lanzamiento.min} - ${lanzamiento.max}`);
 
-  const platformOptions = Array.from(new Set(catalog.map((game) => game.platform).filter(Boolean)));
-  const sellerOptions = Array.from(new Set(catalog.map((game) => game.seller?.name).filter(Boolean)));
+  const genreNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
+  const devNames = Array.from({ length: 20 }, (_, i) => `Ejemplo ${i + 1}`);
 
   return (
     <div className="filtros-page">
       <div className="filtros-container">
         <div className="section-header">
-          <div>
-            <h1 className="section-title">{t.title}</h1>
-            <p className="section-subtitle">{t.subtitle}</p>
-          </div>
+          <h1 className="section-title">{t.title}</h1>
+          <p className="section-subtitle">{t.subtitle}</p>
         </div>
 
         <div className="filters-grid">
@@ -125,11 +87,11 @@ const Filtros = ({ lang }) => {
               <p className="range-result-text">{formatPrecio()}</p>
             </div>
             <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((precio.min - 1) / 49) * 100}%`, right: `${100 - ((precio.max - 1) / 49) * 100}%` }} />
-              <div className="thumb-container" style={{ left: `${((precio.min - 1) / 49) * 100}%` }}><div className="thumb-circle" /></div>
-              <div className="thumb-container" style={{ left: `${((precio.max - 1) / 49) * 100}%` }}><div className="thumb-circle" /></div>
-              <input type="range" min="1" max="50" value={precio.min} onChange={(event) => handleRange(event, 'precio', 'min')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 22 : 21 }} />
-              <input type="range" min="1" max="50" value={precio.max} onChange={(event) => handleRange(event, 'precio', 'max')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 21 : 22 }} />
+              <div className="slider-track" style={{ left: `${((precio.min - 1) / 49) * 100}%`, right: `${100 - ((precio.max - 1) / 49) * 100}%` }}></div>
+              <div className="thumb-container" style={{ left: `${((precio.min - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
+              <div className="thumb-container" style={{ left: `${((precio.max - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
+              <input type="range" min="1" max="50" value={precio.min} onChange={(e) => handleRange(e, 'precio', 'min')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 22 : 21 }} />
+              <input type="range" min="1" max="50" value={precio.max} onChange={(e) => handleRange(e, 'precio', 'max')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 21 : 22 }} />
             </div>
           </div>
 
@@ -141,11 +103,11 @@ const Filtros = ({ lang }) => {
               <div className="toggle-group">
                 <div className="toggle-item">
                   <span>{t.userVal}</span>
-                  <label className="switch"><input type="checkbox" /><span className="slider-round" /></label>
+                  <label className="switch"><input type="checkbox" /><span className="slider-round"></span></label>
                 </div>
                 <div className="toggle-item">
                   <span>{t.gameVal}</span>
-                  <label className="switch"><input type="checkbox" defaultChecked /><span className="slider-round" /></label>
+                  <label className="switch"><input type="checkbox" defaultChecked /><span className="slider-round"></span></label>
                 </div>
               </div>
             </div>
@@ -156,15 +118,15 @@ const Filtros = ({ lang }) => {
               <h3 className="box-label uppercase">{lang === 'ES' ? 'GÉNERO' : 'GENRE'}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'gen' ? null : 'gen')} role="button" tabIndex={0}>
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'gen' ? null : 'gen')}>
                 <span className={`selected-text ${!selectedGenreId ? 'placeholder' : ''}`}>
-                  {selectedGenreId ? `${t.ejemplo} ${selectedGenreId}` : (platformOptions[0] || t.gen)}
+                  {selectedGenreId ? `${t.ejemplo} ${selectedGenreId}` : t.gen}
                 </span>
                 <FaChevronDown className={`arrow ${openDropdown === 'gen' ? 'up' : ''}`} />
                 {openDropdown === 'gen' && (
                   <div className="options-panel">
-                    {platformOptions.map((name, index) => (
-                      <div key={name} className="option" onClick={() => setSelectedGenreId(index + 1)} role="button" tabIndex={0}>{name}</div>
+                    {genreNumbers.map((num) => (
+                      <div key={num} className="option" onClick={() => setSelectedGenreId(num)}>{t.ejemplo} {num}</div>
                     ))}
                   </div>
                 )}
@@ -178,11 +140,11 @@ const Filtros = ({ lang }) => {
               <p className="range-result-text">{formatAlquiler()}</p>
             </div>
             <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((alquiler.min - 1) / 29) * 100}%`, right: `${100 - ((alquiler.max - 1) / 29) * 100}%` }} />
-              <div className="thumb-container" style={{ left: `${((alquiler.min - 1) / 29) * 100}%` }}><div className="thumb-circle" /></div>
-              <div className="thumb-container" style={{ left: `${((alquiler.max - 1) / 29) * 100}%` }}><div className="thumb-circle" /></div>
-              <input type="range" min="1" max="30" value={alquiler.min} onChange={(event) => handleRange(event, 'alquiler', 'min')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 22 : 21 }} />
-              <input type="range" min="1" max="30" value={alquiler.max} onChange={(event) => handleRange(event, 'alquiler', 'max')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 21 : 22 }} />
+              <div className="slider-track" style={{ left: `${((alquiler.min - 1) / 29) * 100}%`, right: `${100 - ((alquiler.max - 1) / 29) * 100}%` }}></div>
+              <div className="thumb-container" style={{ left: `${((alquiler.min - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
+              <div className="thumb-container" style={{ left: `${((alquiler.max - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
+              <input type="range" min="1" max="30" value={alquiler.min} onChange={(e) => handleRange(e, 'alquiler', 'min')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 22 : 21 }} />
+              <input type="range" min="1" max="30" value={alquiler.max} onChange={(e) => handleRange(e, 'alquiler', 'max')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 21 : 22 }} />
             </div>
           </div>
 
@@ -192,11 +154,11 @@ const Filtros = ({ lang }) => {
               <p className="range-result-text">{formatLanzamiento()}</p>
             </div>
             <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%`, right: `${100 - ((lanzamiento.max - 1970) / 56) * 100}%` }} />
-              <div className="thumb-container" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%` }}><div className="thumb-circle" /></div>
-              <div className="thumb-container" style={{ left: `${((lanzamiento.max - 1970) / 56) * 100}%` }}><div className="thumb-circle" /></div>
-              <input type="range" min="1970" max="2026" value={lanzamiento.min} onChange={(event) => handleRange(event, 'lanzamiento', 'min')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 22 : 21 }} />
-              <input type="range" min="1970" max="2026" value={lanzamiento.max} onChange={(event) => handleRange(event, 'lanzamiento', 'max')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 21 : 22 }} />
+              <div className="slider-track" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%`, right: `${100 - ((lanzamiento.max - 1970) / 56) * 100}%` }}></div>
+              <div className="thumb-container" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
+              <div className="thumb-container" style={{ left: `${((lanzamiento.max - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
+              <input type="range" min="1970" max="2026" value={lanzamiento.min} onChange={(e) => handleRange(e, 'lanzamiento', 'min')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 22 : 21 }} />
+              <input type="range" min="1970" max="2026" value={lanzamiento.max} onChange={(e) => handleRange(e, 'lanzamiento', 'max')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 21 : 22 }} />
             </div>
           </div>
 
@@ -205,12 +167,12 @@ const Filtros = ({ lang }) => {
               <h3 className="box-label uppercase">{lang === 'ES' ? 'DESARROLLADORES' : 'DEVELOPERS'}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'dev' ? null : 'dev')} role="button" tabIndex={0}>
-                <span className={`selected-text ${!selectedDev ? 'placeholder' : ''}`}>{selectedDev || (sellerOptions[0] || t.dev)}</span>
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'dev' ? null : 'dev')}>
+                <span className={`selected-text ${!selectedDev ? 'placeholder' : ''}`}>{selectedDev || t.dev}</span>
                 <FaChevronDown className={`arrow ${openDropdown === 'dev' ? 'up' : ''}`} />
                 {openDropdown === 'dev' && (
                   <div className="options-panel">
-                    {sellerOptions.map((name) => <div key={name} className="option" onClick={() => setSelectedDev(name)} role="button" tabIndex={0}>{name}</div>)}
+                    {devNames.map((name, i) => <div key={i} className="option" onClick={() => setSelectedDev(name)}>{name}</div>)}
                   </div>
                 )}
               </div>

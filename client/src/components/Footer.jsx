@@ -5,21 +5,21 @@ const Footer = ({ lang }) => {
   const translations = {
     ES: {
       about: '¿Quiénes somos?',
-      desc: 'RentPlay reúne una parte más visual y otra más funcional del proyecto para dejar una base React más completa.',
+      desc: 'RentPlay es un proyecto nacido de la pasión de un par de estudiantes universitarios que queríamos aportar algo nuevo al mundo del videojuego. Nuestra idea es crear un espacio donde los jugadores puedan compartir y disfrutar de sus títulos favoritos de forma sencilla, fomentando una comunidad más colaborativa y accesible para todos.',
       contact: 'Contacto',
       follow: 'Síguenos',
       rights: 'Proyecto creado por estudiantes universitarios.'
     },
     EN: {
       about: 'About Us',
-      desc: 'RentPlay combines a more visual and a more functional layer to keep the React base fuller.',
+      desc: 'RentPlay is a project born from the passion of a couple of university students who wanted to bring something new to the gaming world. Our idea is to create a space where players can share and enjoy their favorite titles easily, fostering a more collaborative and accessible community for everyone.',
       contact: 'Contact',
       follow: 'Follow Us',
       rights: 'Project created by university students.'
     }
   };
 
-  const t = translations[lang] || translations.ES;
+  const t = translations[lang];
 
   return (
     <footer className="main-footer" role="contentinfo">

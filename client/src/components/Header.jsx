@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaPaperPlane, FaUserCircle, FaPlus, FaPlay, FaCog, FaSignOutAlt, FaUser } from 'react-icons/fa';
 import './Header.css';
 
-const Header = ({ lang, setLang }) => {
+const Header = ({ lang, setLang, session, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -21,6 +21,12 @@ const Header = ({ lang, setLang }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleLogout = () => {
+    setShowProfileMenu(false);
+    onLogout && onLogout();
+    navigate('/login');
+  };
 
   const texts = {
     ES: {
@@ -69,35 +75,45 @@ const Header = ({ lang, setLang }) => {
         </div>
 
         <nav className="header-actions">
-          <button className="btn-add" onClick={() => navigate('/subir-juego')}>
-            <span className="action-text">{current.add}</span> <FaPlus />
-          </button>
+          {session && (
+            <button className="btn-add" onClick={() => navigate('/subir-juego')}>
+              <span className="action-text">{current.add}</span> <FaPlus />
+            </button>
+          )}
 
           <button className="icon-btn action-item" onClick={() => setLang(lang === 'ES' ? 'EN' : 'ES')}>
             <span className="icon-wrapper">{lang === 'ES' ? '🇪🇸' : '🇬🇧'}</span>
             <span className="action-text">{current.langLabel}</span>
           </button>
 
-          <button className="icon-btn action-item" onClick={() => navigate('/chats')}>
-            <span className="icon-wrapper"><FaPaperPlane /></span>
-            <span className="action-text">{current.chats}</span>
-          </button>
-
-          <div className="profile-menu-container" ref={menuRef}>
-            <button className="icon-btn action-item" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-              <span className="icon-wrapper"><FaUserCircle /></span>
-              <span className="action-text">{current.profile}</span>
+          {session && (
+            <button className="icon-btn action-item" onClick={() => navigate('/chats')}>
+              <span className="icon-wrapper"><FaPaperPlane /></span>
+              <span className="action-text">{current.chats}</span>
             </button>
+          )}
 
-            {showProfileMenu && (
-              <div className="profile-dropdown">
-                <div className="dropdown-item" onClick={() => navigate('/perfil_propio')}><FaUser /> {current.myProfile}</div>
-                <div className="dropdown-item" onClick={() => navigate('/ajustes')}><FaCog /> {current.settings}</div>
-                <div className="dropdown-divider"></div>
-                <div className="dropdown-item logout" onClick={() => { setShowProfileMenu(false); navigate('/login'); }}><FaSignOutAlt /> {current.logout}</div>
-              </div>
-            )}
-          </div>
+          {session ? (
+            <div className="profile-menu-container" ref={menuRef}>
+              <button className="icon-btn action-item" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <span className="icon-wrapper"><FaUserCircle /></span>
+                <span className="action-text">{session.user?.name || current.profile}</span>
+              </button>
+
+              {showProfileMenu && (
+                <div className="profile-dropdown">
+                  <div className="dropdown-item" onClick={() => navigate('/perfil_propio')}><FaUser /> {current.myProfile}</div>
+                  <div className="dropdown-item" onClick={() => navigate('/ajustes')}><FaCog /> {current.settings}</div>
+                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-item logout" onClick={handleLogout}><FaSignOutAlt /> {current.logout}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button className="btn-add" onClick={() => navigate('/login')}>
+              <span className="action-text">Iniciar Sesión</span>
+            </button>
+          )}
         </nav>
       </div>
     </header>

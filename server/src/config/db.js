@@ -15,41 +15,60 @@ function getRootPath() {
 export async function getDb() {
   if (!clientPromise) {
     const client = new MongoClient(mongoUri, {
-      serverSelectionTimeoutMS: 5000
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+      retryWrites: false
     });
-    clientPromise = client.connect();
+    clientPromise = client.connect().catch(error => {
+      clientPromise = null;
+      throw new Error(`MongoDB connection error: ${error.message}`);
+    });
   }
 
-  const client = await clientPromise;
-  return client.db(databaseName);
+  try {
+    const client = await clientPromise;
+    return client.db(databaseName);
+  } catch (error) {
+    clientPromise = null;
+    throw error;
+  }
 }
 
 export async function getCollections() {
-  const db = await getDb();
-  return {
-    db,
-    users: db.collection('users'),
-    games: db.collection('games'),
-    rentals: db.collection('rentals')
-  };
+  try {
+    const db = await getDb();
+    return {
+      db,
+      users: db.collection('users'),
+      games: db.collection('games'),
+      rentals: db.collection('rentals')
+    };
+  } catch (error) {
+    console.error('Database error:', error);
+    throw new Error('Database connection failed. Please check MONGODB_URI in environment variables.');
+  }
 }
 
 export async function seedGamesIfNeeded() {
-  const { games } = await getCollections();
-  const count = await games.countDocuments();
+  try {
+    const { games } = await getCollections();
+    const count = await games.countDocuments();
 
-  if (count > 0) {
-    return;
-  }
+    if (count > 0) {
+      return;
+    }
 
-  const gamesPath = path.join(getRootPath(), 'data', 'games.json');
-  const payload = JSON.parse(await readFile(gamesPath, 'utf8'));
-  const catalog = Array.isArray(payload.games) ? payload.games : [];
+    const gamesPath = path.join(getRootPath(), 'data', 'games.json');
+    const payload = JSON.parse(await readFile(gamesPath, 'utf8'));
+    const catalog = Array.isArray(payload.games) ? payload.games : [];
 
-  if (catalog.length > 0) {
-    await games.insertMany(catalog.map((game) => ({
-      ...game,
-      createdAt: new Date()
-    })));
+    if (catalog.length > 0) {
+      await games.insertMany(catalog.map((game) => ({
+        ...game,
+        createdAt: new Date()
+      })));
+    }
+  } catch (error) {
+    console.error('Seed error:', error);
   }
 }

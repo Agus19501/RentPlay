@@ -66,4 +66,194 @@ main {
     flex: 1;
 }
 
-/* Más reglas copiados... (archivo original completo) */
+/* HEADER */
+.header {
+    width: 100%;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid transparent;
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.logo-text {
+    font-weight: 800;
+    font-size: 1.6rem;
+    color: var(--color-text);
+}
+
+.search-container {
+    flex: 1;
+    max-width: 600px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 40px;
+    border: 2px solid var(--color-border);
+    background-color: var(--color-dark-gray);
+    color: var(--color-text);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.language-btn,
+.send-btn,
+.user-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.language-btn:hover,
+.send-btn:hover,
+.user-btn:hover {
+    color: var(--color-primary);
+    transform: scale(1.1);
+}
+
+.flag-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+}
+
+/* ==========================================
+   MAIN CONTENT
+   ========================================== */
+
+.main-content {
+    flex: 1;
+    background-color: var(--color-dark-bg);
+    padding: var(--spacing-xl) 0;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg);
+}
+
+.breadcrumb {
+    margin-bottom: var(--spacing-lg);
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.breadcrumb a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* Product Section */
+.product-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.product-content {
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-start;
+}
+
+/* Product Gallery */
+.product-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    flex: 0 0 250px;
+    min-width: 200px;
+}
+
+.main-image-container {
+    width: 100%;
+}
+
+.image-placeholder {
+    background-color: var(--color-dark-gray);
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 3rem;
+    transition: var(--transition);
+}
+
+.image-placeholder i {
+    margin-bottom: var(--spacing-sm);
+}
+
+.image-placeholder p {
+    font-size: 0.95rem;
+    margin-top: var(--spacing-sm);
+}
+
+.main-image {
+    min-height: 300px;
+    cursor: pointer;
+}
+
+.main-image:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-medium-gray);
+}
+
+.gallery-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.btn-nav-prev,
+.btn-nav-next {
+    flex: 1;
+    background-color: var(--color-primary);
+    color: var(--color-text);
+    border: none;
+    padding: 12px var(--spacing-sm);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+... (file continues)

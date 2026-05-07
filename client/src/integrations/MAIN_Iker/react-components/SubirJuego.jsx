@@ -104,13 +104,10 @@ export default function SubirJuego() {
     
     // Cargar la imagen de RAWG si existe
     if (game.background_image) {
-      // Usar el backend para descargar la imagen (evita CORS issues)
-      fetch('/api/download-image', {
+      apiRequest('/api/download-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: game.background_image }),
+        body: { url: game.background_image },
       })
-        .then(res => res.json())
         .then(data => {
           if (data.ok && data.imageData) {
             const newMedia = {

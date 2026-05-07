@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import '../assets/css/ajustes.css';
 
 const FONT_SCALES = {
   small: '80%',
@@ -176,21 +177,33 @@ export default function Ajustes() {
 
             <div className="payment-methods-grid">
               <label className={`payment-card-label${paymentMethod === 'paypal' ? ' checked' : ''}`}>
-                <div className="payment-icon-wrapper"><span>PP</span></div>
+                <div className="payment-icon-wrapper">
+                  <span style={{ fontWeight: 900, fontSize: 15 }}>
+                    <span style={{ color: '#009cde' }}>Pay</span><span style={{ color: '#012169' }}>Pal</span>
+                  </span>
+                </div>
                 <span className="payment-name">PayPal</span>
                 <input type="radio" name="payment-method" value="paypal" checked={paymentMethod === 'paypal'} onChange={handlePaymentChange} />
                 <span className="payment-radio-mark"></span>
               </label>
 
               <label className={`payment-card-label${paymentMethod === 'credit' ? ' checked' : ''}`}>
-                <div className="payment-icon-wrapper"><span>CC</span></div>
+                <div className="payment-icon-wrapper">
+                  <svg width="52" height="34" viewBox="0 0 52 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="52" height="34" rx="4" fill="#555"/>
+                    <rect y="8" width="52" height="8" fill="#888"/>
+                    <rect x="6" y="21" width="16" height="6" rx="2" fill="#f36b24"/>
+                  </svg>
+                </div>
                 <span className="payment-name">Tarjeta Crédito</span>
                 <input type="radio" name="payment-method" value="credit" checked={paymentMethod === 'credit'} onChange={handlePaymentChange} />
                 <span className="payment-radio-mark"></span>
               </label>
 
               <label className={`payment-card-label${paymentMethod === 'apple' ? ' checked' : ''}`}>
-                <div className="payment-icon-wrapper" style={{ fontSize: '1.8rem', marginBottom: -4 }}><span style={{ fontWeight: 900, fontFamily: 'Arial' }}></span></div>
+                <div className="payment-icon-wrapper">
+                  <span style={{ fontWeight: 600, fontSize: 14, color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: 0.5 }}>Apple Pay</span>
+                </div>
                 <span className="payment-name">ApplePay</span>
                 <input type="radio" name="payment-method" value="apple" checked={paymentMethod === 'apple'} onChange={handlePaymentChange} />
                 <span className="payment-radio-mark"></span>

@@ -188,7 +188,7 @@ export default function Mensajes({ session }) {
           <div className="messages-brand">
             <p className="messages-eyebrow">Mensajes</p>
             <h1>Tu bandeja</h1>
-            <p>Conversaciones reales sincronizadas con MongoDB Atlas.</p>
+            <p>Selecciona una conversación para empezar a chatear.</p>
           </div>
 
           <label className="messages-search">
@@ -308,14 +308,14 @@ export default function Mensajes({ session }) {
                 <p>{selectedRental.game?.rentalDays ? `${selectedRental.game.rentalDays} días` : 'Duración no disponible'}</p>
               </>
             ) : (
-              <p>No hay un alquiler activo cargado desde Atlas.</p>
+              <p>No hay alquiler activo.</p>
             )}
           </div>
 
           <div className="context-card context-note">
             <p className="messages-eyebrow">Notas</p>
             <h3>Estado del chat</h3>
-            <p>Los mensajes salen de MongoDB y puedes iniciar conversaciones buscando usuarios reales.</p>
+            <p>Mantén conversaciones con otros usuarios sobre alquileres.</p>
           </div>
         </aside>
       </section>

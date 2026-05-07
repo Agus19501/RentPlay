@@ -16,15 +16,15 @@ const Resultados = ({ lang }) => {
   const translations = {
     ES: {
       searchTitle: 'RESULTADOS DE LA BÚSQUEDA',
-      searchSub: 'Explora los videojuegos reales que tenemos en Atlas',
+      searchSub: 'Explora los videojuegos que concuerdan con tu búsqueda',
       relatedTitle: 'RELACIONADOS',
-      relatedSub: 'Echa un vistazo a otros juegos del catálogo real de RentPlay'
+      relatedSub: 'Echa un vistazo a otros juegos similares que te pueden interesar'
     },
     EN: {
       searchTitle: 'SEARCH RESULTS',
-      searchSub: 'Explore the real video games we have in Atlas',
+      searchSub: 'Explore the video games that match your search',
       relatedTitle: 'RELATED',
-      relatedSub: 'Take a look at other real games from the RentPlay catalog'
+      relatedSub: 'Check out other similar games that might interest you'
     }
   };
 

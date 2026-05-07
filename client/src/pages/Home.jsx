@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaImage, FaStar, FaUserCircle } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
+import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const Home = () => {
     return Array.from(map.values()).slice(0, 15);
   }, [games]);
 
-  const visibleGames = games.slice(0, 8);
+  const visibleGames = games.slice(0, 12);
 
   const handleScrollDetect = (key, ref) => {
     const isScrolled = (ref.current?.scrollLeft || 0) > 10;

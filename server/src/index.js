@@ -27,6 +27,35 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, message: 'RentPlay API running' });
 });
 
+// Endpoint para descargar imágenes desde URLs externas (para evitar CORS issues)
+app.post('/api/download-image', async (req, res) => {
+  const { url } = req.body;
+  
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ ok: false, message: 'URL inválida' });
+  }
+  
+  try {
+    // Validar que la URL sea de RAWG
+    if (!url.includes('media.rawg.io')) {
+      return res.status(400).json({ ok: false, message: 'Solo se permiten imágenes de RAWG' });
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(400).json({ ok: false, message: 'Error descargando imagen' });
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString('base64');
+    
+    res.json({ ok: true, imageData: `data:image/jpeg;base64,${base64}` });
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    res.status(500).json({ ok: false, message: 'Error descargando imagen' });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/messages', messagesRoutes);

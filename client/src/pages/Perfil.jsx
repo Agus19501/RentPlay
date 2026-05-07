@@ -42,7 +42,7 @@ export default function Perfil({ session }) {
         <div className="profile-copy">
           <p className="profile-eyebrow">Mi perfil</p>
           <h1>{profile?.name || session.user?.name || 'Usuario'}</h1>
-          <p>{profile?.email || session.user?.email || 'Cuenta conectada con MongoDB Atlas'}</p>
+          <p>{profile?.email || session.user?.email || 'No disponible'}</p>
         </div>
         <Link className="profile-link" to="/mensajes"><FaPaperPlane /> Mensajes</Link>
       </section>
@@ -51,7 +51,7 @@ export default function Perfil({ session }) {
         <article className="card profile-card">
           <p className="profile-eyebrow">Resumen</p>
           <h2>Actividad reciente</h2>
-          <p>Esto sale de las colecciones de Atlas, no de un mock local.</p>
+          <p></p>
           <div className="profile-metrics">
             <div>
               <FaGamepad />

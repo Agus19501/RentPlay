@@ -15,7 +15,7 @@ const Filtros = ({ lang }) => {
   const t = {
     ES: {
       title: 'FILTROS DE BÚSQUEDA',
-      subtitle: 'Usa datos reales del catálogo de Atlas para afinar tu búsqueda en RentPlay',
+      subtitle: 'Usa los filtros disponibles para encontrar exactamente lo que buscas',
       precio: 'PRECIO',
       alquiler: 'ALQUILER',
       rating: 'VALORACIÓN',
@@ -28,7 +28,7 @@ const Filtros = ({ lang }) => {
     },
     EN: {
       title: 'SEARCH FILTERS',
-      subtitle: 'Use real Atlas catalog data to refine your search on RentPlay',
+      subtitle: 'Use the available filters to find exactly what you are looking for',
       precio: 'PRICE',
       alquiler: 'RENTAL',
       rating: 'RATING',

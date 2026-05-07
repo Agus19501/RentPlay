@@ -171,7 +171,7 @@ export default function VerJuego() {
 
               <div className="description-section">
                 <h2 className="section-title">Descripción del videojuego</h2>
-                <p className="description-text">{selectedGame.description || 'Sin descripción disponible en Atlas.'}</p>
+                <p className="description-text">{selectedGame.description || 'Sin descripción disponible.'}</p>
                 <p className="description-text">{selectedGame.genre ? `Género: ${selectedGame.genre}.` : ''} {selectedGame.developers ? `Desarrolladores: ${selectedGame.developers}.` : ''}</p>
               </div>
 

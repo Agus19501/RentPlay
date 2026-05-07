@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getCollections } from '../config/db.js';
+import { authRequired } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -53,6 +54,43 @@ router.get('/:gameId', async (req, res) => {
   }
 
   return res.json({ ok: true, game: normalizeGame(game) });
+});
+
+router.post('/', authRequired, async (req, res) => {
+  try {
+    const { title, releaseDate, genre, duration, developers, price, imagePreview } = req.body || {};
+
+    if (!title || !String(title).trim()) {
+      return res.status(422).json({ ok: false, message: 'El título es obligatorio.' });
+    }
+
+    const { games } = await getCollections();
+
+    // generate next numeric id
+    const last = await games.find().sort({ id: -1 }).limit(1).toArray();
+    const nextId = last.length ? Number(last[0].id) + 1 : 1;
+
+    const doc = {
+      id: nextId,
+      title: String(title).trim(),
+      description: '',
+      releaseDate: releaseDate || null,
+      genre: genre || null,
+      rentalDays: Number(duration) || 1,
+      developers: developers || null,
+      price: price || null,
+      image: imagePreview || null,
+      seller: req.user?.name || req.user?.email || null,
+      createdAt: new Date()
+    };
+
+    await games.insertOne(doc);
+
+    return res.json({ ok: true, game: normalizeGame(doc) });
+  } catch (error) {
+    console.error('Create game error:', error);
+    return res.status(500).json({ ok: false, message: 'Error al crear el juego.' });
+  }
 });
 
 export default router;

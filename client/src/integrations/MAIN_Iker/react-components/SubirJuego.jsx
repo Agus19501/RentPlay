@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaCloudUploadAlt, FaPencilAlt } from 'react-icons/fa';
+import '../assets/css/subir-juego.css';
+import cover1 from '../assets/images/cover1.svg';
+import cover2 from '../assets/images/cover2.svg';
 
 const INITIAL_FORM = {
   title: '',
@@ -105,9 +108,9 @@ export default function SubirJuego() {
                 {imagePreview ? (
                   <img src={imagePreview} alt="Vista previa de la portada" className="upload-image-preview" id="preview-img" />
                 ) : (
-                  <div className="upload-placeholder-content visible" id="upload-placeholder">
-                    <FaCloudUploadAlt />
-                    <span>Arrastra o haz clic<br />para subir tu portada</span>
+                  <div className="cover-stack" id="upload-placeholder">
+                    <img src={cover2} alt="portada secundaria" className="cover-stack-back" />
+                    <img src={cover1} alt="portada principal" className="cover-stack-front" />
                   </div>
                 )}
               </div>

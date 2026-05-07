@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, FaTimes, FaUser, FaUserCircle, FaPaperPlane } from 'react-icons/fa';
+import '../assets/css/ver-juego.css';
+import cover1 from '../assets/images/cover1.svg';
+import avatar from '../assets/images/avatar.svg';
 
 const GAME = {
   title: 'GRAND THEFT AUTO : VICE CITY',
@@ -148,9 +151,8 @@ export default function VerJuego() {
           <div className="product-content">
             <div className="product-gallery">
               <div className="main-image-container">
-                <div className="image-placeholder main-image">
-                  <i className="fas fa-image"></i>
-                  <p>Imagen del Juego</p>
+                <div className="image-frame">
+                  <img src={cover1} alt="Portada juego" className="main-image" />
                 </div>
               </div>
               <div className="gallery-controls">
@@ -194,7 +196,7 @@ export default function VerJuego() {
             <div className="seller-section">
               <h3 className="section-title">PROPIETARIO</h3>
               <div className="seller-card">
-                <div className="seller-avatar-placeholder"><FaUser /></div>
+                <div className="seller-avatar-placeholder"><img src={avatar} alt="avatar" /></div>
                 <h4 className="seller-name">{GAME.ownerProfile}</h4>
                 <div className="seller-rating">
                   <FaStar /><FaStar /><FaStar /><FaStar /><FaStar style={{ opacity: 0.4 }} />

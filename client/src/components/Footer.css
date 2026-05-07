@@ -1,70 +1,125 @@
 .main-footer {
-  background: rgba(7, 8, 11, 0.9);
-  border-top: 1px solid var(--line);
+  background-color: #000000;
+  color: white;
+  padding: 40px 0 10px 0; 
+  border-bottom: 2px solid #333333;
   margin-top: auto;
+  width: 100%;
 }
 
 .footer-content {
-  width: min(1280px, calc(100% - 32px));
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding: 0 4%; 
+  max-width: 100%;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.2fr 0.9fr 0.7fr;
-  gap: 24px;
-  padding: 28px 0;
+  /* 👈 MODIFICA ESTE VALOR: Controla la separación vertical cuando los bloques bajan */
+  row-gap: 35px; 
 }
 
-.footer-section h3,
-.footer-section h4 {
-  margin: 0 0 12px;
+.footer-section {
+  flex: 0 1 auto;
 }
 
-.footer-section p,
-.footer-bottom p {
-  margin: 0;
-  color: var(--muted);
+.footer-section.about {
+  max-width: 700px;
+  margin-right: auto;
 }
 
+.footer-section.contact {
+  margin-right: 60px;
+}
+
+.footer-section h3, .footer-section h4 {
+  color: #FF6100;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.footer-section p {
+  line-height: 1.5;
+  color: #BBBBBB;
+  font-size: 15px;
+}
+
+/* Ajuste de alineación para Contacto */
 .contact-links-container {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
 }
 
-.contact-links-container a {
-  display: inline-flex;
+.footer-section.contact a {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--text);
+  gap: 15px;
+  color: #BBBBBB;
+  text-decoration: none;
+  /* Altura y margen idénticos a la social-grid para alineación perfecta */
+  height: 45px; 
+  margin-bottom: 10px; 
+  transition: color 0.3s;
+  font-size: 15px;
 }
 
 .contact-icon {
-  color: var(--accent-strong);
+  font-size: 26px;
+  color: #FFFFFF;
 }
 
+.footer-section a:hover, 
+.footer-section a:hover .contact-icon {
+  color: #FF6100;
+}
+
+/* Cuadrícula de Redes Sociales (2x2) */
 .social-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 45px);
+  grid-template-rows: repeat(2, 45px); /* Filas de 45px */
+  gap: 10px; /* Hueco de 10px */
 }
 
 .social-grid a {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: rgba(18, 22, 32, 0.88);
-  border: 1px solid var(--line);
-  color: var(--text);
+  font-size: 26px;
+  color: #FFFFFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.social-grid a:hover {
+  color: #FF6100;
+  transform: scale(1.1);
 }
 
 .footer-bottom {
-  border-top: 1px solid var(--line);
-  padding: 16px 0 22px;
   text-align: center;
+  margin-top: 30px;
+  padding-top: 10px;
+  border-top: 1px solid #222222;
+  color: #555555;
+  font-size: 13px;
 }
 
-@media (max-width: 900px) {
+/* Responsive */
+@media (max-width: 850px) {
   .footer-content {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .footer-section.about, .footer-section.contact {
+    margin-right: 0;
+    /* Al usar row-gap arriba, ya no necesitamos margin-bottom manual aquí */
+  }
+  .footer-section a, .social-grid, .contact-links-container {
+    align-items: center;
+    justify-content: center;
   }
 }

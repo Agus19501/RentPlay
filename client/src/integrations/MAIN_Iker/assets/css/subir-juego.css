@@ -1,0 +1,51 @@
+/* Styles to match the Subir Juego mockup */
+:root{
+  --bg:#262626;
+  --orange:#f36b24;
+  --white:#ffffff;
+  --input-bg:#000000;
+}
+
+.main-content{background:var(--bg);}
+.upload-game-container{padding:48px 60px;}
+.upload-content{display:flex;gap:40px;align-items:flex-start;}
+
+/* Left column - form */
+.upload-form-section{flex:1 1 60%;}
+.upload-header{margin-bottom:30px;color:var(--white);}
+.upload-title{font-family: 'Montserrat', sans-serif;font-weight:800;color:var(--orange);font-size:56px;letter-spacing:1px;margin:0 0 14px;}
+.upload-subtitle{color:rgba(255,255,255,0.9);font-size:20px;margin:0 0 6px;}
+.upload-hint{color:var(--orange);font-size:18px;margin:6px 0 24px}
+
+.upload-form{display:flex;flex-wrap:wrap;gap:28px}
+.upload-input{box-sizing:border-box;width:calc(50% - 14px);background:var(--input-bg);border:4px solid var(--orange);border-radius:60px;padding:26px 36px;color:var(--white);font-size:22px;font-weight:700;text-align:center;text-transform:uppercase;outline:none}
+.upload-input::placeholder{color:rgba(255,255,255,0.6);}
+.date-picker-input{letter-spacing:2px}
+
+.btn-publicar{display:inline-block;margin-top:34px;background:var(--orange);color:var(--white);border-radius:60px;padding:18px 56px;border:6px solid var(--white);font-size:28px;font-weight:800;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,0.2)}
+
+/* Right column - image preview */
+.upload-image-section{flex:0 0 360px;display:flex;flex-direction:column;align-items:center}
+.upload-image-wrapper{width:320px;height:420px;background:#fff;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,0.6);position:relative;display:flex;align-items:center;justify-content:center}
+.upload-image-preview-container{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.upload-image-preview{width:100%;height:100%;object-fit:cover;display:block}
+.upload-placeholder-content{display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(0,0,0,0.4);font-size:16px}
+
+/* cover stack to mimic mockup */
+.cover-stack{position:relative;width:280px;height:380px;display:flex;align-items:center;justify-content:center}
+.cover-stack-back{position:absolute;right:-18px;top:18px;width:240px;height:330px;object-fit:cover;border:6px solid #bdbdbd;box-shadow:0 6px 12px rgba(0,0,0,0.4);transform:scale(0.95)}
+.cover-stack-front{position:absolute;left:0;top:0;width:280px;height:380px;object-fit:cover;border:8px solid #ffffff;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+
+.btn-edit-image{position:absolute;right:-18px;top:-18px;background:var(--orange);color:var(--white);width:56px;height:56px;border-radius:50%;border:6px solid var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
+
+.upload-image-nav{display:flex;gap:20px;margin-top:18px;align-items:center}
+.upload-nav-btn{background:transparent;border:none;color:var(--white);display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.nav-icon-circle{width:56px;height:56px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;color:var(--white);box-shadow:0 6px 0 rgba(0,0,0,0.2)}
+.upload-nav-btn span{display:block;margin-top:8px;font-size:14px;color:var(--white);letter-spacing:1px}
+
+/* Responsive tweaks */
+@media (max-width: 900px){
+  .upload-content{flex-direction:column}
+  .upload-image-section{flex:0 0 auto;margin-top:20px}
+  .upload-input{width:100%}
+}

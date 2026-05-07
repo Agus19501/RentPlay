@@ -1,205 +1,253 @@
+/* ========================================================
+   BASE ORIGINAL INTACTA (Hovers, Transiciones y fadeIn)
+   ======================================================== */
 .main-header {
+  background-color: #000000;
+  width: 100%;
+  padding: 20px 60px;
+  border-bottom: 2px solid #333333;
+  display: flex;
+  justify-content: center;
   position: sticky;
   top: 0;
-  z-index: 20;
-  background: rgba(7, 8, 11, 0.78);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(18px);
+  z-index: 1000;
 }
 
 .header-container {
-  width: min(1280px, calc(100% - 32px));
-  margin: 0 auto;
-  min-height: 96px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 18px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1800px;
 }
 
 .logo {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  border: 0;
-  background: transparent;
-  color: inherit;
   cursor: pointer;
-  padding: 0;
-  text-decoration: none;
+  font-size: 32px;
+  font-weight: 800;
+  color: #FFFFFF;
 }
 
 .logo-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: #120b05;
-  box-shadow: var(--shadow);
+  background-color: #FF6100;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 15px;
 }
 
-.play-svg {
-  font-size: 1.35rem;
-}
-
-.logo-text {
-  font-size: 2rem;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  line-height: 1;
-}
-
-.orange {
-  color: var(--accent-strong);
-}
+.play-svg { font-size: 18px; margin-left: 3px; color: white; }
+.orange { color: #FF6100; }
 
 .search-bar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  flex: 1;
+  max-width: 700px;
+  background-color: #222222;
+  border-radius: 30px;
+  padding: 0 6px 0 25px; 
+  height: 55px;
+  margin: 0 50px;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  background: rgba(18, 22, 32, 0.88);
-  border: 1px solid var(--line);
+  transition: all 0.3s ease;
+  overflow: hidden; 
 }
 
-.search-icon {
-  color: var(--muted);
-}
+.search-icon { color: #888888; font-size: 18px; }
 
 .search-bar input {
-  width: 100%;
-  border: 0;
   background: transparent;
-  color: var(--text);
+  border: none;
+  color: #FFFFFF;
+  flex: 1; 
+  min-width: 0; 
+  height: 100%;
+  margin-left: 15px;
+  font-size: 18px;
   outline: none;
 }
 
-.btn-filters,
-.btn-add,
-.icon-btn,
-.dropdown-item {
-  border: 0;
-  border-radius: 999px;
+.btn-filters {
+  background: transparent;
+  color: #FF6100;
+  border: 2px solid #FF6100;
+  border-radius: 25px;
+  height: 43px;
+  padding: 0 25px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none; 
 }
 
-.btn-filters:hover,
-.btn-add:hover,
-.icon-btn:hover,
-.dropdown-item:hover {
+.txt-short { display: none; }
+
+.btn-filters:hover { background-color: #FF6100; color: #FFFFFF; }
+
+.header-actions { display: flex; align-items: center; gap: 35px; }
+
+.btn-add {
+  background-color: #FF6100;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+  background-color: #D45000;
   transform: translateY(-1px);
 }
 
-.btn-filters {
-  padding: 10px 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: #160d04;
-  font-weight: 800;
-}
-
-.txt-short {
-  display: none;
-}
-
-.header-actions {
+.action-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  position: relative;
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: color 0.3s ease;
 }
 
-.btn-add,
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: rgba(18, 22, 32, 0.88);
-  color: var(--text);
-  border: 1px solid var(--line);
-}
+.action-item:hover { color: #FF6100; }
 
-.action-text {
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.profile-menu-container {
-  position: relative;
-}
+.icon-wrapper { font-size: 30px; display: flex; align-items: center; }
+.action-text { font-size: 18px; font-weight: 500; }
 
 .profile-dropdown {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 120%;
   right: 0;
-  min-width: 220px;
-  padding: 10px;
-  border-radius: 20px;
-  background: rgba(7, 8, 11, 0.96);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  background-color: #222222;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  width: 180px;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  animation: fadeIn 0.2s ease-out;
 }
 
-.dropdown-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: transparent;
-  color: var(--text);
-  text-align: left;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.dropdown-divider {
-  height: 1px;
-  margin: 8px 0;
-  background: var(--line);
+.dropdown-item { 
+  padding: 12px 16px; 
+  color: white; 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 }
 
-.logout {
-  color: #ffd36e;
+.dropdown-item:hover {
+  background-color: #333333;
+  color: #FF6100;
+}
+
+.logout:hover {
+  background-color: rgba(255, 0, 0, 0.1); 
+  color: #ff4444;
+}
+
+/* ========================================================
+   ZONA DE CONTROL RESPONSIVO
+   ======================================================== */
+
+@media (max-width: 1450px) {
+  .logo-text { display: none; }
+  .logo-icon { margin-right: 0; }
+  .search-bar { margin: 0 25px; max-width: 550px; }
+}
+
+@media (max-width: 1250px) {
+  .search-bar { max-width: 450px; padding: 0 12px 0 15px; }
+  .search-bar input { font-size: 16px; }
+  .header-actions { gap: 20px; }
 }
 
 @media (max-width: 1100px) {
-  .header-container {
-    grid-template-columns: auto 1fr;
-  }
-
-  .header-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
+  .action-text { display: none; }
+  /* En este tramo los iconos ya no tienen texto, preparamos el botón añadir para ser circular */
+  .btn-add { padding: 0; width: 50px; height: 50px; justify-content: center; border-radius: 50%; }
+  .main-header { padding: 20px 30px; }
 }
 
-@media (max-width: 780px) {
-  .header-container {
-    width: min(100% - 20px, 1280px);
-    grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 12px 0;
+/* TRAMO 850px: Cambio de texto a "FILTROS" y reducción simultánea del botón "+" */
+@media (max-width: 850px) {
+  .search-bar { margin: 0 10px; max-width: 300px; height: 45px; padding: 0 10px 0 15px; }
+  .search-bar input { font-size: 14px; }
+  .txt-full { display: none; }
+  .txt-short { display: inline; }
+  .btn-filters { padding: 0 12px; height: 35px; font-size: 11px; border-width: 1px; }
+  
+  /* 👈 MODIFICA ESTE VALOR: Tamaño del botón Añadir para igualarlo a la circunferencia de Perfil */
+  .btn-add { 
+    width: 34px;  /* Cambia este valor si lo ves muy grande o pequeño */
+    height: 34px; /* Debe ser igual al de arriba para mantener el círculo perfecto */
+  }
+  .btn-add svg { font-size: 15px; } /* Ajuste del icono + interior */
+  
+  .icon-wrapper { font-size: 26px; } /* Ajuste del resto de iconos para emparejar tamaños */
+}
+
+/* TRAMO 600px: Vista Móvil Final (Ajustes de logo y separación de iconos derechos) */
+@media (max-width: 600px) {
+  .main-header { padding: 8px 10px; }
+  
+  /* 👈 MODIFICA ESTE VALOR: Sube los píxeles para mover el logo más a la derecha */
+  .logo { 
+    margin-left: 12px; 
+  } 
+  .logo-icon { width: 30px; height: 30px; }
+  .play-svg { font-size: 10px; }
+
+  .search-bar { 
+    margin: 0 4px; 
+    height: 35px; 
+    padding: 0 6px 0 8px; 
+    flex: 4; 
+  }
+  
+  .search-bar input { width: 80px; font-size: 10px; margin-left: 4px; }
+  .search-icon { font-size: 10px; }
+  
+  .btn-filters { 
+    height: 26px; 
+    padding: 0 6px; 
+    font-size: 8.5px; 
+    border-width: 1px;
+    flex: none; 
   }
 
-  .logo {
-    justify-self: flex-start;
+  /* 👈 MODIFICA ESTE VALOR: Sube los píxeles de margin-left para separar los botones del buscador */
+  .header-actions { 
+    gap: 8px; 
+    flex: 1.5; 
+    justify-content: flex-end; 
+    margin-left: 15px; /* Empuja el bloque entero a la derecha */
   }
-
-  .search-bar {
-    border-radius: 24px;
-  }
-
-  .action-text,
-  .txt-full {
-    display: none;
-  }
-
-  .txt-short {
-    display: inline;
-  }
+  
+  .icon-wrapper { font-size: 22px; } 
+  .btn-add { width: 30px; height: 30px; } 
 }

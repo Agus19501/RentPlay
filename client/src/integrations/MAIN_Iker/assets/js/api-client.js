@@ -82,6 +82,13 @@
     });
   }
 
+  async function createGame(payload) {
+    return request('/games', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   async function getMyRentals() {
     return request('/rentals/mine', {
       method: 'GET'
@@ -109,6 +116,7 @@
     login,
     getMe,
     createRental,
+    createGame,
     getMyRentals,
     createRating,
     getSellerRatings

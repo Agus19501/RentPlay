@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import gamesRoutes from './routes/games.js';
+import messagesRoutes from './routes/messages.js';
 import rentalsRoutes from './routes/rentals.js';
 import { seedGamesIfNeeded } from './config/db.js';
 
@@ -28,6 +29,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gamesRoutes);
+app.use('/api/messages', messagesRoutes);
 app.use('/api/rentals', rentalsRoutes);
 
 app.use((error, _req, res, _next) => {

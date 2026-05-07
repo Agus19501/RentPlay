@@ -1,63 +1,78 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
+import { apiRequest } from '../api.js';
 import './Filtros.css';
 
 const Filtros = ({ lang }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [games, setGames] = useState([]);
   const [precio, setPrecio] = useState({ min: 1, max: 15 });
   const [alquiler, setAlquiler] = useState({ min: 1, max: 30 });
-  const [lanzamiento, setLanzamiento] = useState({ min: 1970, max: 2026 });
-  const [selectedGenreId, setSelectedGenreId] = useState(null);
-  const [selectedDev, setSelectedDev] = useState(null);
+  const [rating, setRating] = useState({ min: 0, max: 5 });
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedSeller, setSelectedSeller] = useState(null);
 
   const t = {
     ES: {
       title: 'FILTROS DE BÚSQUEDA',
-      subtitle: 'Establece los parámetros de búsqueda para encontrar la oferta ideal en RentPlay',
+      subtitle: 'Usa datos reales del catálogo de Atlas para afinar tu búsqueda en RentPlay',
       precio: 'PRECIO',
       alquiler: 'ALQUILER',
-      año: 'AÑO DE LANZAMIENTO',
-      val: 'VALORACIONES',
-      gen: 'Género',
-      dev: 'Desarrolladores',
-      userVal: 'Usuarios mejor valorados',
-      gameVal: 'Juegos mejor valorados',
+      rating: 'VALORACIÓN',
+      platform: 'PLATAFORMA',
+      seller: 'VENDEDOR',
       day: 'DIA',
       days: 'DIAS',
       eur: 'EUR',
-      ejemplo: 'Ejemplo'
+      all: 'Todos'
     },
     EN: {
       title: 'SEARCH FILTERS',
-      subtitle: 'Set the search parameters to find the ideal deal on RentPlay',
+      subtitle: 'Use real Atlas catalog data to refine your search on RentPlay',
       precio: 'PRICE',
       alquiler: 'RENTAL',
-      año: 'RELEASE YEAR',
-      val: 'RATINGS',
-      gen: 'Genre',
-      dev: 'Developers',
-      userVal: 'Top rated users',
-      gameVal: 'Top rated games',
+      rating: 'RATING',
+      platform: 'PLATFORM',
+      seller: 'SELLER',
       day: 'DAY',
       days: 'DAYS',
       eur: 'EUR',
-      ejemplo: 'Example'
+      all: 'All'
     }
   }[lang];
 
-  const handleRange = (e, type, edge) => {
-    const val = parseInt(e.target.value, 10);
-    const setter = (type === 'precio' ? setPrecio : type === 'alquiler' ? setAlquiler : setLanzamiento);
-    const state = (type === 'precio' ? precio : type === 'alquiler' ? alquiler : lanzamiento);
+  useEffect(() => {
+    apiRequest('/api/games')
+      .then((response) => setGames(response.games || []))
+      .catch(() => setGames([]));
+  }, []);
+
+  const minPrice = useMemo(() => Math.floor(Math.min(...games.map((game) => Number(game.price) || 0), 15)), [games]);
+  const maxPrice = useMemo(() => Math.ceil(Math.max(...games.map((game) => Number(game.price) || 0), 15)), [games]);
+  const minRental = useMemo(() => Math.floor(Math.min(...games.map((game) => Number(game.rentalDays) || 1), 30)), [games]);
+  const maxRental = useMemo(() => Math.ceil(Math.max(...games.map((game) => Number(game.rentalDays) || 1), 30)), [games]);
+  const platforms = useMemo(() => Array.from(new Set(games.map((game) => game.platform).filter(Boolean))), [games]);
+  const sellers = useMemo(() => Array.from(new Set(games.map((game) => game.seller?.name || game.seller).filter(Boolean))), [games]);
+
+  useEffect(() => {
+    setPrecio({ min: minPrice, max: maxPrice });
+  }, [minPrice, maxPrice]);
+
+  useEffect(() => {
+    setAlquiler({ min: minRental, max: maxRental });
+  }, [minRental, maxRental]);
+
+  const handleRange = (event, type, edge) => {
+    const value = parseFloat(event.target.value);
+    const setter = type === 'precio' ? setPrecio : type === 'alquiler' ? setAlquiler : setRating;
+    const current = type === 'precio' ? precio : type === 'alquiler' ? alquiler : rating;
 
     if (edge === 'min') {
-      if (val <= state.max) {
-        setter({ ...state, min: val });
+      if (value <= current.max) {
+        setter({ ...current, min: value });
       }
-    } else {
-      if (val >= state.min) {
-        setter({ ...state, max: val });
-      }
+    } else if (value >= current.min) {
+      setter({ ...current, max: value });
     }
   };
 
@@ -67,10 +82,7 @@ const Filtros = ({ lang }) => {
     const maxText = `${alquiler.max} ${t.days}`;
     return alquiler.min === alquiler.max ? minText : `${minText} - ${maxText}`;
   };
-  const formatLanzamiento = () => (lanzamiento.min === lanzamiento.max ? `${lanzamiento.min}` : `${lanzamiento.min} - ${lanzamiento.max}`);
-
-  const genreNumbers = Array.from({ length: 20 }, (_, i) => i + 1);
-  const devNames = Array.from({ length: 20 }, (_, i) => `Ejemplo ${i + 1}`);
+  const formatRating = () => (rating.min === rating.max ? `${rating.min.toFixed(1)} ★` : `${rating.min.toFixed(1)} ★ - ${rating.max.toFixed(1)} ★`);
 
   return (
     <div className="filtros-page">
@@ -90,43 +102,38 @@ const Filtros = ({ lang }) => {
               <div className="slider-track" style={{ left: `${((precio.min - 1) / 49) * 100}%`, right: `${100 - ((precio.max - 1) / 49) * 100}%` }}></div>
               <div className="thumb-container" style={{ left: `${((precio.min - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
               <div className="thumb-container" style={{ left: `${((precio.max - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="1" max="50" value={precio.min} onChange={(e) => handleRange(e, 'precio', 'min')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 22 : 21 }} />
-              <input type="range" min="1" max="50" value={precio.max} onChange={(e) => handleRange(e, 'precio', 'max')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 21 : 22 }} />
+              <input type="range" min="1" max="50" value={precio.min} onChange={(event) => handleRange(event, 'precio', 'min')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 22 : 21 }} />
+              <input type="range" min="1" max="50" value={precio.max} onChange={(event) => handleRange(event, 'precio', 'max')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 21 : 22 }} />
             </div>
           </div>
 
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label">{t.val}</h3>
+              <h3 className="box-label">{t.rating}</h3>
+              <p className="range-result-text">{formatRating()}</p>
             </div>
-            <div className="centered-select-wrapper">
-              <div className="toggle-group">
-                <div className="toggle-item">
-                  <span>{t.userVal}</span>
-                  <label className="switch"><input type="checkbox" /><span className="slider-round"></span></label>
-                </div>
-                <div className="toggle-item">
-                  <span>{t.gameVal}</span>
-                  <label className="switch"><input type="checkbox" defaultChecked /><span className="slider-round"></span></label>
-                </div>
-              </div>
+            <div className="dual-slider-container">
+              <div className="slider-track" style={{ left: `${(rating.min / 5) * 100}%`, right: `${100 - (rating.max / 5) * 100}%` }}></div>
+              <div className="thumb-container" style={{ left: `${(rating.min / 5) * 100}%` }}><div className="thumb-circle"></div></div>
+              <div className="thumb-container" style={{ left: `${(rating.max / 5) * 100}%` }}><div className="thumb-circle"></div></div>
+              <input type="range" min="0" max="5" step="0.1" value={rating.min} onChange={(event) => handleRange(event, 'rating', 'min')} className="thumb-input" style={{ zIndex: rating.min > 2.5 ? 22 : 21 }} />
+              <input type="range" min="0" max="5" step="0.1" value={rating.max} onChange={(event) => handleRange(event, 'rating', 'max')} className="thumb-input" style={{ zIndex: rating.min > 2.5 ? 21 : 22 }} />
             </div>
           </div>
 
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label uppercase">{lang === 'ES' ? 'GÉNERO' : 'GENRE'}</h3>
+              <h3 className="box-label uppercase">{t.platform}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'gen' ? null : 'gen')}>
-                <span className={`selected-text ${!selectedGenreId ? 'placeholder' : ''}`}>
-                  {selectedGenreId ? `${t.ejemplo} ${selectedGenreId}` : t.gen}
-                </span>
-                <FaChevronDown className={`arrow ${openDropdown === 'gen' ? 'up' : ''}`} />
-                {openDropdown === 'gen' && (
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'platform' ? null : 'platform')}>
+                <span className={`selected-text ${!selectedPlatform ? 'placeholder' : ''}`}>{selectedPlatform || t.all}</span>
+                <FaChevronDown className={`arrow ${openDropdown === 'platform' ? 'up' : ''}`} />
+                {openDropdown === 'platform' && (
                   <div className="options-panel">
-                    {genreNumbers.map((num) => (
-                      <div key={num} className="option" onClick={() => setSelectedGenreId(num)}>{t.ejemplo} {num}</div>
+                    <div className="option" onClick={() => setSelectedPlatform(null)}>{t.all}</div>
+                    {platforms.map((platform) => (
+                      <div key={platform} className="option" onClick={() => setSelectedPlatform(platform)}>{platform}</div>
                     ))}
                   </div>
                 )}
@@ -143,36 +150,25 @@ const Filtros = ({ lang }) => {
               <div className="slider-track" style={{ left: `${((alquiler.min - 1) / 29) * 100}%`, right: `${100 - ((alquiler.max - 1) / 29) * 100}%` }}></div>
               <div className="thumb-container" style={{ left: `${((alquiler.min - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
               <div className="thumb-container" style={{ left: `${((alquiler.max - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="1" max="30" value={alquiler.min} onChange={(e) => handleRange(e, 'alquiler', 'min')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 22 : 21 }} />
-              <input type="range" min="1" max="30" value={alquiler.max} onChange={(e) => handleRange(e, 'alquiler', 'max')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 21 : 22 }} />
+              <input type="range" min="1" max="30" value={alquiler.min} onChange={(event) => handleRange(event, 'alquiler', 'min')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 22 : 21 }} />
+              <input type="range" min="1" max="30" value={alquiler.max} onChange={(event) => handleRange(event, 'alquiler', 'max')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 21 : 22 }} />
             </div>
           </div>
 
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label">{t.año}</h3>
-              <p className="range-result-text">{formatLanzamiento()}</p>
-            </div>
-            <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%`, right: `${100 - ((lanzamiento.max - 1970) / 56) * 100}%` }}></div>
-              <div className="thumb-container" style={{ left: `${((lanzamiento.min - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
-              <div className="thumb-container" style={{ left: `${((lanzamiento.max - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="1970" max="2026" value={lanzamiento.min} onChange={(e) => handleRange(e, 'lanzamiento', 'min')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 22 : 21 }} />
-              <input type="range" min="1970" max="2026" value={lanzamiento.max} onChange={(e) => handleRange(e, 'lanzamiento', 'max')} className="thumb-input" style={{ zIndex: lanzamiento.min > 1998 ? 21 : 22 }} />
-            </div>
-          </div>
-
-          <div className="filter-box">
-            <div className="box-header-group">
-              <h3 className="box-label uppercase">{lang === 'ES' ? 'DESARROLLADORES' : 'DEVELOPERS'}</h3>
+              <h3 className="box-label uppercase">{t.seller}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'dev' ? null : 'dev')}>
-                <span className={`selected-text ${!selectedDev ? 'placeholder' : ''}`}>{selectedDev || t.dev}</span>
-                <FaChevronDown className={`arrow ${openDropdown === 'dev' ? 'up' : ''}`} />
-                {openDropdown === 'dev' && (
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'seller' ? null : 'seller')}>
+                <span className={`selected-text ${!selectedSeller ? 'placeholder' : ''}`}>{selectedSeller || t.all}</span>
+                <FaChevronDown className={`arrow ${openDropdown === 'seller' ? 'up' : ''}`} />
+                {openDropdown === 'seller' && (
                   <div className="options-panel">
-                    {devNames.map((name, i) => <div key={i} className="option" onClick={() => setSelectedDev(name)}>{name}</div>)}
+                    <div className="option" onClick={() => setSelectedSeller(null)}>{t.all}</div>
+                    {sellers.map((seller) => (
+                      <div key={seller} className="option" onClick={() => setSelectedSeller(seller)}>{seller}</div>
+                    ))}
                   </div>
                 )}
               </div>

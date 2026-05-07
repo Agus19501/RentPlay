@@ -1,150 +1,146 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, FaTimes, FaUser, FaUserCircle, FaPaperPlane } from 'react-icons/fa';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, FaTimes, FaUser } from 'react-icons/fa';
 import '../assets/css/ver-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
-
-const GAME = {
-  title: 'GRAND THEFT AUTO : VICE CITY',
-  descriptionOne: 'Grand Theft Auto: Vice City es un juego de mundo abierto ambientado en los años 80, con una ciudad llena de neones y estilo retro.',
-  descriptionTwo: 'Sigue la historia de Tommy Vercetti mientras sube en el mundo criminal, haciendo misiones, comprando negocios y explorando la ciudad a tu ritmo.',
-  price: '19.99 €',
-  priceRaw: '19.99',
-  seller: 'Pepe_gom01',
-  sellerRating: '4.1',
-  rating: '4.2',
-  durationDays: 6,
-  ownerProfile: 'Pepe_gom01'
-};
-
-const RECOMMENDED = [
-  { id: 1, title: 'GTA: San Andreas', price: '15.99 €' },
-  { id: 2, title: 'GTA III', price: '12.99 €' },
-  { id: 3, title: 'Red Dead Redemption', price: '18.99 €' }
-];
-
-const SOURCE_RATINGS = [
-  {
-    id: 1,
-    username: 'Juan_6794',
-    score: 4,
-    comment: 'Un trato estupendo. Un placer hacer negocios con él. Le pongo 4 estrellas porque lo puso un poco caro'
-  },
-  {
-    id: 2,
-    username: 'Alba_222',
-    score: 3,
-    comment: 'Un trato decente pero como tiene juegos exclusivos se aprovecha y sube mucho el precio'
-  }
-];
+import { apiRequest } from '../../../api.js';
 
 export default function VerJuego() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isRentalModalOpen, setRentalModalOpen] = useState(false);
-  const [isRatingModalOpen, setRatingModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('paypal');
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
-  const [dbRatings, setDbRatings] = useState([]);
   const [wishlistActive, setWishlistActive] = useState(false);
 
-  const displayRatings = useMemo(() => {
-    const remoteRatings = dbRatings.map((item, index) => ({
-      id: `db-${index}`,
-      username: item.username || 'Usuario Anónimo',
-      score: Number(item.score || item.rating || 0),
-      comment: item.comment || ''
-    }));
-    return [...remoteRatings, ...SOURCE_RATINGS];
-  }, [dbRatings]);
-
   useEffect(() => {
-    const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-    setWishlistActive(savedWishlist.includes(GAME.title));
-  }, []);
+    let active = true;
 
-  useEffect(() => {
-    if (!isRatingModalOpen || !window.RentPlayApi) {
-      return;
-    }
-
-    window.RentPlayApi.getSellerRatings(GAME.seller)
+    apiRequest('/api/games')
       .then((response) => {
-        if (response && response.ratings) {
-          setDbRatings(response.ratings);
+        if (active) {
+          setGames(response.games || []);
         }
       })
-      .catch(() => {});
-  }, [isRatingModalOpen]);
+      .catch(() => {
+        if (active) {
+          setGames([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedGameId = Number(searchParams.get('gameId'));
+  const selectedGame = useMemo(() => {
+    if (!games.length) {
+      return null;
+    }
+
+    return games.find((game) => game.id === selectedGameId) || games[0];
+  }, [games, selectedGameId]);
+
+  const recommendedGames = useMemo(() => {
+    if (!selectedGame) {
+      return [];
+    }
+
+    return games
+      .filter((game) => game.id !== selectedGame.id)
+      .sort((left, right) => (right.rating || 0) - (left.rating || 0))
+      .slice(0, 3);
+  }, [games, selectedGame]);
 
   useEffect(() => {
-    if (!isRentalModalOpen && !isRatingModalOpen) {
-      document.body.classList.remove('modal-open');
+    if (!selectedGame) {
       return;
     }
+
+    const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    setWishlistActive(savedWishlist.includes(String(selectedGame.id)));
+  }, [selectedGame]);
+
+  useEffect(() => {
+    if (!isRentalModalOpen) {
+      document.body.classList.remove('modal-open');
+      return undefined;
+    }
+
     document.body.classList.add('modal-open');
-  }, [isRentalModalOpen, isRatingModalOpen]);
+    return () => document.body.classList.remove('modal-open');
+  }, [isRentalModalOpen]);
 
   const toggleWishlist = () => {
-    const saved = JSON.parse(localStorage.getItem('wishlist')) || [];
+    if (!selectedGame) {
+      return;
+    }
+
+    const saved = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const key = String(selectedGame.id);
+
     if (wishlistActive) {
-      localStorage.setItem('wishlist', JSON.stringify(saved.filter((item) => item !== GAME.title)));
+      localStorage.setItem('wishlist', JSON.stringify(saved.filter((item) => item !== key)));
       setWishlistActive(false);
     } else {
-      localStorage.setItem('wishlist', JSON.stringify([...saved, GAME.title]));
+      localStorage.setItem('wishlist', JSON.stringify([...saved, key]));
       setWishlistActive(true);
     }
   };
 
   const handleConfirmRental = async () => {
-    if (window.RentPlayApi) {
-      try {
-        await window.RentPlayApi.createRental({
-          game: GAME.title,
-          price: GAME.priceRaw,
-          payment: paymentMethod,
-          durationDays: GAME.durationDays
-        });
-      } catch (error) {
-        console.warn('Backend:', error.message);
-      }
-    }
-
-    const rentHistory = JSON.parse(localStorage.getItem('rentHistory')) || [];
-    rentHistory.push({ game: GAME.title, price: GAME.price, payment: paymentMethod, date: new Date().toLocaleDateString('es-ES') });
-    localStorage.setItem('rentHistory', JSON.stringify(rentHistory));
-    setRentalModalOpen(false);
-    navigate('/mi-alquiler');
-  };
-
-  const handleSubmitRating = async () => {
-    if (rating === 0) {
-      alert('Selecciona una puntuación');
+    if (!selectedGame) {
       return;
     }
 
-    if (window.RentPlayApi) {
-      try {
-        await window.RentPlayApi.createRating({ toSeller: GAME.seller, score: rating, comment });
-      } catch (error) {
-        console.warn('Error BD:', error.message);
-      }
+    try {
+      await apiRequest('/api/rentals', {
+        method: 'POST',
+        body: {
+          gameId: selectedGame.id,
+          paymentMethod
+        }
+      });
+      setRentalModalOpen(false);
+      navigate('/mi-alquiler');
+    } catch (error) {
+      alert(error.message || 'No se ha podido crear el alquiler.');
     }
-
-    const userRatings = JSON.parse(localStorage.getItem('userRatings')) || [];
-    userRatings.push({ seller: GAME.seller, rating, comment, date: new Date().toLocaleDateString('es-ES') });
-    localStorage.setItem('userRatings', JSON.stringify(userRatings));
-    setRatingModalOpen(false);
-    setComment('');
-    setRating(0);
   };
+
+  if (loading) {
+    return (
+      <div className="main-content">
+        <div className="container">
+          <p>Cargando juego...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedGame) {
+    return (
+      <div className="main-content">
+        <div className="container">
+          <p>No se ha encontrado ningún juego en el catálogo.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="main-content">
       <div className="container">
         <div className="breadcrumb">
-          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>Inicio</button> / <span>{GAME.title}</span>
+          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>Inicio</button> / <span>{selectedGame.title}</span>
         </div>
 
         <section className="product-section">
@@ -152,7 +148,7 @@ export default function VerJuego() {
             <div className="product-gallery">
               <div className="main-image-container">
                 <div className="image-frame">
-                  <img src={cover1} alt="Portada juego" className="main-image" />
+                  {selectedGame.image ? <img src={`/${selectedGame.image}`} alt={selectedGame.title} className="main-image" onError={(event) => { event.currentTarget.src = cover1; }} /> : <img src={cover1} alt={selectedGame.title} className="main-image" />}
                 </div>
               </div>
               <div className="gallery-controls">
@@ -161,13 +157,13 @@ export default function VerJuego() {
               </div>
               <div className="rating">
                 <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfAlt />
-                <span className="rating-value">{GAME.rating}</span>
+                <span className="rating-value">{selectedGame.rating ?? 0}</span>
               </div>
             </div>
 
             <div className="product-info">
               <div className="product-header">
-                <h1 className="product-title">{GAME.title}</h1>
+                <h1 className="product-title">{selectedGame.title}</h1>
                 <button className="wishlist-btn" type="button" onClick={toggleWishlist}>
                   {wishlistActive ? <FaHeart /> : <FaRegHeart />}
                 </button>
@@ -175,18 +171,18 @@ export default function VerJuego() {
 
               <div className="description-section">
                 <h2 className="section-title">Descripción del videojuego</h2>
-                <p className="description-text">{GAME.descriptionOne}</p>
-                <p className="description-text">{GAME.descriptionTwo}</p>
+                <p className="description-text">{selectedGame.description || 'Sin descripción disponible en Atlas.'}</p>
+                <p className="description-text">{selectedGame.genre ? `Género: ${selectedGame.genre}.` : ''} {selectedGame.developers ? `Desarrolladores: ${selectedGame.developers}.` : ''}</p>
               </div>
 
               <div className="rental-details">
                 <div className="detail-item">
                   <span className="detail-label">DURACIÓN ALQUILER</span>
-                  <span className="detail-value">{GAME.durationDays} DÍAS</span>
+                  <span className="detail-value">{selectedGame.rentalDays ? `${selectedGame.rentalDays} DÍAS` : 'SIN DATOS'}</span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">PRECIO</span>
-                  <span className="detail-value price">{GAME.price}</span>
+                  <span className="detail-value price">{selectedGame.price ? `${selectedGame.price} €` : 'NO DISPONIBLE'}</span>
                 </div>
               </div>
 
@@ -197,12 +193,12 @@ export default function VerJuego() {
               <h3 className="section-title">PROPIETARIO</h3>
               <div className="seller-card">
                 <div className="seller-avatar-placeholder"><img src={avatar} alt="avatar" /></div>
-                <h4 className="seller-name">{GAME.ownerProfile}</h4>
+                <h4 className="seller-name">{selectedGame.seller?.name || 'Sin vendedor'}</h4>
                 <div className="seller-rating">
                   <FaStar /><FaStar /><FaStar /><FaStar /><FaStar style={{ opacity: 0.4 }} />
-                  <span className="rating-value">{GAME.sellerRating}</span>
+                  <span className="rating-value">{selectedGame.seller?.rating ?? selectedGame.rating ?? 0}</span>
                 </div>
-                <button className="btn-valorar" type="button" onClick={() => setRatingModalOpen(true)}>VALORAR</button>
+                <button className="btn-valorar" type="button" onClick={() => navigate('/mensajes')}>MENSAJES</button>
               </div>
             </div>
           </div>
@@ -210,12 +206,12 @@ export default function VerJuego() {
           <div className="recommended-section">
             <h2 className="section-title">VIDEOJUEGOS RECOMENDADOS</h2>
             <div className="games-grid">
-              {RECOMMENDED.map((game) => (
+              {recommendedGames.map((game) => (
                 <div className="game-card" key={game.id}>
-                  <div className="game-image-placeholder"><i className="fas fa-image"></i></div>
+                  <div className="game-image-placeholder">{game.image ? <img src={`/${game.image}`} alt={game.title} onError={(event) => { event.currentTarget.src = cover1; }} /> : <img src={cover1} alt={game.title} />}</div>
                   <h3 className="game-title">{game.title}</h3>
-                  <p className="game-price">{game.price}</p>
-                  <button className="btn-secondary" type="button" onClick={() => navigate('/ver-juego')}>Ver Detalles</button>
+                  <p className="game-price">{game.price ? `${game.price} €` : 'Precio no disponible'}</p>
+                  <button className="btn-secondary" type="button" onClick={() => navigate(`/ver-juego?gameId=${game.id}`)}>Ver Detalles</button>
                 </div>
               ))}
             </div>
@@ -224,7 +220,6 @@ export default function VerJuego() {
       </div>
 
       {isRentalModalOpen && <div className="modal-overlay active" onClick={() => setRentalModalOpen(false)} />}
-      {isRatingModalOpen && <div className="modal-overlay active" onClick={() => setRatingModalOpen(false)} />}
 
       {isRentalModalOpen && (
         <div className="modal active" id="modal-rental">
@@ -249,60 +244,6 @@ export default function VerJuego() {
               </label>
             </div>
             <button className="btn-rent modal-btn-rent" type="button" onClick={handleConfirmRental}>ALQUILAR</button>
-          </div>
-        </div>
-      )}
-
-      {isRatingModalOpen && (
-        <div className="modal active" id="modal-ratings">
-          <div className="modal-content modal-ratings-content">
-            <button className="modal-close" type="button" onClick={() => setRatingModalOpen(false)}><FaTimes /></button>
-            <h2 className="modal-title">VALORACIONES DE OTROS USUARIOS</h2>
-
-            <div className="ratings-list">
-              {displayRatings.map((item) => (
-                <div className="rating-item" key={item.id || `${item.username}-${item.score}`}>
-                  <div className="rating-user-avatar"><FaUserCircle /></div>
-                  <div className="rating-user-info">
-                    <h4 className="rating-username">{item.username}</h4>
-                    <div className="rating-stars">
-                      {Array.from({ length: 5 }, (_, index) => (
-                        <span key={index}>
-                          <FaStar style={{ opacity: index < Math.round(item.score) ? 1 : 0.25 }} />
-                        </span>
-                      ))}
-                      <span className="rating-score">{Number(item.score).toFixed(1)}</span>
-                    </div>
-                    <p className="rating-comment">{item.comment}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="user-rating-input">
-              <h3 className="section-title">TU VALORACIÓN</h3>
-              <div className="rating-input-stars">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <FaStar
-                    key={value}
-                    className={`rating-star${rating >= value ? ' active' : ''}`}
-                    data-rating={value}
-                    onClick={() => setRating(value)}
-                  />
-                ))}
-              </div>
-              <input
-                type="text"
-                className="rating-comment-input"
-                placeholder="Escribe un comentario..."
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-              />
-              <button className="btn-submit-rating" type="button" onClick={handleSubmitRating}>
-                <span>ENVIAR</span>
-                <FaPaperPlane />
-              </button>
-            </div>
           </div>
         </div>
       )}

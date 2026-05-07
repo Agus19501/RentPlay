@@ -1,18 +1,69 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaImage, FaStar, FaUserCircle } from 'react-icons/fa';
-
-const GAME_TITLES = ['GTA VI', 'DOOM Eternal', 'Dark Souls II', 'Stardew Valley', 'The Last of Us II', 'Terraria', 'Uncharted 4', 'Cyberpunk 2077'];
-const PROFILE_NAMES = ['Juanje_dor34', 'Xx_Anton_xX', 'Davidpro21', 'Navarete7', 'Ratileonde', 'Alfrentio Jr', 'err4st00', 'GamerPro_88', 'Lara_Gamer', 'Alex_99', 'Marta_Play', 'Gamer_Vlc', 'Sofia_Pixel', 'Rafa_Kill', 'Lucas_Indie'];
+import { apiRequest } from '../api.js';
+import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 
 const Home = () => {
   const navigate = useNavigate();
   const gamesRef = useRef(null);
   const profilesRef = useRef(null);
   const [showLeft, setShowLeft] = useState({ games: false, profiles: false });
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const games = useMemo(() => GAME_TITLES.map((title, index) => ({ id: index + 1, title })), []);
-  const profiles = useMemo(() => PROFILE_NAMES.map((name, index) => ({ id: index + 1, name })), []);
+  useEffect(() => {
+    let active = true;
+
+    apiRequest('/api/games')
+      .then((response) => {
+        if (active) {
+          setGames(response.games || []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setGames([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const sellerProfiles = useMemo(() => {
+    const map = new Map();
+
+    for (const game of games) {
+      const seller = game.seller;
+      const sellerName = typeof seller === 'string' ? seller : seller?.name;
+
+      if (!sellerName || map.has(sellerName)) {
+        continue;
+      }
+
+      map.set(sellerName, {
+        id: game.id,
+        name: sellerName,
+        rating: seller?.rating ?? game.rating ?? 0,
+        reviews: seller?.reviews ?? 0,
+        gameCount: games.filter((item) => {
+          const itemSeller = typeof item.seller === 'string' ? item.seller : item.seller?.name;
+          return itemSeller === sellerName;
+        }).length
+      });
+    }
+
+    return Array.from(map.values()).slice(0, 15);
+  }, [games]);
+
+  const visibleGames = games.slice(0, 8);
 
   const handleScrollDetect = (key, ref) => {
     const isScrolled = (ref.current?.scrollLeft || 0) > 10;
@@ -43,9 +94,12 @@ const Home = () => {
             </button>
           )}
           <div className="carousel-scroll" ref={gamesRef} onScroll={() => handleScrollDetect('games', gamesRef)}>
-            {games.map((game) => (
-              <div key={game.id} className="game-item" onClick={() => navigate('/ver-juego')} role="button" tabIndex={0}>
-                <div className="game-image"><FaImage /></div>
+            {loading && <p className="section-description">Cargando catálogo real...</p>}
+            {!loading && visibleGames.map((game) => (
+              <div key={game.id} className="game-item" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
+                <div className="game-image">
+                  {game.image ? <img src={`/${game.image}`} alt={game.title} onError={(event) => { event.currentTarget.src = cover1; }} /> : <img src={cover1} alt={game.title} />}
+                </div>
                 <p className="game-item-label">{game.title}</p>
               </div>
             ))}
@@ -71,15 +125,16 @@ const Home = () => {
             </button>
           )}
           <div className="carousel-scroll" ref={profilesRef} onScroll={() => handleScrollDetect('profiles', profilesRef)}>
-            {profiles.map((profile, index) => (
-              <div key={profile.id} className="profile-item" onClick={() => navigate('/ajustes')} role="button" tabIndex={0}>
+            {!loading && sellerProfiles.map((profile) => (
+              <div key={profile.name} className="profile-item" role="button" tabIndex={0}>
                 <div className="profile-avatar"><FaUserCircle /></div>
                 <h3 className="profile-name">{profile.name}</h3>
                 <div className="profile-rating">
                   <FaStar /><FaStar /><FaStar /><FaStar />
-                  {index % 3 === 0 ? <FaStar /> : <FaStar style={{ opacity: 0.4 }} />}
-                  <span className="rating-count">{35 + index * 3}</span>
+                  <FaStar style={{ opacity: profile.rating >= 4.5 ? 1 : 0.35 }} />
+                  <span className="rating-count">{profile.reviews}</span>
                 </div>
+                <p className="profile-description">{profile.gameCount} juegos publicados</p>
               </div>
             ))}
           </div>

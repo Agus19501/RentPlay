@@ -19,7 +19,11 @@ function normalizeGame(game) {
     platform: game.platform,
     image: game.image,
     features: game.features || [],
-    seller: game.seller || null
+    seller: game.seller || null,
+    releaseDate: game.releaseDate || null,
+    genre: game.genre || null,
+    developers: game.developers || null,
+    createdAt: game.createdAt || null
   };
 }
 

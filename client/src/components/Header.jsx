@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; 
-import { FaSearch, FaPaperPlane, FaUserCircle, FaPlus, FaPlay, FaCog, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaSearch, FaPaperPlane, FaUserCircle, FaPlus, FaPlay, FaCog, FaSignOutAlt, FaUser, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 import './Header.css';
 
-const Header = ({ lang, setLang }) => {
+const Header = ({ lang, setLang, session, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation(); 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -38,9 +38,11 @@ const Header = ({ lang, setLang }) => {
   };
 
   const current = texts[lang];
+  const isLoggedIn = Boolean(session?.token);
 
   const handleLogout = () => {
     setShowProfileMenu(false);
+    onLogout?.();
     navigate('/login'); 
   };
 
@@ -77,7 +79,7 @@ const Header = ({ lang, setLang }) => {
         </div>
 
         <nav className="header-actions">
-          <button className="btn-add" onClick={() => navigate('/subir-juego')}>
+          <button className="btn-add" onClick={() => navigate(isLoggedIn ? '/subir-juego' : '/login')}>
             <span className="action-text">{current.add}</span> <FaPlus />
           </button>
 
@@ -86,26 +88,39 @@ const Header = ({ lang, setLang }) => {
             <span className="action-text">{current.langLabel}</span>
           </button>
 
-          <button className="icon-btn action-item" onClick={() => navigate('/chats')}>
+          <button className="icon-btn action-item" onClick={() => navigate(isLoggedIn ? '/mensajes' : '/login')}>
             <span className="icon-wrapper"><FaPaperPlane /></span>
             <span className="action-text">{current.chats}</span>
           </button>
 
-          <div className="profile-menu-container" ref={menuRef}>
-            <button className="icon-btn action-item" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-              <span className="icon-wrapper"><FaUserCircle /></span>
-              <span className="action-text">{current.profile}</span>
-            </button>
+          {isLoggedIn ? (
+            <div className="profile-menu-container" ref={menuRef}>
+              <button className="icon-btn action-item" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <span className="icon-wrapper"><FaUserCircle /></span>
+                <span className="action-text">{current.profile}</span>
+              </button>
 
-            {showProfileMenu && (
-              <div className="profile-dropdown">
-                <div className="dropdown-item" onClick={() => navigate('/perfil_propio')}><FaUser /> {current.myProfile}</div>
-                <div className="dropdown-item" onClick={() => navigate('/ajustes')}><FaCog /> {current.settings}</div>
-                <div className="dropdown-divider"></div>
-                <div className="dropdown-item logout" onClick={handleLogout}><FaSignOutAlt /> {current.logout}</div>
-              </div>
-            )}
-          </div>
+              {showProfileMenu && (
+                <div className="profile-dropdown">
+                  <button type="button" className="dropdown-item" onClick={() => navigate('/perfil')}><FaUser /> {current.myProfile}</button>
+                  <button type="button" className="dropdown-item" onClick={() => navigate('/ajustes')}><FaCog /> {current.settings}</button>
+                  <div className="dropdown-divider"></div>
+                  <button type="button" className="dropdown-item logout" onClick={handleLogout}><FaSignOutAlt /> {current.logout}</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="auth-actions">
+              <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/login')}>
+                <span className="icon-wrapper"><FaSignInAlt /></span>
+                <span className="action-text">Entrar</span>
+              </button>
+              <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/register')}>
+                <span className="icon-wrapper"><FaUserPlus /></span>
+                <span className="action-text">Registro</span>
+              </button>
+            </div>
+          )}
         </nav>
       </div>
     </header>

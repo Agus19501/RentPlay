@@ -1,0 +1,344 @@
+/* ===== AJUSTES PAGE ===== */
+.settings-main {
+  background: #262626;
+  min-height: 100vh;
+}
+
+.settings-container {
+  padding: 48px 60px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* Grid 2x2 */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* Card */
+.settings-card {
+  background: #111;
+  border: 3px solid #f36b24;
+  border-radius: 8px;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-card-title {
+  color: #f36b24;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.settings-description {
+  color: #ccc;
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ── Row ── */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.setting-label {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settings-separator {
+  border: none;
+  border-top: 2px solid #f36b24;
+  margin: 4px 0;
+}
+
+/* ── Theme toggle (big) ── */
+.theme-toggle-row {
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+/* Big theme switch */
+.theme-switch {
+  width: 80px;
+  height: 40px;
+}
+
+.theme-switch .slider {
+  position: absolute;
+  inset: 0;
+  background: #444;
+  border-radius: 40px;
+  transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+.theme-switch input:checked + .slider {
+  background: #555;
+}
+
+.switch-icon {
+  font-size: 18px;
+  line-height: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.theme-switch .slider::after {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f36b24;
+  top: 4px;
+  left: 4px;
+  transition: transform 0.3s;
+}
+
+.theme-switch input:checked + .slider::after {
+  transform: translateX(40px);
+}
+
+/* Small standard switch */
+.standard-switch {
+  width: 52px;
+  height: 28px;
+}
+
+.standard-switch .slider {
+  position: absolute;
+  inset: 0;
+  background: #555;
+  border-radius: 28px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.standard-switch .slider::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  top: 4px;
+  left: 4px;
+  transition: transform 0.3s;
+}
+
+.standard-switch input:checked + .slider {
+  background: #f36b24;
+}
+
+.standard-switch input:checked + .slider::after {
+  transform: translateX(24px);
+}
+
+/* toggle row: label left, switch right */
+.toggle-row {
+  justify-content: space-between;
+}
+
+.control-wrapper {
+  flex-shrink: 0;
+}
+
+/* ── Font size radio ── */
+.font-size-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.font-size-controls {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.custom-radio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.custom-radio input {
+  display: none;
+}
+
+.radio-mark {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #888;
+  background: #333;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.custom-radio input:checked ~ .radio-mark {
+  border-color: #f36b24;
+  background: #f36b24;
+}
+
+.radio-label {
+  color: #ccc;
+  font-size: 13px;
+}
+
+/* ── Language select ── */
+.custom-select-wrapper {
+  position: relative;
+  width: 220px;
+}
+
+.settings-select {
+  width: 100%;
+  background: #222;
+  color: #fff;
+  border: 2px solid #555;
+  border-radius: 6px;
+  padding: 10px 40px 10px 14px;
+  font-size: 15px;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #fff;
+  pointer-events: none;
+  font-size: 18px;
+}
+
+.language-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lang-link {
+  color: #f36b24;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.lang-link:hover {
+  color: #ff8c4b;
+}
+
+/* ── Payment methods ── */
+.payment-methods-grid {
+  display: flex;
+  gap: 24px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.payment-card-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.payment-card-label input {
+  display: none;
+}
+
+.payment-icon-wrapper {
+  width: 90px;
+  height: 60px;
+  background: #222;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  border: 2px solid #444;
+  transition: border-color 0.2s;
+}
+
+.payment-card-label.checked .payment-icon-wrapper {
+  border-color: #f36b24;
+}
+
+.payment-name {
+  color: #ccc;
+  font-size: 13px;
+  text-align: center;
+}
+
+.payment-radio-mark {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #888;
+  background: #333;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.payment-card-label.checked .payment-radio-mark {
+  border-color: #f36b24;
+  background: #f36b24;
+}
+
+/* PayPal brand color text */
+.paypal-text {
+  color: #009cde;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -1px;
+}
+
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-container {
+    padding: 24px 20px;
+  }
+}

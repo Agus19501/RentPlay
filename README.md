@@ -1,34 +1,34 @@
 # RentPlay
-Repositorio asignatura Usabilidad y Accesibilidad UA 2026
 
-Proyecto web de alquiler de videojuegos con interfaz responsive, autenticación y persistencia de datos.
+RentPlay ya está migrado a una base MERN con dos partes:
 
-## Funcionalidades
+- `client/`: frontend en React con Vite.
+- `server/`: API en Express conectada a MongoDB.
 
-- Home con catálogo y navegación principal.
-- Login y registro con header unificado.
-- Integración con MongoDB para autenticación.
-- Preparado para despliegue en Netlify con Functions.
+## Estructura nueva
 
-## Estructura
+- `client/src/App.jsx`: rutas y pantallas principales.
+- `client/src/api.js`: cliente HTTP y manejo de sesion.
+- `server/src/index.js`: arranque de la API.
+- `server/src/routes/`: autenticacion, catalogo y alquileres.
+- `data/games.json`: catalogo inicial que se siembra en MongoDB.
 
-- `index.html`, `home.html`, `login.html`, `registro.html`, `mi-alquiler.html`
-- `assets/css/style.css`
-- `assets/js/`
-- `data/games.json`
-- `api/` para backend local PHP
-- `functions/` para Netlify Functions
+## Variables de entorno
 
-## Desarrollo local
+Copiando `server/.env.example` puedes configurar:
 
-Abre el proyecto con XAMPP y sirve la carpeta `RentPlay` desde `htdocs`.
+- `MONGODB_URI`
+- `MONGODB_DB`
+- `JWT_SECRET`
+- `CLIENT_ORIGIN`
 
-## Despliegue
+## Comandos
 
-- Sube el proyecto a GitHub.
-- Conecta el repo a Netlify.
-- Define la variable de entorno `MONGODB_URI` con la cadena de MongoDB Atlas.
+- `npm install` en la raiz para instalar workspaces.
+- `npm run dev` para levantar cliente y servidor.
+- `npm run build` para compilar el frontend.
+- `npm run start` para arrancar la API.
 
 ## Estado
 
-Este repositorio contiene tanto la versión local PHP como la versión serverless para producción.
+La base antigua HTML/PHP, Netlify Functions y el backend local ya fueron retirados; la ruta principal del proyecto es React + Express + MongoDB.

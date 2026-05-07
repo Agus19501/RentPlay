@@ -1,15 +1,20 @@
 {
   "name": "rentplay",
-  "version": "1.0.0",
-  "description": "Plataforma de alquiler de videojuegos",
-  "main": "index.html",
+  "version": "2.0.0",
+  "private": true,
+  "description": "RentPlay migrated to MERN",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "build": "npm install"
-  },
-  "dependencies": {
-    "mongodb": "^6.3.0"
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace client",
+    "start": "npm run start --workspace server"
   },
   "devDependencies": {
-    "@netlify/functions": "^2.4.0"
+    "concurrently": "^9.1.0"
   }
 }

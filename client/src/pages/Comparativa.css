@@ -1,0 +1,138 @@
+.comparativa-page {
+  --unit: 1px;
+  padding-bottom: calc(80 * var(--unit));
+  background-color: #222222;
+}
+
+@media (max-width: 1400px) {
+  .comparativa-page {
+    --unit: calc(0.75px + 0.25 * (100vw - 600px) / 800);
+  }
+}
+
+@media (max-width: 600px) {
+  .comparativa-page {
+    --unit: 0.75px;
+  }
+}
+
+.comparativa-page .home-section {
+  padding: calc(40 * var(--unit)) calc(60 * var(--unit));
+}
+
+.comparativa-page .section-header {
+  margin-bottom: calc(20 * var(--unit));
+}
+
+.comparativa-page .section-title {
+  color: #FF6100;
+  font-size: calc(28 * var(--unit));
+  font-weight: 800;
+  letter-spacing: calc(1 * var(--unit));
+  margin-bottom: calc(12 * var(--unit));
+}
+
+.comparativa-page .section-subtitle {
+  color: #BBBBBB;
+  font-size: calc(16 * var(--unit));
+}
+
+.comparativa-page .content-relative-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.comparativa-page .scroll-area {
+  display: flex;
+  gap: calc(30 * var(--unit));
+  overflow-x: hidden;
+  padding: calc(15 * var(--unit)) 0;
+  scroll-behavior: smooth;
+}
+
+.comparativa-page .nav-btn {
+  position: absolute;
+  background-color: #000000;
+  color: white;
+  border: none;
+  width: calc(50 * var(--unit));
+  height: calc(50 * var(--unit));
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: calc(20 * var(--unit));
+  z-index: 10;
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+}
+
+.comparativa-page .nav-btn:hover {
+  background-color: #FF6100;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.comparativa-page .left-btn { left: calc(-25 * var(--unit)); }
+.comparativa-page .right-btn { right: calc(-25 * var(--unit)); }
+.comparativa-page .game-btn-pos { top: calc(130 * var(--unit)); }
+
+.comparativa-page .item-card {
+  min-width: calc(170 * var(--unit));
+  cursor: pointer;
+  text-align: center;
+}
+
+.comparativa-page .rect-placeholder {
+  width: calc(170 * var(--unit));
+  height: calc(230 * var(--unit));
+  background-color: #FFFFFF;
+  border-radius: calc(12 * var(--unit));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.comparativa-page .offer-overlay {
+  background: rgba(0, 0, 0, 0.90);
+  width: 95%;
+  height: 97.5%;
+  border-radius: calc(8 * var(--unit));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #FF6100;
+  gap: calc(15 * var(--unit));
+}
+
+.comparativa-page .offer-price {
+  font-size: calc(22 * var(--unit));
+  font-weight: 900;
+  margin: 0;
+}
+
+.comparativa-page .offer-duration {
+  font-size: calc(16 * var(--unit));
+  font-weight: 700;
+  margin: 0;
+}
+
+.comparativa-page .item-card:hover .rect-placeholder {
+  transform: scale(1.08);
+  background-color: #FF6100;
+}
+
+.comparativa-page .item-label {
+  color: white;
+  margin-top: calc(15 * var(--unit));
+  font-weight: 600;
+  font-size: calc(16 * var(--unit));
+}
+
+@media (max-width: 768px) {
+  .comparativa-page .nav-btn { display: none; }
+  .comparativa-page .scroll-area { overflow-x: auto; }
+}

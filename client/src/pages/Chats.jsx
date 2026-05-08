@@ -136,7 +136,11 @@ export default function Chats({ lang }) {
           {activeChat ? (
             <>
               <header className="chat-header">
-                <div className="chat-header-user">
+                <div 
+                  className="chat-header-user" 
+                  onClick={() => navigate(`/perfil_otro?id=${activeChat.user.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className="user-avatar">
                     {activeChat.user.avatar ? <img src={activeChat.user.avatar} alt="" /> : <FaUserCircle />}
                   </div>

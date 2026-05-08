@@ -153,7 +153,12 @@ export default function PerfilOtro() {
           <div className="otro-right-body">
             <div className="perfil-games-grid">
               {juegosOtro.map((juego) => (
-                <article key={juego.id} className="juego-card">
+                <article 
+                  key={juego.id} 
+                  className="juego-card" 
+                  onClick={() => navigate(`/ver-juego/${juego.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img 
                     src={juego.image ? (juego.image.startsWith('data:') ? juego.image : `/${juego.image}`) : 'https://via.placeholder.com/150'} 
                     alt={juego.title}

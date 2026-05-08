@@ -79,45 +79,41 @@ export default function VerJuego({ lang = 'ES' }) {
   };
   const t = texts[lang] || texts.ES;
 
+  const selectedGameId = paramGameId || searchParams.get('id') || searchParams.get('gameId');
+  const [selectedGame, setSelectedGame] = useState(null);
+
   useEffect(() => {
     let active = true;
+    setLoading(true);
+
+    const gamePromise = selectedGameId
+      ? apiRequest(`/api/games/${selectedGameId}`).then(r => r.game || null)
+      : apiRequest('/api/games').then(r => (r.games || [])[0] || null);
 
     Promise.all([
-      apiRequest('/api/games'),
+      gamePromise,
+      apiRequest('/api/games').catch(() => ({ games: [] })),
       apiRequest('/api/rentals/mine').catch(() => ({ rentals: [] }))
     ])
-      .then(([gamesRes, rentalsRes]) => {
+      .then(([game, gamesRes, rentalsRes]) => {
         if (active) {
+          setSelectedGame(game);
           setGames(gamesRes.games || []);
           setRentals(rentalsRes.rentals || []);
         }
       })
       .catch(() => {
         if (active) {
+          setSelectedGame(null);
           setGames([]);
         }
       })
       .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const selectedGameId = paramGameId || searchParams.get('id') || searchParams.get('gameId');
-  const selectedGame = useMemo(() => {
-    if (!games.length) {
-      return null;
-    }
-
-    if (!selectedGameId) return games[0];
-
-    return games.find((game) => String(game.id) === String(selectedGameId)) || games[0];
-  }, [games, selectedGameId]);
+    return () => { active = false; };
+  }, [selectedGameId]);
 
   const mediaFiles = useMemo(() => {
     if (!selectedGame) return [];

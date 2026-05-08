@@ -5,10 +5,13 @@ import { authRequired } from '../middleware/auth.js';
 
 const router = Router();
 
-function normalizeGame(game) {
+function normalizeGame(game, { includeBase64Image = true } = {}) {
   if (!game) {
     return null;
   }
+
+  const rawImage = game.image || null;
+  const isBase64 = typeof rawImage === 'string' && rawImage.startsWith('data:');
 
   return {
     id: game._id.toString(),
@@ -18,13 +21,17 @@ function normalizeGame(game) {
     rentalDays: game.rentalDays,
     rating: game.rating,
     platform: game.platform,
-    image: game.image,
+    image: isBase64 ? (includeBase64Image ? rawImage : null) : rawImage,
     features: game.features || [],
     seller: game.seller || null,
     releaseDate: game.releaseDate || null,
     genre: game.genre || null,
     developers: game.developers || null,
-    media: Array.isArray(game.media) ? game.media : [],
+    media: Array.isArray(game.media) ? game.media.map(m => ({
+      type: m.type,
+      name: m.name,
+      data: typeof m.data === 'string' && m.data.startsWith('data:') ? (includeBase64Image ? m.data : null) : m.data
+    })) : [],
     uploadedBy: game.uploadedBy?.toString() || null,
     available: game.available !== false,
     createdAt: game.createdAt || null
@@ -89,7 +96,7 @@ router.get('/', async (req, res) => {
     // Enriquecer juegos con datos actuales de usuarios
     const enrichedGames = await Promise.all(
       catalog.map(async (game) => {
-        const normalized = normalizeGame(game);
+        const normalized = normalizeGame(game, { includeBase64Image: false });
         if (normalized.uploadedBy && ObjectId.isValid(normalized.uploadedBy)) {
           const user = await users.findOne({ _id: new ObjectId(normalized.uploadedBy) });
           if (user) {

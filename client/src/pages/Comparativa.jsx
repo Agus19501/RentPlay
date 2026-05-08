@@ -193,6 +193,14 @@ const Comparativa = ({ lang }) => {
             {!loading && filteredGames.length === 0 && <p className="section-description">{t.empty}</p>}
             {!loading && filteredGames.map((game) => {
               const isRentedByAnyone = game.status === 'rented';
+              const isRentedByMe = rentals.some(r => {
+                const rentalGameId = r.game?.id || r.gameId;
+                return String(rentalGameId) === String(game.id) && r.status === 'active';
+              });
+              const rented = isRentedByAnyone || isRentedByMe;
+              const priceStr = typeof game.price === 'number' ? game.price.toFixed(2) : parseFloat(game.price || 0).toFixed(2);
+              const days = Number(game.rentalDays) || 0;
+              const dayLabel = days === 1 ? t.day : t.days;
               return (
                 <div key={game.id} className="game-item" onClick={() => handleGameClick(game)} role="button" tabIndex={0}>
                   <div className="game-image">
@@ -205,35 +213,52 @@ const Comparativa = ({ lang }) => {
                     ) : (
                       <img src={cover1} alt={game.title} />
                     )}
-                    
-                    {isRentedByAnyone ? (
-                      <div className="game-status" style={{ 
-                        position: 'absolute', 
-                        top: '10px', 
-                        right: '10px', 
-                        background: 'rgba(255, 0, 0, 0.9)', 
-                        color: '#fff',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
+
+                    {!rented && (
+                      <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                        <span style={{
+                          background: '#FF6100',
+                          color: '#fff',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          lineHeight: 1.2,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {priceStr}€
+                        </span>
+                        <span style={{
+                          background: '#FF6100',
+                          color: '#fff',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          lineHeight: 1.2,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {days} {dayLabel}
+                        </span>
+                      </div>
+                    )}
+
+                    {rented && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'rgba(28, 28, 28, 0.95)',
+                        color: '#FF6100',
+                        textAlign: 'center',
+                        padding: '8px 4px',
+                        fontWeight: '900',
+                        fontSize: '13px',
+                        letterSpacing: '0.04em',
                         textTransform: 'uppercase'
                       }}>
-                        NO DISPONIBLE (YA ALQUILADO)
-                      </div>
-                    ) : (
-                      <div className="game-status" style={{ 
-                        position: 'absolute', 
-                        top: '10px', 
-                        right: '10px', 
-                        background: 'rgba(51, 255, 0, 0.9)', 
-                        color: '#000',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
-                        {typeof game.price === 'number' ? game.price.toFixed(2) : parseFloat(game.price || 0).toFixed(2)}€
+                        Alquilado
                       </div>
                     )}
                   </div>
@@ -242,7 +267,6 @@ const Comparativa = ({ lang }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', opacity: 0.8 }}>
                       <FaStar style={{ color: '#FFD700' }} />
                       <span>{game.seller?.rating?.toFixed(1) || '0.0'}</span>
-                      <span>• {game.rentalDays} días</span>
                     </div>
                     <p style={{ fontSize: '11px', marginTop: '4px', opacity: 0.6 }}>Vendedor: {game.seller?.name || 'Anon'}</p>
                   </div>

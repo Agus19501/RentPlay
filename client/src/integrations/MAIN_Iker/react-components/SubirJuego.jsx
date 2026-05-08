@@ -199,25 +199,15 @@ export default function SubirJuego({ lang = 'ES' }) {
       })
       .catch(error => console.error('Error fetching game details:', error));
     
-    // Cargar la imagen de RAWG si existe
+    // Usar la URL de RAWG directamente (funciona en <img src>, sin CORS)
     if (game.background_image) {
-      apiRequest('/api/download-image', {
-        method: 'POST',
-        body: { url: game.background_image },
-      })
-        .then(data => {
-          if (data.ok && data.imageData) {
-            const newMedia = {
-              id: Date.now(),
-              type: 'image',
-              name: `${game.name}-cover`,
-              data: data.imageData,
-            };
-            setMediaFiles([newMedia]);
-            setCurrentMediaIndex(0);
-          }
-        })
-        .catch(error => console.error('Error loading image:', error));
+      setMediaFiles([{
+        id: Date.now(),
+        type: 'image',
+        name: `${game.name}-cover`,
+        data: game.background_image,
+      }]);
+      setCurrentMediaIndex(0);
     }
     
     setShowSuggestions(false);

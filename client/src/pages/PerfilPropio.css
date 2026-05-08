@@ -224,8 +224,8 @@
   gap: 1.5rem 1.7rem;
   align-content: start;
   padding-top: 0.2rem;
-  max-height: none;
-  overflow: visible;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
 }
 
 .juego-card {

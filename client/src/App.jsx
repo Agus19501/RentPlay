@@ -75,7 +75,7 @@ function App() {
           <Route path="/resultados" element={<Resultados lang={lang} />} />
           <Route path="/comparativa" element={<Comparativa lang={lang} />} />
           {/* Rutas integradas desde MAIN_Iker (diseño preservado) */}
-          <Route path="/ajustes" element={<Ajustes lang={lang} />} />
+          <Route path="/ajustes" element={<Ajustes lang={lang} setLang={setLang} />} />
           <Route path="/perfil" element={<PerfilPropio session={session} lang={lang} />} />
           <Route path="/perfil_propio" element={<PerfilPropio session={session} lang={lang} />} />
           <Route path="/perfil-propio" element={<PerfilPropio session={session} lang={lang} />} />

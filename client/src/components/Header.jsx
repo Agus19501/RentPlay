@@ -27,13 +27,15 @@ const Header = ({ lang, setLang, session, onLogout }) => {
       placeholder: "Buscar juegos...", add: "AÑADIR", langLabel: "Idioma", chats: "Chats", 
       profile: "Perfil", logout: "Cerrar sesión", settings: "Ajustes", myProfile: "Mi Perfil",
       filters: "BÚSQUEDA POR FILTROS", apply: "APLICAR FILTROS", manage: "GESTIONAR FILTROS",
-      fShort: "FILTROS", aShort: "APLICAR", mShort: "FILTROS" 
+      fShort: "FILTROS", aShort: "APLICAR", mShort: "FILTROS",
+      login: "Entrar", register: "Registro"
     },
     EN: { 
       placeholder: "Search games...", add: "ADD", langLabel: "Language", chats: "Chats", 
       profile: "Profile", logout: "Logout", settings: "Settings", myProfile: "My Profile",
       filters: "FILTER SEARCH", apply: "APPLY FILTERS", manage: "MANAGE FILTERS",
-      fShort: "FILTERS", aShort: "APPLY", mShort: "FILTERS"
+      fShort: "FILTERS", aShort: "APPLY", mShort: "FILTERS",
+      login: "Login", register: "Sign Up"
     }
   };
 
@@ -129,11 +131,11 @@ const Header = ({ lang, setLang, session, onLogout }) => {
             <div className="auth-actions">
               <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/login')}>
                 <span className="icon-wrapper"><FaSignInAlt /></span>
-                <span className="action-text">Entrar</span>
+                <span className="action-text">{current.login}</span>
               </button>
               <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/register')}>
                 <span className="icon-wrapper"><FaUserPlus /></span>
-                <span className="action-text">Registro</span>
+                <span className="action-text">{current.register}</span>
               </button>
             </div>
           )}

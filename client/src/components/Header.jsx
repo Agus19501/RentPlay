@@ -77,7 +77,6 @@ const Header = ({ lang, setLang, session, onLogout }) => {
         </div>
 
         <div className="search-bar">
-          <FaSearch className="search-icon" />
           <input 
             type="text" 
             placeholder={current.placeholder}

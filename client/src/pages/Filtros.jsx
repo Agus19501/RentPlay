@@ -1,88 +1,105 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
 import './Filtros.css';
 
 const Filtros = ({ lang }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [openDropdown, setOpenDropdown] = useState(null);
   const [games, setGames] = useState([]);
-  const [precio, setPrecio] = useState({ min: 1, max: 15 });
-  const [alquiler, setAlquiler] = useState({ min: 1, max: 30 });
-  const [rating, setRating] = useState({ min: 0, max: 5 });
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
-  const [selectedSeller, setSelectedSeller] = useState(null);
+  
+  // Filtros
+  const [year, setYear] = useState({ min: 1970, max: 2026 });
+  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedDeveloper, setSelectedDeveloper] = useState(null);
+
+  const currentSearch = searchParams.get('search') || '';
 
   const t = {
     ES: {
       title: 'FILTROS DE BÚSQUEDA',
       subtitle: 'Usa los filtros disponibles para encontrar exactamente lo que buscas',
-      precio: 'PRECIO',
-      alquiler: 'ALQUILER',
-      rating: 'VALORACIÓN',
-      platform: 'PLATAFORMA',
-      seller: 'VENDEDOR',
-      day: 'DIA',
-      days: 'DIAS',
-      eur: 'EUR',
-      all: 'Todos'
+      year: 'AÑO DE LANZAMIENTO',
+      genre: 'GÉNERO',
+      developer: 'DESARROLLADORES',
+      all: 'Todos',
+      apply: 'APLICAR FILTROS'
     },
     EN: {
       title: 'SEARCH FILTERS',
       subtitle: 'Use the available filters to find exactly what you are looking for',
-      precio: 'PRICE',
-      alquiler: 'RENTAL',
-      rating: 'RATING',
-      platform: 'PLATFORM',
-      seller: 'SELLER',
-      day: 'DAY',
-      days: 'DAYS',
-      eur: 'EUR',
-      all: 'All'
+      year: 'RELEASE YEAR',
+      genre: 'GENRE',
+      developer: 'DEVELOPERS',
+      all: 'All',
+      apply: 'APPLY FILTERS'
     }
-  }[lang];
+  }[lang] || {
+    title: 'FILTROS DE BÚSQUEDA',
+    subtitle: 'Usa los filtros disponibles para encontrar exactamente lo que buscas',
+    year: 'AÑO DE LANZAMIENTO',
+    genre: 'GÉNERO',
+    developer: 'DESARROLLADORES',
+    all: 'Todos',
+    apply: 'APLICAR FILTROS'
+  };
 
   useEffect(() => {
+    // 1. Cargamos TODOS los juegos para sacar Géneros/Desarrolladores únicos para los dropdowns
     apiRequest('/api/games')
       .then((response) => setGames(response.games || []))
       .catch(() => setGames([]));
-  }, []);
 
-  const minPrice = useMemo(() => Math.floor(Math.min(...games.map((game) => Number(game.price) || 0), 15)), [games]);
-  const maxPrice = useMemo(() => Math.ceil(Math.max(...games.map((game) => Number(game.price) || 0), 15)), [games]);
-  const minRental = useMemo(() => Math.floor(Math.min(...games.map((game) => Number(game.rentalDays) || 1), 30)), [games]);
-  const maxRental = useMemo(() => Math.ceil(Math.max(...games.map((game) => Number(game.rentalDays) || 1), 30)), [games]);
-  const platforms = useMemo(() => Array.from(new Set(games.map((game) => game.platform).filter(Boolean))), [games]);
-  const sellers = useMemo(() => Array.from(new Set(games.map((game) => game.seller?.name || game.seller).filter(Boolean))), [games]);
+    // 2. Sincronizamos los estados visuales con la URL actual
+    const minParam = searchParams.get('minYear');
+    const maxParam = searchParams.get('maxYear');
+    const genreParam = searchParams.get('genre');
+    const devParam = searchParams.get('developer');
 
-  useEffect(() => {
-    setPrecio({ min: minPrice, max: maxPrice });
-  }, [minPrice, maxPrice]);
+    if (minParam) setYear(y => ({ ...y, min: parseInt(minParam) }));
+    if (maxParam) setYear(y => ({ ...y, max: parseInt(maxParam) }));
+    if (genreParam) setSelectedGenre(genreParam);
+    if (devParam) setSelectedDeveloper(devParam);
+  }, [searchParams]);
 
-  useEffect(() => {
-    setAlquiler({ min: minRental, max: maxRental });
-  }, [minRental, maxRental]);
+  const genres = useMemo(() => 
+    Array.from(new Set(games.map((game) => game.genre).filter(Boolean))).sort()
+  , [games]);
+  
+  const developers = useMemo(() => 
+    Array.from(new Set(games.map((game) => game.developers).filter(Boolean))).sort()
+  , [games]);
 
   const handleRange = (event, type, edge) => {
     const value = parseFloat(event.target.value);
-    const setter = type === 'precio' ? setPrecio : type === 'alquiler' ? setAlquiler : setRating;
-    const current = type === 'precio' ? precio : type === 'alquiler' ? alquiler : rating;
-
     if (edge === 'min') {
-      if (value <= current.max) {
-        setter({ ...current, min: value });
-      }
-    } else if (value >= current.min) {
-      setter({ ...current, max: value });
+      if (value <= year.max) setYear((prev) => ({ ...prev, min: value }));
+    } else {
+      if (value >= year.min) setYear((prev) => ({ ...prev, max: value }));
     }
   };
 
-  const formatPrecio = () => (precio.min === precio.max ? `${precio.min} ${t.eur}` : `${precio.min} ${t.eur} - ${precio.max} ${t.eur}`);
-  const formatAlquiler = () => {
-    const minText = `${alquiler.min} ${alquiler.min === 1 ? t.day : t.days}`;
-    const maxText = `${alquiler.max} ${t.days}`;
-    return alquiler.min === alquiler.max ? minText : `${minText} - ${maxText}`;
+  const formatYear = () => (year.min === year.max ? `${year.min}` : `${year.min} - ${year.max}`);
+
+  const handleApply = () => {
+    // CREAMOS UNA URL LIMPIA PERO MANTENEMOS EL SEARCH OBLIGATORIAMENTE
+    const params = new URLSearchParams();
+    
+    // Si veníamos de una búsqueda por texto (ej: "Fortnite"), la mantenemos como base obligatoria
+    if (currentSearch) {
+      params.set('search', currentSearch);
+    }
+    
+    // Aplicamos los filtros adicionales sobre esa búsqueda
+    if (selectedGenre && selectedGenre !== t.all) params.set('genre', selectedGenre);
+    if (selectedDeveloper && selectedDeveloper !== t.all) params.set('developer', selectedDeveloper);
+    if (year.min > 1970) params.set('minYear', year.min);
+    if (year.max < 2026) params.set('maxYear', year.max);
+    
+    navigate(`/resultados?${params.toString()}`);
   };
-  const formatRating = () => (rating.min === rating.max ? `${rating.min.toFixed(1)} ★` : `${rating.min.toFixed(1)} ★ - ${rating.max.toFixed(1)} ★`);
 
   return (
     <div className="filtros-page">
@@ -95,45 +112,31 @@ const Filtros = ({ lang }) => {
         <div className="filters-grid">
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label">{t.precio}</h3>
-              <p className="range-result-text">{formatPrecio()}</p>
+              <h3 className="box-label">{t.year}</h3>
+              <p className="range-result-text">{formatYear()}</p>
             </div>
             <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((precio.min - 1) / 49) * 100}%`, right: `${100 - ((precio.max - 1) / 49) * 100}%` }}></div>
-              <div className="thumb-container" style={{ left: `${((precio.min - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
-              <div className="thumb-container" style={{ left: `${((precio.max - 1) / 49) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="1" max="50" value={precio.min} onChange={(event) => handleRange(event, 'precio', 'min')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 22 : 21 }} />
-              <input type="range" min="1" max="50" value={precio.max} onChange={(event) => handleRange(event, 'precio', 'max')} className="thumb-input" style={{ zIndex: precio.min > 25 ? 21 : 22 }} />
+              <div className="slider-track" style={{ left: `${((year.min - 1970) / 56) * 100}%`, right: `${100 - ((year.max - 1970) / 56) * 100}%` }}></div>
+              <div className="thumb-container" style={{ left: `${((year.min - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
+              <div className="thumb-container" style={{ left: `${((year.max - 1970) / 56) * 100}%` }}><div className="thumb-circle"></div></div>
+              <input type="range" min="1970" max="2026" step="1" value={year.min} onChange={(event) => handleRange(event, 'year', 'min')} className="thumb-input" style={{ zIndex: year.min > 1998 ? 22 : 21 }} />
+              <input type="range" min="1970" max="2026" step="1" value={year.max} onChange={(event) => handleRange(event, 'year', 'max')} className="thumb-input" style={{ zIndex: year.min > 1998 ? 21 : 22 }} />
             </div>
           </div>
 
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label">{t.rating}</h3>
-              <p className="range-result-text">{formatRating()}</p>
-            </div>
-            <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${(rating.min / 5) * 100}%`, right: `${100 - (rating.max / 5) * 100}%` }}></div>
-              <div className="thumb-container" style={{ left: `${(rating.min / 5) * 100}%` }}><div className="thumb-circle"></div></div>
-              <div className="thumb-container" style={{ left: `${(rating.max / 5) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="0" max="5" step="0.1" value={rating.min} onChange={(event) => handleRange(event, 'rating', 'min')} className="thumb-input" style={{ zIndex: rating.min > 2.5 ? 22 : 21 }} />
-              <input type="range" min="0" max="5" step="0.1" value={rating.max} onChange={(event) => handleRange(event, 'rating', 'max')} className="thumb-input" style={{ zIndex: rating.min > 2.5 ? 21 : 22 }} />
-            </div>
-          </div>
-
-          <div className="filter-box">
-            <div className="box-header-group">
-              <h3 className="box-label uppercase">{t.platform}</h3>
+              <h3 className="box-label uppercase">{t.genre}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'platform' ? null : 'platform')}>
-                <span className={`selected-text ${!selectedPlatform ? 'placeholder' : ''}`}>{selectedPlatform || t.all}</span>
-                <FaChevronDown className={`arrow ${openDropdown === 'platform' ? 'up' : ''}`} />
-                {openDropdown === 'platform' && (
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'genre' ? null : 'genre')}>
+                <span className={`selected-text ${!selectedGenre ? 'placeholder' : ''}`}>{selectedGenre || t.all}</span>
+                <FaChevronDown className={`arrow ${openDropdown === 'genre' ? 'up' : ''}`} />
+                {openDropdown === 'genre' && (
                   <div className="options-panel">
-                    <div className="option" onClick={() => setSelectedPlatform(null)}>{t.all}</div>
-                    {platforms.map((platform) => (
-                      <div key={platform} className="option" onClick={() => setSelectedPlatform(platform)}>{platform}</div>
+                    <div className="option" onClick={() => setSelectedGenre(null)}>{t.all}</div>
+                    {genres.map((genre) => (
+                      <div key={genre} className="option" onClick={() => setSelectedGenre(genre)}>{genre}</div>
                     ))}
                   </div>
                 )}
@@ -143,31 +146,17 @@ const Filtros = ({ lang }) => {
 
           <div className="filter-box">
             <div className="box-header-group">
-              <h3 className="box-label">{t.alquiler}</h3>
-              <p className="range-result-text">{formatAlquiler()}</p>
-            </div>
-            <div className="dual-slider-container">
-              <div className="slider-track" style={{ left: `${((alquiler.min - 1) / 29) * 100}%`, right: `${100 - ((alquiler.max - 1) / 29) * 100}%` }}></div>
-              <div className="thumb-container" style={{ left: `${((alquiler.min - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
-              <div className="thumb-container" style={{ left: `${((alquiler.max - 1) / 29) * 100}%` }}><div className="thumb-circle"></div></div>
-              <input type="range" min="1" max="30" value={alquiler.min} onChange={(event) => handleRange(event, 'alquiler', 'min')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 22 : 21 }} />
-              <input type="range" min="1" max="30" value={alquiler.max} onChange={(event) => handleRange(event, 'alquiler', 'max')} className="thumb-input" style={{ zIndex: alquiler.min > 15 ? 21 : 22 }} />
-            </div>
-          </div>
-
-          <div className="filter-box">
-            <div className="box-header-group">
-              <h3 className="box-label uppercase">{t.seller}</h3>
+              <h3 className="box-label uppercase">{t.developer}</h3>
             </div>
             <div className="centered-select-wrapper">
-              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'seller' ? null : 'seller')}>
-                <span className={`selected-text ${!selectedSeller ? 'placeholder' : ''}`}>{selectedSeller || t.all}</span>
-                <FaChevronDown className={`arrow ${openDropdown === 'seller' ? 'up' : ''}`} />
-                {openDropdown === 'seller' && (
+              <div className="custom-select" onClick={() => setOpenDropdown(openDropdown === 'developer' ? null : 'developer')}>
+                <span className={`selected-text ${!selectedDeveloper ? 'placeholder' : ''}`}>{selectedDeveloper || t.all}</span>
+                <FaChevronDown className={`arrow ${openDropdown === 'developer' ? 'up' : ''}`} />
+                {openDropdown === 'developer' && (
                   <div className="options-panel">
-                    <div className="option" onClick={() => setSelectedSeller(null)}>{t.all}</div>
-                    {sellers.map((seller) => (
-                      <div key={seller} className="option" onClick={() => setSelectedSeller(seller)}>{seller}</div>
+                    <div className="option" onClick={() => setSelectedDeveloper(null)}>{t.all}</div>
+                    {developers.map((dev) => (
+                      <div key={dev} className="option" onClick={() => setSelectedDeveloper(dev)}>{dev}</div>
                     ))}
                   </div>
                 )}
@@ -175,6 +164,25 @@ const Filtros = ({ lang }) => {
             </div>
           </div>
         </div>
+
+        <button 
+          className="btn-apply-filters"
+          onClick={handleApply}
+          style={{
+            marginTop: '40px',
+            background: '#FF6100',
+            color: 'white',
+            border: 'none',
+            padding: '15px 40px',
+            borderRadius: '4px',
+            fontSize: '18px',
+            fontWeight: '800',
+            cursor: 'pointer',
+            textTransform: 'uppercase'
+          }}
+        >
+          {t.apply}
+        </button>
       </div>
     </div>
   );

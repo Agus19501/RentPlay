@@ -42,7 +42,8 @@ export async function getCollections() {
       users: db.collection('users'),
       games: db.collection('games'),
       rentals: db.collection('rentals'),
-      messages: db.collection('messages')
+      messages: db.collection('messages'),
+      chats: db.collection('chats')
     };
   } catch (error) {
     console.error('Database error:', error);

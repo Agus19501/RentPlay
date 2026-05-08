@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaCloudUploadAlt, FaPencilAlt } from 'react-icons/fa';
-import { apiRequest } from '../../../api.js';
+import { apiRequest, getSession } from '../../../api.js';
 import '../assets/css/subir-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import cover2 from '../assets/images/cover2.svg';
@@ -19,6 +19,8 @@ const RAWG_API_KEY = '2fd7395ed6044fd8aa568558be497b46';
 
 export default function SubirJuego() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editGame = location.state?.editGame;
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -29,13 +31,33 @@ export default function SubirJuego() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   useEffect(() => {
-    setFormData(INITIAL_FORM);
-    setMediaFiles([]);
-    setCurrentMediaIndex(0);
-    setDateValue('');
+    if (editGame) {
+      setFormData({
+        title: editGame.title || '',
+        releaseDate: editGame.releaseDate || '',
+        genre: editGame.genre || '',
+        duration: editGame.rentalDays || '',
+        developers: editGame.developers || '',
+        price: editGame.price || ''
+      });
+      setDateValue(editGame.releaseDate || '');
+      if (editGame.image) {
+        setMediaFiles([{
+          id: Date.now(),
+          type: 'image',
+          name: 'current-cover',
+          data: editGame.image.startsWith('data:') ? editGame.image : `/${editGame.image}`
+        }]);
+      }
+    } else {
+      setFormData(INITIAL_FORM);
+      setMediaFiles([]);
+      setCurrentMediaIndex(0);
+      setDateValue('');
+    }
     setSuggestions([]);
     setShowSuggestions(false);
-  }, []);
+  }, [editGame]);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -199,32 +221,46 @@ export default function SubirJuego() {
   const handlePublish = async (event) => {
     event.preventDefault();
 
-    if (!formData.title.trim()) {
-      alert('Por favor, indica al menos el título del juego.');
+    if (!formData.title.trim() || !formData.price || !dateValue) {
+      alert('Por favor, indica título, precio y fecha.');
       return;
     }
 
     const primaryImage = mediaFiles.find((m) => m.type === 'image')?.data || '';
     const payload = {
       title: formData.title,
-      releaseDate: formData.releaseDate,
+      releaseDate: dateValue,
       genre: formData.genre,
-      duration: formData.duration,
+      rentalDays: Number(formData.duration),
       developers: formData.developers,
-      price: formData.price,
-      imagePreview: primaryImage,
+      price: Number(formData.price),
+      image: primaryImage
     };
 
     try {
-      await apiRequest('/api/games', { method: 'POST', body: payload });
-      alert('¡Juego publicado correctamente!');
-      navigate('/home');
-    } catch (error) {
-      if (error.message === 'No autorizado.' || error.message === 'Sesion invalida.') {
-        alert('Debes iniciar sesión para publicar un juego.');
-      } else {
-        alert(`Error al publicar: ${error.message}`);
+      const session = await getSession();
+      if (!session) {
+        alert('Debes iniciar sesión para publicar/editar un juego.');
+        return;
       }
+
+      const endpoint = editGame ? `/api/games/${editGame.id}` : '/api/games';
+      const method = editGame ? 'PUT' : 'POST';
+
+      const response = await apiRequest(endpoint, { 
+        method, 
+        body: payload,
+        token: session.token
+      });
+
+      if (response.ok) {
+        alert(editGame ? '¡Juego actualizado con éxito!' : '¡Juego publicado correctamente!');
+        navigate('/perfil-propio');
+      } else {
+        alert(response.message || 'Error al guardar el juego');
+      }
+    } catch (error) {
+      alert(`Error al guardar: ${error.message}`);
     }
   };
 
@@ -234,8 +270,12 @@ export default function SubirJuego() {
         <div className="upload-content">
           <div className="upload-form-section">
             <div className="upload-header">
-              <h1 className="upload-title">PONER UN JUEGO EN ALQUILER</h1>
-              <p className="upload-subtitle">Introduce los datos del videojuego que quieras subir a rentplay.</p>
+              <h1 className="upload-title">{editGame ? 'EDITAR VENTA' : 'PONER UN JUEGO EN ALQUILER'}</h1>
+              <p className="upload-subtitle">
+                {editGame 
+                  ? 'Actualiza los datos de tu videojuego.' 
+                  : 'Introduce los datos del videojuego que quieras subir a rentplay.'}
+              </p>
               <p className="upload-hint">Si lo conocemos, completaremos los datos por ti ;)</p>
             </div>
 
@@ -292,7 +332,9 @@ export default function SubirJuego() {
               <input type="text" name="price" placeholder="PRECIO" className="upload-input" value={formData.price} onChange={handleInputChange} required />
             </form>
 
-            <button className="btn-publicar" id="btn-publish-game" type="button" onClick={handlePublish}>PUBLICAR</button>
+              <button className="btn-publicar" id="btn-publish-game" type="button" onClick={handlePublish}>
+                {editGame ? 'ACTUALIZAR' : 'PUBLICAR'}
+              </button>
           </div>
 
           <div className="upload-image-section">

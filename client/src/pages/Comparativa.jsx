@@ -1,161 +1,255 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaChevronRight, FaChevronLeft } from 'react-icons/fa';
+import { FaChevronRight, FaChevronLeft, FaStar, FaChevronDown } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
-import './Comparativa.css';
+import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
+import './Home.css'; 
+import './Filtros.css'; // Importamos estilos de filtros
 
 const Comparativa = ({ lang }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const searchRef1 = useRef(null);
-  const searchRef2 = useRef(null);
-  const relatedRef = useRef(null);
-  const [showLeft, setShowLeft] = useState({ search1: false, search2: false, related: false });
+  const searchRef = useRef(null);
+  const [showLeft, setShowLeft] = useState(false);
   const [games, setGames] = useState([]);
+  const [filteredGames, setFilteredGames] = useState([]);
+  const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const translations = {
+  // Estados para filtros
+  const [precioMax, setPrecioMax] = useState(50);
+  const [alquilerMax, setAlquilerMax] = useState(30);
+
+  const titleQuery = searchParams.get('title') || '';
+
+  const t = {
     ES: {
-      searchTitle: 'COMPARATIVA',
-      searchSub: 'Datos reales del catálogo para el videojuego seleccionado',
-      relatedTitle: 'RELACIONADOS',
-      relatedSub: 'Otros juegos reales del catálogo de RentPlay'
+      searchTitle: 'COMPARATIVA DE OFERTAS',
+      searchSub: `Mostrando todas las ofertas para "${titleQuery}"`,
+      empty: 'No hay ofertas disponibles para este título actualmente.',
+      precio: 'PRECIO MÁXIMO',
+      alquiler: 'ALQUILER MÁXIMO',
+      apply: 'FILTRAR',
+      eur: 'EUR',
+      day: 'DIA',
+      days: 'DIAS'
     },
     EN: {
-      searchTitle: 'COMPARISON',
-      searchSub: 'Real catalog data for the selected game',
-      relatedTitle: 'RELATED',
-      relatedSub: 'Other real games from the RentPlay catalog'
+      searchTitle: 'OFFER COMPARISON',
+      searchSub: `Showing all offers for "${titleQuery}"`,
+      empty: 'No offers available for this title at the moment.',
+      precio: 'MAX PRICE',
+      alquiler: 'MAX RENTAL',
+      apply: 'FILTER',
+      eur: 'EUR',
+      day: 'DAY',
+      days: 'DAYS'
+    }
+  }[lang] || {
+    ES: {
+      searchTitle: 'COMPARATIVA DE OFERTAS',
+      searchSub: `Mostrando todas las ofertas para "${titleQuery}"`,
+      empty: 'No hay ofertas disponibles para este título actualmente.',
+      precio: 'PRECIO MÁXIMO',
+      alquiler: 'ALQUILER MÁXIMO',
+      apply: 'FILTRAR',
+      eur: 'EUR',
+      day: 'DIA',
+      days: 'DIAS'
     }
   };
 
-  const t = translations[lang] || translations.ES;
-
   useEffect(() => {
     let active = true;
+    setLoading(true);
 
-    apiRequest('/api/games')
-      .then((response) => {
+    Promise.all([
+      apiRequest('/api/games'),
+      apiRequest('/api/rentals/mine').catch(() => ({ rentals: [] }))
+    ])
+      .then(([gamesRes, rentalsRes]) => {
         if (active) {
-          setGames(response.games || []);
+          const allGames = gamesRes.games || [];
+          const myRentals = rentalsRes.rentals || [];
+          setRentals(myRentals);
+
+          const filtered = allGames.filter(g => g.title.toLowerCase().trim() === titleQuery.toLowerCase().trim());
+          setGames(filtered);
+          setFilteredGames(filtered);
+          
+          if (filtered.length > 0) {
+            const prices = filtered.map(g => Number(g.price) || 0);
+            const durations = filtered.map(g => Number(g.rentalDays) || 0);
+            setPrecioMax(Math.ceil(Math.max(...prices)));
+            setAlquilerMax(Math.ceil(Math.max(...durations)));
+          }
         }
       })
       .catch(() => {
         if (active) {
           setGames([]);
+          setFilteredGames([]);
         }
       })
       .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, []);
+    return () => { active = false; };
+  }, [titleQuery]);
 
-  const handleScrollDetect = (key, ref) => {
-    const isScrolled = ref.current.scrollLeft > 10;
-    setShowLeft((prev) => ({ ...prev, [key]: isScrolled }));
+  const handleGameClick = (game) => {
+    const isRentedByMe = rentals.some(r => {
+      const rentalGameId = r.game?.id || r.gameId;
+      return String(rentalGameId) === String(game.id) && r.status === 'active';
+    });
+
+    if (isRentedByMe) {
+      navigate(`/mi-alquiler?id=${game.id}`);
+    } else {
+      navigate(`/ver-juego?id=${game.id}`);
+    }
   };
 
-  const executeScroll = (ref, direction) => {
-    const offset = direction === 'left' ? -500 : 500;
-    ref.current.scrollBy({ left: offset, behavior: 'smooth' });
+  const handleApplyFilters = () => {
+    const filtered = games.filter(game => {
+      const p = Number(game.price) || 0;
+      const d = Number(game.rentalDays) || 0;
+      return p <= precioMax && d <= alquilerMax;
+    });
+    setFilteredGames(filtered);
   };
 
-  const selectedGameId = Number(searchParams.get('gameId'));
-  const selectedGame = useMemo(() => {
-    if (!games.length) {
-      return null;
-    }
+  const handleScrollDetect = () => {
+    const isScrolled = (searchRef.current?.scrollLeft || 0) > 10;
+    setShowLeft(isScrolled);
+  };
 
-    return games.find((game) => game.id === selectedGameId) || games[0];
-  }, [games, selectedGameId]);
-
-  const samePlatformGames = useMemo(() => {
-    if (!selectedGame) {
-      return [];
-    }
-
-    const matches = games.filter((game) => game.id !== selectedGame.id && game.platform === selectedGame.platform);
-    return (matches.length > 0 ? matches : games.filter((game) => game.id !== selectedGame.id)).slice(0, 15);
-  }, [games, selectedGame]);
-
-  const relatedGames = useMemo(() => {
-    if (!selectedGame) {
-      return [];
-    }
-
-    return games
-      .filter((game) => game.id !== selectedGame.id)
-      .sort((left, right) => (right.rating || 0) - (left.rating || 0))
-      .slice(0, 15);
-  }, [games, selectedGame]);
+  const executeScroll = (direction) => {
+    searchRef.current?.scrollBy({ left: direction === 'left' ? -500 : 500, behavior: 'smooth' });
+  };
 
   return (
-    <div className="comparativa-page">
+    <div className="home-page" style={{ paddingBottom: '40px' }}>
       <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">{loading ? t.searchTitle : (selectedGame?.title || t.searchTitle)}</h2>
-          <p className="section-subtitle">{loading ? t.searchSub : selectedGame?.description || t.searchSub}</p>
+        <div className="section-header" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+          <div className="section-info">
+            <h2 className="section-title">{t.searchTitle}</h2>
+            <p className="section-description">{t.searchSub}</p>
+          </div>
+
+          <div className="comparativa-filters" style={{ display: 'flex', gap: '20px', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '11px', color: '#FF6100', fontWeight: 'bold' }}>{t.precio}: {precioMax}€</label>
+              <input 
+                type="range" min="1" max="50" 
+                value={precioMax} 
+                onChange={(e) => setPrecioMax(parseInt(e.target.value))} 
+                style={{ width: '130px', accentColor: '#FF6100' }} 
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <label style={{ fontSize: '11px', color: '#FF6100', fontWeight: 'bold' }}>{t.alquiler}: {alquilerMax} d</label>
+              <input 
+                type="range" min="1" max="30" 
+                value={alquilerMax} 
+                onChange={(e) => setAlquilerMax(parseInt(e.target.value))} 
+                style={{ width: '130px', accentColor: '#FF6100' }} 
+              />
+            </div>
+
+            <button 
+              onClick={handleApplyFilters}
+              style={{
+                background: '#FF6100',
+                border: 'none',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '12px',
+                textTransform: 'uppercase'
+              }}
+            >
+              {t.apply}
+            </button>
+          </div>
+
+          <button className="carousel-nav carousel-next" type="button" onClick={() => executeScroll('right')}>
+            <FaChevronRight />
+          </button>
         </div>
 
-        <div className="content-relative-wrapper">
-          {showLeft.search1 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={searchRef1} onScroll={() => handleScrollDetect('search1', searchRef1)}>
-            {!loading && samePlatformGames.map((game) => (
-              <div key={`row1-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder">
-                  <div className="offer-overlay">
-                    <p className="offer-price">{game.price ? `${game.price.toFixed(2)} €` : '—'}</p>
-                    <p className="offer-duration">{game.rentalDays ? `${game.rentalDays} días` : '—'}</p>
+        <div className="carousel-container">
+          {showLeft && (
+            <button className="carousel-nav" type="button" onClick={() => executeScroll('left')} style={{ position: 'absolute', left: 0, top: '50%', zIndex: 2 }}>
+              <FaChevronLeft />
+            </button>
+          )}
+          <div className="carousel-scroll" ref={searchRef} onScroll={handleScrollDetect}>
+            {loading && <p className="section-description">Cargando ofertas...</p>}
+            {!loading && filteredGames.length === 0 && <p className="section-description">{t.empty}</p>}
+            {!loading && filteredGames.map((game) => {
+              const isRentedByAnyone = game.status === 'rented';
+              return (
+                <div key={game.id} className="game-item" onClick={() => handleGameClick(game)} role="button" tabIndex={0}>
+                  <div className="game-image">
+                    {game.image ? (
+                      <img 
+                        src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                        alt={game.title} 
+                        onError={(event) => { event.currentTarget.src = cover1; }} 
+                      />
+                    ) : (
+                      <img src={cover1} alt={game.title} />
+                    )}
+                    
+                    {isRentedByAnyone ? (
+                      <div className="game-status" style={{ 
+                        position: 'absolute', 
+                        top: '10px', 
+                        right: '10px', 
+                        background: 'rgba(255, 0, 0, 0.9)', 
+                        color: '#fff',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase'
+                      }}>
+                        NO DISPONIBLE (YA ALQUILADO)
+                      </div>
+                    ) : (
+                      <div className="game-status" style={{ 
+                        position: 'absolute', 
+                        top: '10px', 
+                        right: '10px', 
+                        background: 'rgba(51, 255, 0, 0.9)', 
+                        color: '#000',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}>
+                        {typeof game.price === 'number' ? game.price.toFixed(2) : parseFloat(game.price || 0).toFixed(2)}€
+                      </div>
+                    )}
+                  </div>
+                  <div className="game-info" style={{ padding: '10px 0' }}>
+                    <p className="game-item-label" style={{ marginBottom: '4px' }}>{game.title}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', opacity: 0.8 }}>
+                      <FaStar style={{ color: '#FFD700' }} />
+                      <span>{game.seller?.rating?.toFixed(1) || '0.0'}</span>
+                      <span>• {game.rentalDays} días</span>
+                    </div>
+                    <p style={{ fontSize: '11px', marginTop: '4px', opacity: 0.6 }}>Vendedor: {game.seller?.name || 'Anon'}</p>
                   </div>
                 </div>
-                <p className="item-label">{game.title}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'right')} type="button"><FaChevronRight /></button>
-        </div>
-
-        <div className="content-relative-wrapper" style={{ marginTop: '30px' }}>
-          {showLeft.search2 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={searchRef2} onScroll={() => handleScrollDetect('search2', searchRef2)}>
-            {!loading && samePlatformGames.slice().reverse().map((game) => (
-              <div key={`row2-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder">
-                  <div className="offer-overlay">
-                    <p className="offer-price">{game.rating ? `${game.rating} ★` : '—'}</p>
-                    <p className="offer-duration">{game.platform || 'Atlas'}</p>
-                  </div>
-                </div>
-                <p className="item-label">{game.title}</p>
-              </div>
-            ))}
-          </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'right')} type="button"><FaChevronRight /></button>
-        </div>
-      </section>
-
-      <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">{t.relatedTitle}</h2>
-          <p className="section-subtitle">{t.relatedSub}</p>
-        </div>
-        <div className="content-relative-wrapper">
-          {showLeft.related && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(relatedRef, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={relatedRef} onScroll={() => handleScrollDetect('related', relatedRef)}>
-            {!loading && relatedGames.map((game) => (
-              <div key={`rel-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || game.seller?.name || 'Atlas'}</span></div>
-                <p className="item-label">{game.title}</p>
-              </div>
-            ))}
-          </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(relatedRef, 'right')} type="button"><FaChevronRight /></button>
         </div>
       </section>
     </div>

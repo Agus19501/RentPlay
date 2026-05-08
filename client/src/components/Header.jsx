@@ -39,11 +39,23 @@ const Header = ({ lang, setLang, session, onLogout }) => {
 
   const current = texts[lang];
   const isLoggedIn = Boolean(session?.token);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleLogout = () => {
     setShowProfileMenu(false);
     onLogout?.();
     navigate('/login'); 
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      const query = searchQuery.trim();
+      if (!query) {
+        navigate('/home');
+      } else {
+        navigate(`/resultados?search=${encodeURIComponent(query)}`);
+      }
+    }
   };
 
   const getButtonText = () => {
@@ -67,15 +79,19 @@ const Header = ({ lang, setLang, session, onLogout }) => {
           <input 
             type="text" 
             placeholder={current.placeholder}
-            onKeyDown={(e) => e.key === 'Enter' && navigate('/resultados')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
           />
-          <button 
-            className="btn-filters" 
-            onClick={() => navigate(isFiltersPage ? '/resultados' : '/filtros')}
-          >
-            <span className="txt-full">{btnText.full}</span>
-            <span className="txt-short">{btnText.short}</span>
-          </button>
+          {!isManageFiltersPage && !isFiltersPage && (
+            <button 
+              className="btn-filters" 
+              onClick={() => navigate(isFiltersPage ? '/resultados' : '/filtros')}
+            >
+              <span className="txt-full">{btnText.full}</span>
+              <span className="txt-short">{btnText.short}</span>
+            </button>
+          )}
         </div>
 
         <nav className="header-actions">

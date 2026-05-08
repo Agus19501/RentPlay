@@ -9,6 +9,9 @@ import Resultados from './pages/Resultados.jsx';
 import Comparativa from './pages/Comparativa.jsx';
 import Mensajes from './pages/Mensajes.jsx';
 import Perfil from './pages/Perfil.jsx';
+import PerfilPropio from './pages/PerfilPropio.jsx';
+import PerfilOtro from './pages/PerfilOtro.jsx';
+import Chats from './pages/Chats.jsx';
 
 // Integración: componentes desde MAIN_Iker (se preservan estilos originales)
 import Ajustes from './integrations/MAIN_Iker/react-components/Ajustes.jsx';
@@ -72,14 +75,18 @@ function App() {
           <Route path="/resultados" element={<Resultados lang={lang} />} />
           <Route path="/comparativa" element={<Comparativa lang={lang} />} />
           {/* Rutas integradas desde MAIN_Iker (diseño preservado) */}
-          <Route path="/ajustes" element={<Ajustes />} />
-          <Route path="/perfil" element={<Perfil session={session} />} />
-          <Route path="/perfil_propio" element={<Navigate to="/perfil" replace />} />
-          <Route path="/mi-alquiler" element={<MiAlquiler />} />
-          <Route path="/subir-juego" element={<SubirJuego />} />
-          <Route path="/ver-juego" element={<VerJuego />} />
-          <Route path="/mensajes" element={<Mensajes session={session} />} />
-          <Route path="/chats" element={<Navigate to="/mensajes" replace />} />
+          <Route path="/ajustes" element={<Ajustes lang={lang} />} />
+          <Route path="/perfil" element={<PerfilPropio session={session} lang={lang} />} />
+          <Route path="/perfil_propio" element={<PerfilPropio session={session} lang={lang} />} />
+          <Route path="/perfil-propio" element={<PerfilPropio session={session} lang={lang} />} />
+          <Route path="/perfil_otro" element={<PerfilOtro lang={lang} />} />
+          <Route path="/perfil-otro" element={<PerfilOtro lang={lang} />} />
+          <Route path="/mi-alquiler" element={<MiAlquiler lang={lang} />} />
+          <Route path="/subir-juego" element={<SubirJuego lang={lang} />} />
+          <Route path="/ver-juego/:gameId" element={<VerJuego lang={lang} />} />
+          <Route path="/ver-juego" element={<VerJuego lang={lang} />} />
+          <Route path="/mensajes" element={<Chats lang={lang} />} />
+          <Route path="/chats" element={<Chats lang={lang} />} />
           <Route path="/login" element={<AuthPage mode="login" onAuth={updateSession} session={session} />} />
           <Route path="/register" element={<AuthPage mode="register" onAuth={updateSession} session={session} />} />
           <Route path="/games/:gameId" element={<GameDetailPage session={session} onAuth={updateSession} />} />
@@ -300,10 +307,10 @@ function GameDetailPage({ session }) {
       const result = await apiRequest('/api/rentals', {
         method: 'POST',
         token: session.token,
-        body: { gameId: Number(gameId), paymentMethod }
+        body: { gameId, paymentMethod }
       });
       setMessage(result.message || 'Alquiler creado');
-      navigate('/rentals', { replace: true });
+      navigate('/perfil', { replace: true });
     } catch (error) {
       setMessage(error.message);
     }

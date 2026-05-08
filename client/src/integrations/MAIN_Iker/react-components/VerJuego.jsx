@@ -1,6 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, FaTimes, FaUser } from 'react-icons/fa';
+﻿import { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfAlt, FaTimes, FaUser, FaCheckCircle } from 'react-icons/fa';
 import '../assets/css/ver-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
@@ -8,20 +8,28 @@ import { apiRequest } from '../../../api.js';
 
 export default function VerJuego() {
   const navigate = useNavigate();
+  const { gameId: paramGameId } = useParams();
   const [searchParams] = useSearchParams();
   const [games, setGames] = useState([]);
+  const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRentalModalOpen, setRentalModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [wishlistActive, setWishlistActive] = useState(false);
+  const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
+  const timerRef = useRef(null);
 
   useEffect(() => {
     let active = true;
 
-    apiRequest('/api/games')
-      .then((response) => {
+    Promise.all([
+      apiRequest('/api/games'),
+      apiRequest('/api/rentals/mine').catch(() => ({ rentals: [] }))
+    ])
+      .then(([gamesRes, rentalsRes]) => {
         if (active) {
-          setGames(response.games || []);
+          setGames(gamesRes.games || []);
+          setRentals(rentalsRes.rentals || []);
         }
       })
       .catch(() => {
@@ -40,14 +48,68 @@ export default function VerJuego() {
     };
   }, []);
 
-  const selectedGameId = Number(searchParams.get('gameId'));
+  const selectedGameId = paramGameId || searchParams.get('id') || searchParams.get('gameId');
   const selectedGame = useMemo(() => {
     if (!games.length) {
       return null;
     }
 
-    return games.find((game) => game.id === selectedGameId) || games[0];
+    if (!selectedGameId) return games[0];
+
+    return games.find((game) => String(game.id) === String(selectedGameId)) || games[0];
   }, [games, selectedGameId]);
+
+  const isRented = useMemo(() => {
+    // Comprobar si está alquilado específicamente por el usuario actual
+    const isRentedByMe = rentals.some(r => {
+      const rentalGameId = r.game?.id || r.gameId;
+      return String(rentalGameId) === String(selectedGame?.id) && r.status === 'active';
+    });
+    
+    // Comprobar si el juego está alquilado por CUALQUIER usuario (status active o marcado en el juego)
+    const isRentedByAnyone = selectedGame?.status === 'rented' || isRentedByMe;
+    
+    return { isRentedByMe, isRentedByAnyone };
+  }, [rentals, selectedGame]);
+
+  useEffect(() => {
+    if (!loading && isRented.isRentedByMe && selectedGame) {
+      navigate(`/mi-alquiler?id=${selectedGame.id}`, { replace: true });
+    }
+  }, [loading, isRented.isRentedByMe, selectedGame, navigate]);
+
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    // Obtener el alquiler del usuario actual para este juego
+    const rental = rentals.find(r => String(r.game?.id) === String(selectedGame?.id) && r.status === 'active');
+    if (!rental?.expiresAt) {
+      setLocalTimeRemaining('00:00:00');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const total = Date.parse(rental.expiresAt) - Date.parse(new Date());
+      if (total <= 0) {
+        setLocalTimeRemaining('00:00:00');
+        clearInterval(timerRef.current);
+        return;
+      }
+      
+      const hours = Math.floor(total / (1000 * 60 * 60));
+      const minutes = Math.floor((total / (1000 * 60)) % 60);
+      const seconds = Math.floor((total / 1000) % 60);
+      
+      setLocalTimeRemaining(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    };
+
+    updateCountdown();
+    timerRef.current = setInterval(updateCountdown, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [rentals, selectedGame]);
 
   const recommendedGames = useMemo(() => {
     if (!selectedGame) {
@@ -102,15 +164,21 @@ export default function VerJuego() {
     }
 
     try {
-      await apiRequest('/api/rentals', {
+      const response = await apiRequest('/api/rentals', {
         method: 'POST',
         body: {
           gameId: selectedGame.id,
           paymentMethod
         }
       });
-      setRentalModalOpen(false);
-      navigate('/mi-alquiler');
+      
+      if (response.ok) {
+        alert('¡Juego alquilado correctamente!');
+        setRentalModalOpen(false);
+        navigate(`/mi-alquiler?id=${selectedGame.id}`);
+      } else {
+        alert(response.message || 'No se ha podido crear el alquiler.');
+      }
     } catch (error) {
       alert(error.message || 'No se ha podido crear el alquiler.');
     }
@@ -148,16 +216,21 @@ export default function VerJuego() {
             <div className="product-gallery">
               <div className="main-image-container">
                 <div className="image-frame">
-                  {selectedGame.image ? <img src={`/${selectedGame.image}`} alt={selectedGame.title} className="main-image" onError={(event) => { event.currentTarget.src = cover1; }} /> : <img src={cover1} alt={selectedGame.title} className="main-image" />}
+                  {selectedGame.image ? (
+                    <img 
+                      src={selectedGame.image.startsWith('data:') ? selectedGame.image : `/${selectedGame.image}`} 
+                      alt={selectedGame.title} 
+                      className="main-image" 
+                      onError={(event) => { event.currentTarget.src = cover1; }} 
+                    />
+                  ) : (
+                    <img src={cover1} alt={selectedGame.title} className="main-image" />
+                  )}
                 </div>
               </div>
               <div className="gallery-controls">
                 <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>ANTERIOR</span></button>
                 <button className="btn-nav-next" type="button"><span>SIGUIENTE</span><FaChevronRight /></button>
-              </div>
-              <div className="rating">
-                <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfAlt />
-                <span className="rating-value">{selectedGame.rating ?? 0}</span>
               </div>
             </div>
 
@@ -180,70 +253,125 @@ export default function VerJuego() {
                   <span className="detail-label">DURACIÓN ALQUILER</span>
                   <span className="detail-value">{selectedGame.rentalDays ? `${selectedGame.rentalDays} DÍAS` : 'SIN DATOS'}</span>
                 </div>
-                <div className="detail-item">
-                  <span className="detail-label">PRECIO</span>
-                  <span className="detail-value price">{selectedGame.price ? `${selectedGame.price} €` : 'NO DISPONIBLE'}</span>
-                </div>
+                {isRented.isRentedByMe ? (
+                  <div className="detail-item">
+                    <span className="detail-label">TIEMPO RESTANTE</span>
+                    <span className="detail-value countdown">{localTimeRemaining}</span>
+                  </div>
+                ) : (
+                  <div className="detail-item">
+                    <span className="detail-label">PRECIO</span>
+                    <span className="detail-value price">{selectedGame.price ? `${selectedGame.price} €` : 'NO DISPONIBLE'}</span>
+                  </div>
+                )}
               </div>
 
-              <button className="btn-rent" type="button" onClick={() => setRentalModalOpen(true)}>ALQUILAR</button>
+              {isRented.isRentedByMe ? (
+                <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--orange)', fontWeight: '800', fontSize: '20px' }}>
+                  <FaCheckCircle style={{ fontSize: '26px' }} />
+                  <span>ALQUILADO</span>
+                </div>
+              ) : isRented.isRentedByAnyone ? (
+                <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#ff4444', fontWeight: '800', fontSize: '20px' }}>
+                  <FaTimes style={{ fontSize: '26px' }} />
+                  <span>NO DISPONIBLE (YA ALQUILADO)</span>
+                </div>
+              ) : (
+                <button className="btn-rent" type="button" onClick={() => setRentalModalOpen(true)}>¡ALQUILAR YA!</button>
+              )}
             </div>
 
             <div className="seller-section">
               <h3 className="section-title">PROPIETARIO</h3>
               <div className="seller-card">
-                <div className="seller-avatar-placeholder"><img src={avatar} alt="avatar" /></div>
+                <div 
+                  className="seller-avatar-placeholder" 
+                  onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {selectedGame.seller?.avatar ? (
+                    <img 
+                      src={selectedGame.seller.avatar.startsWith('data:') ? selectedGame.seller.avatar : `/${selectedGame.seller.avatar}`} 
+                      alt="avatar" 
+                    />
+                  ) : (
+                    <img src={avatar} alt="avatar" />
+                  )}
+                </div>
                 <h4 className="seller-name">{selectedGame.seller?.name || 'Sin vendedor'}</h4>
                 <div className="seller-rating">
-                  <FaStar /><FaStar /><FaStar /><FaStar /><FaStar style={{ opacity: 0.4 }} />
-                  <span className="rating-value">{selectedGame.seller?.rating ?? selectedGame.rating ?? 0}</span>
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <FaStar 
+                      key={num} 
+                      style={{ 
+                        color: num <= Math.round(selectedGame.seller?.rating || 0) ? '#ff6100' : '#ccc',
+                        cursor: 'pointer'
+                      }} 
+                      onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}
+                    />
+                  ))}
+                  <span className="rating-value">{selectedGame.seller?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
-                <button className="btn-valorar" type="button" onClick={() => navigate('/mensajes')}>MENSAJES</button>
+                <button className="btn-valorar" type="button" onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}>
+                  VALORAR
+                </button>
               </div>
             </div>
           </div>
-
-          <div className="recommended-section">
+          {/* <div className="recommended-section">
             <h2 className="section-title">VIDEOJUEGOS RECOMENDADOS</h2>
             <div className="games-grid">
               {recommendedGames.map((game) => (
                 <div className="game-card" key={game.id}>
-                  <div className="game-image-placeholder">{game.image ? <img src={`/${game.image}`} alt={game.title} onError={(event) => { event.currentTarget.src = cover1; }} /> : <img src={cover1} alt={game.title} />}</div>
+                  <div className="game-image-placeholder">
+                    {game.image ? (
+                      <img 
+                        src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                        alt={game.title} 
+                        onError={(event) => { event.currentTarget.src = cover1; }} 
+                      />
+                    ) : (
+                      <img src={cover1} alt={game.title} />
+                    )}
+                  </div>
                   <h3 className="game-title">{game.title}</h3>
                   <p className="game-price">{game.price ? `${game.price} €` : 'Precio no disponible'}</p>
                   <button className="btn-secondary" type="button" onClick={() => navigate(`/ver-juego?gameId=${game.id}`)}>Ver Detalles</button>
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </section>
       </div>
 
-      {isRentalModalOpen && <div className="modal-overlay active" onClick={() => setRentalModalOpen(false)} />}
-
       {isRentalModalOpen && (
-        <div className="modal active" id="modal-rental">
-          <div className="modal-content modal-rental-content">
-            <button className="modal-close" type="button" onClick={() => setRentalModalOpen(false)}><FaTimes /></button>
-            <h2 className="modal-title">MÉTODOS DE PAGO</h2>
-            <div className="payment-methods">
-              <label className="payment-option">
-                <input type="radio" name="payment" value="paypal" checked={paymentMethod === 'paypal'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                <div className="payment-icon"><i className="fab fa-paypal"></i></div>
-                <span>PayPal</span>
-              </label>
-              <label className="payment-option">
-                <input type="radio" name="payment" value="credit-card" checked={paymentMethod === 'credit-card'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                <div className="payment-icon"><i className="fas fa-credit-card"></i></div>
-                <span>Tarjeta Crédito</span>
-              </label>
-              <label className="payment-option">
-                <input type="radio" name="payment" value="applepay" checked={paymentMethod === 'applepay'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                <div className="payment-icon"><i className="fab fa-apple"></i></div>
-                <span>ApplePay</span>
-              </label>
+        <div className="modal-overlay active" onClick={() => setRentalModalOpen(false)}>
+          <div className="modal active" id="modal-rental" onClick={e => e.stopPropagation()}>
+            <div className="modal-content modal-rental-content">
+              <button className="modal-close" type="button" onClick={() => setRentalModalOpen(false)}><FaTimes /></button>
+              <h2 className="modal-title">MÉTODOS DE PAGO</h2>
+              <div className="payment-methods">
+                <label className={`payment-option ${paymentMethod === 'paypal' ? 'active' : ''}`}>
+                  <input type="radio" name="payment" value="paypal" checked={paymentMethod === 'paypal'} onChange={(event) => setPaymentMethod(event.target.value)} />
+                  <div className="payment-icon"><i className="fab fa-paypal"></i></div>
+                  <span className="payment-name">PayPal</span>
+                  <div className="payment-dot"></div>
+                </label>
+                <label className={`payment-option ${paymentMethod === 'credit-card' ? 'active' : ''}`}>
+                  <input type="radio" name="payment" value="credit-card" checked={paymentMethod === 'credit-card'} onChange={(event) => setPaymentMethod(event.target.value)} />
+                  <div className="payment-icon"><i className="fas fa-credit-card"></i></div>
+                  <span className="payment-name">Tarjeta Crédito</span>
+                  <div className="payment-dot"></div>
+                </label>
+                <label className={`payment-option ${paymentMethod === 'applepay' ? 'active' : ''}`}>
+                  <input type="radio" name="payment" value="applepay" checked={paymentMethod === 'applepay'} onChange={(event) => setPaymentMethod(event.target.value)} />
+                  <div className="payment-icon"><i className="fab fa-apple"></i></div>
+                  <span className="payment-name">ApplePay</span>
+                  <div className="payment-dot"></div>
+                </label>
+              </div>
+              <button className="btn-rent modal-btn-rent" type="button" onClick={handleConfirmRental}>ALQUILAR</button>
             </div>
-            <button className="btn-rent modal-btn-rent" type="button" onClick={handleConfirmRental}>ALQUILAR</button>
           </div>
         </div>
       )}

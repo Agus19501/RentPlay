@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import gamesRoutes from './routes/games.js';
 import messagesRoutes from './routes/messages.js';
 import rentalsRoutes from './routes/rentals.js';
+import chatsRoutes from './routes/chats.js';
 import { seedGamesIfNeeded } from './config/db.js';
 
 const app = express();
@@ -20,8 +21,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, message: 'RentPlay API running' });
@@ -60,6 +61,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/rentals', rentalsRoutes);
+app.use('/api/chats', chatsRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

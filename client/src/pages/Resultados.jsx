@@ -1,125 +1,152 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaChevronRight, FaChevronLeft } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
-import './Resultados.css';
+import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
+import './Home.css'; // Reutilizar estilos de Home
 
 const Resultados = ({ lang }) => {
   const navigate = useNavigate();
-  const searchRef1 = useRef(null);
-  const searchRef2 = useRef(null);
-  const relatedRef = useRef(null);
-  const [showLeft, setShowLeft] = useState({ search1: false, search2: false, related: false });
+  const [searchParams] = useSearchParams();
+  const searchRef = useRef(null);
+  const [showLeft, setShowLeft] = useState(false);
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const translations = {
+  const query = searchParams.get('search') || '';
+  const genre = searchParams.get('genre') || '';
+  const developer = searchParams.get('developer') || '';
+  const minYear = searchParams.get('minYear') || '';
+  const maxYear = searchParams.get('maxYear') || '';
+
+  const t = {
     ES: {
       searchTitle: 'RESULTADOS DE LA BÚSQUEDA',
-      searchSub: 'Explora los videojuegos que concuerdan con tu búsqueda',
-      relatedTitle: 'RELACIONADOS',
-      relatedSub: 'Echa un vistazo a otros juegos similares que te pueden interesar'
+      searchSub: query ? `Explora videojuegos relacionados con "${query}"` : 'Explora los videojuegos filtrados',
+      empty: 'No se encontraron juegos para esta búsqueda',
+      loading: 'Cargando resultados...',
+      manage: 'GESTIONAR FILTROS'
     },
     EN: {
       searchTitle: 'SEARCH RESULTS',
-      searchSub: 'Explore the video games that match your search',
-      relatedTitle: 'RELATED',
-      relatedSub: 'Check out other similar games that might interest you'
+      searchSub: query ? `Explore video games related to "${query}"` : 'Explore filtered video games',
+      empty: 'No games found for this search',
+      loading: 'Loading results...',
+      manage: 'MANAGE FILTERS'
     }
+  }[lang] || {
+    searchTitle: 'RESULTADOS DE LA BÚSQUEDA',
+    searchSub: query ? `Explora videojuegos relacionados con "${query}"` : 'Explora los videojuegos filtrados',
+    empty: 'No se encontraron juegos para esta búsqueda',
+    loading: 'Cargando resultados...',
+    manage: 'GESTIONAR FILTROS'
   };
-
-  const t = translations[lang] || translations.ES;
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
 
-    apiRequest('/api/games')
+    const params = new URLSearchParams();
+    if (query) params.append('search', query);
+    if (genre) params.append('genre', genre);
+    if (developer) params.append('developer', developer);
+    if (minYear) params.append('minYear', minYear);
+    if (maxYear) params.append('maxYear', maxYear);
+
+    apiRequest(`/api/games?${params.toString()}`)
       .then((response) => {
         if (active) {
           setGames(response.games || []);
         }
       })
       .catch(() => {
-        if (active) {
-          setGames([]);
-        }
+        if (active) setGames([]);
       })
       .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, []);
+    return () => { active = false; };
+  }, [query, genre, developer, minYear, maxYear]);
 
-  const handleScrollDetect = (key, ref) => {
-    const isScrolled = ref.current.scrollLeft > 10;
-    setShowLeft((prev) => ({ ...prev, [key]: isScrolled }));
+  const uniqueGames = useMemo(() => {
+    const map = new Map();
+    for (const game of games) {
+      const titleKey = game.title.toLowerCase().trim();
+      if (!map.has(titleKey)) {
+        map.set(titleKey, game);
+      }
+    }
+    return Array.from(map.values());
+  }, [games]);
+
+  const handleScrollDetect = () => {
+    const isScrolled = (searchRef.current?.scrollLeft || 0) > 10;
+    setShowLeft(isScrolled);
   };
 
-  const executeScroll = (ref, direction) => {
-    const offset = direction === 'left' ? -500 : 500;
-    ref.current.scrollBy({ left: offset, behavior: 'smooth' });
+  const executeScroll = (direction) => {
+    searchRef.current?.scrollBy({ left: direction === 'left' ? -500 : 500, behavior: 'smooth' });
   };
-
-  const primaryGames = games.slice(0, 12);
-  const secondaryGames = games.slice().reverse().slice(0, 12);
 
   return (
-    <div className="resultados-page">
+    <div className="home-page" style={{ paddingBottom: '40px' }}>
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">{t.searchTitle}</h2>
-          <p className="section-subtitle">{t.searchSub}</p>
+          <div className="section-info">
+            <h2 className="section-title">{t.searchTitle}</h2>
+            <p className="section-description">{t.searchSub}</p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button 
+              className="btn-manage-filters"
+              onClick={() => navigate(`/filtros?${searchParams.toString()}`)}
+              style={{
+                background: '#FF6100',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                textTransform: 'uppercase'
+              }}
+            >
+              {t.manage}
+            </button>
+            <button className="carousel-nav carousel-next" type="button" onClick={() => executeScroll('right')}>
+              <FaChevronRight />
+            </button>
+          </div>
         </div>
 
-        <div className="content-relative-wrapper">
-          {showLeft.search1 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={searchRef1} onScroll={() => handleScrollDetect('search1', searchRef1)}>
-            {loading && <p className="section-subtitle">Cargando catálogo real...</p>}
-            {!loading && primaryGames.map((game) => (
-              <div key={`s1-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.platform || 'Atlas'}</span></div>
-                <p className="item-label">{game.title}</p>
+        <div className="carousel-container">
+          {showLeft && (
+            <button className="carousel-nav" type="button" onClick={() => executeScroll('left')} style={{ position: 'absolute', left: 0, top: '50%', zIndex: 2 }}>
+              <FaChevronLeft />
+            </button>
+          )}
+          <div className="carousel-scroll" ref={searchRef} onScroll={handleScrollDetect}>
+            {loading && <p className="section-description">{t.loading}</p>}
+            {!loading && uniqueGames.length === 0 && <p className="section-description">{t.empty}</p>}
+            {!loading && uniqueGames.map((game) => (
+              <div key={game.id} className="game-item" onClick={() => navigate(`/comparativa?title=${encodeURIComponent(game.title)}`)} role="button" tabIndex={0}>
+                <div className="game-image">
+                  {game.image ? (
+                    <img 
+                      src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                      alt={game.title} 
+                      onError={(event) => { event.currentTarget.src = cover1; }} 
+                    />
+                  ) : (
+                    <img src={cover1} alt={game.title} />
+                  )}
+                </div>
+                <p className="game-item-label">{game.title}</p>
               </div>
             ))}
           </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(searchRef1, 'right')} type="button"><FaChevronRight /></button>
-        </div>
-
-        <div className="content-relative-wrapper" style={{ marginTop: '30px' }}>
-          {showLeft.search2 && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={searchRef2} onScroll={() => handleScrollDetect('search2', searchRef2)}>
-            {!loading && secondaryGames.map((game) => (
-              <div key={`s2-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.seller?.name || game.platform || 'Atlas'}</span></div>
-                <p className="item-label">{game.title}</p>
-              </div>
-            ))}
-          </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(searchRef2, 'right')} type="button"><FaChevronRight /></button>
-        </div>
-      </section>
-
-      <section className="home-section">
-        <div className="section-header">
-          <h2 className="section-title">{t.relatedTitle}</h2>
-          <p className="section-subtitle">{t.relatedSub}</p>
-        </div>
-        <div className="content-relative-wrapper">
-          {showLeft.related && <button className="nav-btn left-btn game-btn-pos" onClick={() => executeScroll(relatedRef, 'left')} type="button"><FaChevronLeft /></button>}
-          <div className="scroll-area" ref={relatedRef} onScroll={() => handleScrollDetect('related', relatedRef)}>
-            {!loading && games.slice(0, 12).map((game) => (
-              <div key={`related-${game.id}`} className="item-card" onClick={() => navigate(`/games/${game.id}`)} role="button" tabIndex={0}>
-                <div className="rect-placeholder"><span>{game.rating ? `${game.rating} ★` : 'Atlas'}</span></div>
-                <p className="item-label">{game.title}</p>
-              </div>
-            ))}
-          </div>
-          <button className="nav-btn right-btn game-btn-pos" onClick={() => executeScroll(relatedRef, 'right')} type="button"><FaChevronRight /></button>
         </div>
       </section>
     </div>

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight, FaCloudUploadAlt, FaPencilAlt } from 'react-icons/fa';
 import { apiRequest, getSession } from '../../../api.js';
+import { notify } from '../../../utils/notify.js';
 import '../assets/css/subir-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import cover2 from '../assets/images/cover2.svg';
@@ -296,7 +297,7 @@ export default function SubirJuego({ lang = 'ES' }) {
     event.preventDefault();
 
     if (!formData.title.trim() || !formData.price || !dateValue) {
-      alert(t.requiredMsg);
+      notify(t.requiredMsg, 'info');
       return;
     }
 
@@ -308,13 +309,18 @@ export default function SubirJuego({ lang = 'ES' }) {
       rentalDays: Number(formData.duration),
       developers: formData.developers,
       price: Number(formData.price),
-      image: primaryImage
+      image: primaryImage,
+      media: mediaFiles.map((media) => ({
+        type: media.type,
+        name: media.name,
+        data: media.data
+      }))
     };
 
     try {
       const session = await getSession();
       if (!session) {
-        alert(t.needLogin);
+        notify(t.needLogin, 'info');
         return;
       }
 
@@ -328,13 +334,13 @@ export default function SubirJuego({ lang = 'ES' }) {
       });
 
       if (response.ok) {
-        alert(editGame ? t.updated : t.published);
+        notify(editGame ? t.updated : t.published, 'success');
         navigate('/perfil-propio');
       } else {
-        alert(response.message || t.saveError);
+        notify(response.message || t.saveError, 'error');
       }
     } catch (error) {
-      alert(`${t.saveErrorPrefix} ${error.message}`);
+      notify(`${t.saveErrorPrefix} ${error.message}`, 'error');
     }
   };
 

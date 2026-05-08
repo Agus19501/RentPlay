@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaStar } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
+import { notify } from '../utils/notify.js';
 import './PerfilPropio.css';
 
 const tabs = [
@@ -143,7 +145,8 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       closeAvatarUpload: 'Cerrar carga de avatar',
       selectImage: 'Selecciona una imagen',
       file: 'Archivo',
-      uploadImage: 'Subir imagen'
+      uploadImage: 'Subir imagen',
+      reviewsLabel: 'reseñas'
     },
     EN: {
       tabs: { alquilados: 'Rented', subidos: 'Uploaded', favoritos: 'Favorites' },
@@ -169,10 +172,13 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       closeAvatarUpload: 'Close avatar upload',
       selectImage: 'Select an image',
       file: 'File',
-      uploadImage: 'Upload image'
+      uploadImage: 'Upload image',
+      reviewsLabel: 'reviews'
     }
   };
   const t = texts[lang] || texts.ES;
+  const ratingValue = Number(usuario?.rating || 0);
+  const reviewsValue = Number(usuario?.reviews || 0);
 
   useEffect(() => {
     async function cargarDatos() {
@@ -219,7 +225,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       if (res.ok) {
         setJuegosSubidos(prev => prev.filter(g => g.id !== gameId));
       } else {
-        alert(res.message || 'Error al borrar el juego');
+        notify(res.message || 'Error al borrar el juego', 'error');
       }
     } catch (e) {
       console.error('Error borrando juego:', e);
@@ -383,8 +389,12 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
             <div className="perfil-identidad">
               <h1 className="perfil-nickname">{usuario.name}</h1>
               <div className="perfil-rating">
-                <span className="perfil-stars">★★★★☆</span>
-                <span className="perfil-rating-value">4.1</span>
+                <span className="perfil-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FaStar key={star} style={{ color: star <= Math.round(ratingValue) ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)' }} />
+                  ))}
+                </span>
+                <span className="perfil-rating-value">{ratingValue.toFixed(1)} ({reviewsValue} {t.reviewsLabel || 'reseñas'})</span>
               </div>
             </div>
           </div>

@@ -12,7 +12,7 @@ export default function Ajustes({ lang, setLang }) {
   const [fontSize, setFontSize] = useState('normal');
   const [paymentMethod, setPaymentMethod] = useState('credit');
   const [settings, setSettings] = useState({
-    filter18: false,
+    updatesAlert: false,
     alertGeneral: true,
     alertFav: false
   });
@@ -30,7 +30,7 @@ export default function Ajustes({ lang, setLang }) {
       generalLang: 'IDIOMA GENERAL',
       langDesc: 'Cambia el idioma predeterminado de la plataforma',
       navExp: 'EXPERIENCIA DE NAVEGACIÓN',
-      pegi18: 'Filtro contenido PEGI +18',
+      updatesAlert: 'Alertas nuevas actualizaciones',
       alertsGen: 'Alertas de Ofertas Generales',
       alertsFav: 'Alertas Ofertas Contenido Favorito',
       payMethods: 'MÉTODOS DE PAGO',
@@ -48,7 +48,7 @@ export default function Ajustes({ lang, setLang }) {
       generalLang: 'GENERAL LANGUAGE',
       langDesc: 'Change the platform\'s default language',
       navExp: 'NAVIGATION EXPERIENCE',
-      pegi18: 'PEGI +18 Content Filter',
+      updatesAlert: 'New update alerts',
       alertsGen: 'General Offer Alerts',
       alertsFav: 'Favorite Content Offer Alerts',
       payMethods: 'PAYMENT METHODS',
@@ -56,7 +56,7 @@ export default function Ajustes({ lang, setLang }) {
     }
   };
 
-  const t = texts[lang];
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('rentplay_theme') || 'dark';
@@ -70,7 +70,8 @@ export default function Ajustes({ lang, setLang }) {
     document.documentElement.style.fontSize = FONT_SCALES[savedFontSize] || FONT_SCALES.normal;
 
     const storedSettings = {
-      filter18: localStorage.getItem('rentplay_filter-18') === 'true',
+      // Backward compatible with previous key rentplay_filter-18
+      updatesAlert: localStorage.getItem('rentplay_updates-alert') === 'true' || localStorage.getItem('rentplay_filter-18') === 'true',
       alertGeneral: localStorage.getItem('rentplay_alert-general') !== 'false',
       alertFav: localStorage.getItem('rentplay_alert-fav') === 'true'
     };
@@ -100,17 +101,21 @@ export default function Ajustes({ lang, setLang }) {
     setFontSize(size);
     localStorage.setItem('rentplay_fontsize', size);
     document.documentElement.style.fontSize = FONT_SCALES[size] || FONT_SCALES.normal;
+    saveSettingToDB('fontSize', size);
   };
 
   const handlePaymentChange = (event) => {
-    setPaymentMethod(event.target.value);
-    localStorage.setItem('rentplay_payment', event.target.value);
+    const value = event.target.value;
+    setPaymentMethod(value);
+    localStorage.setItem('rentplay_payment', value);
+    saveSettingToDB('paymentMethod', value);
   };
 
-  const handleToggleChange = (key) => (event) => {
+  const handleToggleChange = (stateKey, storageKey, dbKey = stateKey) => (event) => {
     const value = event.target.checked;
-    setSettings((current) => ({ ...current, [key]: value }));
-    localStorage.setItem(`rentplay_${key}`, String(value));
+    setSettings((current) => ({ ...current, [stateKey]: value }));
+    localStorage.setItem(`rentplay_${storageKey}`, String(value));
+    saveSettingToDB(dbKey, value);
   };
 
   return (
@@ -186,10 +191,10 @@ export default function Ajustes({ lang, setLang }) {
             <h2 className="settings-card-title">{t.navExp}</h2>
 
             <div className="settings-row toggle-row">
-              <span className="setting-label">{t.pegi18}</span>
+              <span className="setting-label">{t.updatesAlert}</span>
               <div className="control-wrapper">
                 <label className="switch-toggle standard-switch">
-                  <input type="checkbox" id="filter-18" checked={settings.filter18} onChange={handleToggleChange('filter-18')} />
+                  <input type="checkbox" id="updates-alert" checked={settings.updatesAlert} onChange={handleToggleChange('updatesAlert', 'updates-alert')} />
                   <span className="slider round"></span>
                 </label>
               </div>
@@ -199,7 +204,7 @@ export default function Ajustes({ lang, setLang }) {
               <span className="setting-label">{t.alertsGen}</span>
               <div className="control-wrapper">
                 <label className="switch-toggle standard-switch">
-                  <input type="checkbox" id="alert-general" checked={settings.alertGeneral} onChange={handleToggleChange('alert-general')} />
+                  <input type="checkbox" id="alert-general" checked={settings.alertGeneral} onChange={handleToggleChange('alertGeneral', 'alert-general')} />
                   <span className="slider round"></span>
                 </label>
               </div>
@@ -209,7 +214,7 @@ export default function Ajustes({ lang, setLang }) {
               <span className="setting-label">{t.alertsFav}</span>
               <div className="control-wrapper">
                 <label className="switch-toggle standard-switch">
-                  <input type="checkbox" id="alert-fav" checked={settings.alertFav} onChange={handleToggleChange('alert-fav')} />
+                  <input type="checkbox" id="alert-fav" checked={settings.alertFav} onChange={handleToggleChange('alertFav', 'alert-fav')} />
                   <span className="slider round"></span>
                 </label>
               </div>

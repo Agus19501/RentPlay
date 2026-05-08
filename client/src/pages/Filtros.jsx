@@ -14,6 +14,7 @@ const Filtros = ({ lang }) => {
   const [year, setYear] = useState({ min: 1970, max: 2026 });
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [selectedDeveloper, setSelectedDeveloper] = useState(null);
+  const [developerQuery, setDeveloperQuery] = useState('');
 
   const currentSearch = searchParams.get('search') || '';
 
@@ -24,6 +25,7 @@ const Filtros = ({ lang }) => {
       year: 'AÑO DE LANZAMIENTO',
       genre: 'GÉNERO',
       developer: 'DESARROLLADORES',
+      searchDeveloper: 'Buscar desarrollador...',
       all: 'Todos',
       apply: 'APLICAR FILTROS'
     },
@@ -33,6 +35,7 @@ const Filtros = ({ lang }) => {
       year: 'RELEASE YEAR',
       genre: 'GENRE',
       developer: 'DEVELOPERS',
+      searchDeveloper: 'Search developer...',
       all: 'All',
       apply: 'APPLY FILTERS'
     }
@@ -42,6 +45,7 @@ const Filtros = ({ lang }) => {
     year: 'AÑO DE LANZAMIENTO',
     genre: 'GÉNERO',
     developer: 'DESARROLLADORES',
+    searchDeveloper: 'Buscar desarrollador...',
     all: 'Todos',
     apply: 'APLICAR FILTROS'
   };
@@ -71,6 +75,12 @@ const Filtros = ({ lang }) => {
   const developers = useMemo(() => 
     Array.from(new Set(games.map((game) => game.developers).filter(Boolean))).sort()
   , [games]);
+
+  const filteredDevelopers = useMemo(() => {
+    const query = developerQuery.trim().toLowerCase();
+    if (!query) return developers;
+    return developers.filter((dev) => dev.toLowerCase().includes(query));
+  }, [developers, developerQuery]);
 
   const handleRange = (event, type, edge) => {
     const value = parseFloat(event.target.value);
@@ -154,8 +164,17 @@ const Filtros = ({ lang }) => {
                 <FaChevronDown className={`arrow ${openDropdown === 'developer' ? 'up' : ''}`} />
                 {openDropdown === 'developer' && (
                   <div className="options-panel">
+                    <div className="option-search-wrap" onClick={(event) => event.stopPropagation()}>
+                      <input
+                        type="text"
+                        className="option-search-input"
+                        placeholder={t.searchDeveloper}
+                        value={developerQuery}
+                        onChange={(event) => setDeveloperQuery(event.target.value)}
+                      />
+                    </div>
                     <div className="option" onClick={() => setSelectedDeveloper(null)}>{t.all}</div>
-                    {developers.map((dev) => (
+                    {filteredDevelopers.map((dev) => (
                       <div key={dev} className="option" onClick={() => setSelectedDeveloper(dev)}>{dev}</div>
                     ))}
                   </div>

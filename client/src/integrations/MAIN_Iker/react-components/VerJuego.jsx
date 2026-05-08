@@ -5,6 +5,7 @@ import '../assets/css/ver-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
 import { apiRequest } from '../../../api.js';
+import { notify } from '../../../utils/notify.js';
 
 export default function VerJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function VerJuego({ lang = 'ES' }) {
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [wishlistActive, setWishlistActive] = useState(false);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const timerRef = useRef(null);
 
   const texts = {
@@ -116,6 +118,51 @@ export default function VerJuego({ lang = 'ES' }) {
 
     return games.find((game) => String(game.id) === String(selectedGameId)) || games[0];
   }, [games, selectedGameId]);
+
+  const galleryMedia = useMemo(() => {
+    if (!selectedGame) return [];
+
+    const media = Array.isArray(selectedGame.media) ? selectedGame.media : [];
+    const normalizedMedia = media
+      .map((item) => {
+        if (!item) return null;
+        const type = item.type || (String(item.data || item).startsWith('data:video') ? 'video' : 'image');
+        const rawData = item.data || item.url || item;
+        if (!rawData) return null;
+        const src = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
+          ? String(rawData)
+          : `/${String(rawData)}`;
+        return { type, src };
+      })
+      .filter(Boolean);
+
+    if (normalizedMedia.length > 0) {
+      return normalizedMedia;
+    }
+
+    if (selectedGame.image) {
+      const src = selectedGame.image.startsWith('data:') || selectedGame.image.startsWith('/') || selectedGame.image.startsWith('http')
+        ? selectedGame.image
+        : `/${selectedGame.image}`;
+      return [{ type: 'image', src }];
+    }
+
+    return [{ type: 'image', src: cover1 }];
+  }, [selectedGame]);
+
+  useEffect(() => {
+    setCurrentMediaIndex(0);
+  }, [selectedGame?.id]);
+
+  const goToPreviousMedia = () => {
+    if (!galleryMedia.length) return;
+    setCurrentMediaIndex((prev) => (prev === 0 ? galleryMedia.length - 1 : prev - 1));
+  };
+
+  const goToNextMedia = () => {
+    if (!galleryMedia.length) return;
+    setCurrentMediaIndex((prev) => (prev === galleryMedia.length - 1 ? 0 : prev + 1));
+  };
 
   const isRented = useMemo(() => {
     // Comprobar si está alquilado específicamente por el usuario actual
@@ -231,14 +278,14 @@ export default function VerJuego({ lang = 'ES' }) {
       });
       
       if (response.ok) {
-        alert(t.rentalOk);
+        notify(t.rentalOk, 'success');
         setRentalModalOpen(false);
         navigate(`/mi-alquiler?id=${selectedGame.id}`);
       } else {
-        alert(response.message || t.rentalFail);
+        notify(response.message || t.rentalFail, 'error');
       }
     } catch (error) {
-      alert(error.message || t.rentalFail);
+      notify(error.message || t.rentalFail, 'error');
     }
   };
 
@@ -274,21 +321,21 @@ export default function VerJuego({ lang = 'ES' }) {
             <div className="product-gallery">
               <div className="main-image-container">
                 <div className="image-frame">
-                  {selectedGame.image ? (
-                    <img 
-                      src={selectedGame.image.startsWith('data:') ? selectedGame.image : `/${selectedGame.image}`} 
-                      alt={selectedGame.title} 
-                      className="main-image" 
-                      onError={(event) => { event.currentTarget.src = cover1; }} 
-                    />
+                  {galleryMedia[currentMediaIndex]?.type === 'video' ? (
+                    <video src={galleryMedia[currentMediaIndex].src} className="main-image" controls />
                   ) : (
-                    <img src={cover1} alt={selectedGame.title} className="main-image" />
+                    <img
+                      src={galleryMedia[currentMediaIndex]?.src || cover1}
+                      alt={selectedGame.title}
+                      className="main-image"
+                      onError={(event) => { event.currentTarget.src = cover1; }}
+                    />
                   )}
                 </div>
               </div>
               <div className="gallery-controls">
-                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>{t.prev}</span></button>
-                <button className="btn-nav-next" type="button"><span>{t.next}</span><FaChevronRight /></button>
+                <button className="btn-nav-prev" type="button" onClick={goToPreviousMedia}><FaChevronLeft /><span>{t.prev}</span></button>
+                <button className="btn-nav-next" type="button" onClick={goToNextMedia}><span>{t.next}</span><FaChevronRight /></button>
               </div>
             </div>
 

@@ -24,6 +24,7 @@ function normalizeGame(game) {
     releaseDate: game.releaseDate || null,
     genre: game.genre || null,
     developers: game.developers || null,
+    media: Array.isArray(game.media) ? game.media : [],
     uploadedBy: game.uploadedBy?.toString() || null,
     available: game.available !== false,
     createdAt: game.createdAt || null
@@ -211,7 +212,7 @@ router.post('/', authRequired, async (req, res) => {
 router.put('/:gameId', authRequired, async (req, res) => {
   try {
     const { gameId } = req.params;
-    const { title, releaseDate, genre, rentalDays, developers, price, image } = req.body;
+    const { title, releaseDate, genre, rentalDays, developers, price, image, media } = req.body;
 
     if (!ObjectId.isValid(gameId)) {
       return res.status(422).json({ ok: false, message: 'ID de juego inválido.' });
@@ -246,7 +247,8 @@ router.put('/:gameId', authRequired, async (req, res) => {
       rentalDays: Number(rentalDays) || game.rentalDays,
       developers: developers || game.developers,
       price: price || game.price,
-      image: image || game.image
+      image: image || game.image,
+      media: Array.isArray(media) ? media : (Array.isArray(game.media) ? game.media : [])
     };
 
     await games.updateOne({ _id: new ObjectId(gameId) }, { $set: updateDoc });

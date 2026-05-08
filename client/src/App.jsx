@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } fr
 import { apiRequest, clearSession, getSession, saveSession } from './api.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import ToastHost from './components/ToastHost.jsx';
 import Home from './pages/Home.jsx';
 import Filtros from './pages/Filtros.jsx';
 import Resultados from './pages/Resultados.jsx';
@@ -204,6 +205,7 @@ function App() {
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </main>
+      <ToastHost />
       {!isAuthRoute && <Footer lang={lang} />}
     </div>
   );

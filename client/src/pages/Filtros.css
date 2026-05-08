@@ -212,6 +212,29 @@
   z-index: 100;
 }
 
+.filtros-page .option-search-wrap {
+  position: sticky;
+  top: 0;
+  background: #222;
+  padding: calc(8 * var(--unit));
+  border-bottom: calc(1 * var(--unit)) solid #444;
+  z-index: 2;
+}
+
+.filtros-page .option-search-input {
+  width: 100%;
+  background: #111;
+  border: calc(1 * var(--unit)) solid #555;
+  color: #fff;
+  padding: calc(9 * var(--unit)) calc(10 * var(--unit));
+  font-size: calc(14 * var(--unit));
+  outline: none;
+}
+
+.filtros-page .option-search-input:focus {
+  border-color: #FF6100;
+}
+
 .filtros-page .option {
   padding: calc(12 * var(--unit));
   transition: 0.2s;

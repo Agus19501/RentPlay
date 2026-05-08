@@ -12,6 +12,7 @@ export default function MiAlquiler({ lang = 'ES' }) {
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const timerRef = useRef(null);
 
   const texts = {
@@ -32,7 +33,8 @@ export default function MiAlquiler({ lang = 'ES' }) {
       rented: 'ALQUILADO',
       owner: 'PROPIETARIO',
       noSeller: 'Sin vendedor',
-      rate: 'VALORAR'
+      rate: 'VALORAR',
+      noRatings: 'Sin valoraciones'
     },
     EN: {
       loading: 'Loading rentals...',
@@ -51,7 +53,8 @@ export default function MiAlquiler({ lang = 'ES' }) {
       rented: 'RENTED',
       owner: 'OWNER',
       noSeller: 'No seller',
-      rate: 'RATE'
+      rate: 'RATE',
+      noRatings: 'No ratings yet'
     }
   };
   const t = texts[lang] || texts.ES;
@@ -100,6 +103,51 @@ export default function MiAlquiler({ lang = 'ES' }) {
   }, [rentals, requestedGameId]);
 
   const rentalGame = useMemo(() => latestRental?.game || null, [latestRental]);
+
+  const galleryMedia = useMemo(() => {
+    if (!rentalGame) return [];
+
+    const media = Array.isArray(rentalGame.media) ? rentalGame.media : [];
+    const normalizedMedia = media
+      .map((item) => {
+        if (!item) return null;
+        const type = item.type || (String(item.data || item).startsWith('data:video') ? 'video' : 'image');
+        const rawData = item.data || item.url || item;
+        if (!rawData) return null;
+        const src = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
+          ? String(rawData)
+          : `/${String(rawData)}`;
+        return { type, src };
+      })
+      .filter(Boolean);
+
+    if (normalizedMedia.length > 0) {
+      return normalizedMedia;
+    }
+
+    if (rentalGame.image) {
+      const src = rentalGame.image.startsWith('data:') || rentalGame.image.startsWith('/') || rentalGame.image.startsWith('http')
+        ? rentalGame.image
+        : `/${rentalGame.image}`;
+      return [{ type: 'image', src }];
+    }
+
+    return [{ type: 'image', src: cover1 }];
+  }, [rentalGame]);
+
+  useEffect(() => {
+    setCurrentMediaIndex(0);
+  }, [rentalGame?.id]);
+
+  const goToPreviousMedia = () => {
+    if (!galleryMedia.length) return;
+    setCurrentMediaIndex((prev) => (prev === 0 ? galleryMedia.length - 1 : prev - 1));
+  };
+
+  const goToNextMedia = () => {
+    if (!galleryMedia.length) return;
+    setCurrentMediaIndex((prev) => (prev === galleryMedia.length - 1 ? 0 : prev + 1));
+  };
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -167,21 +215,21 @@ export default function MiAlquiler({ lang = 'ES' }) {
             <div className="product-gallery">
               <div className="main-image-container">
                 <div className="image-frame">
-                  {rentalGame.image ? (
-                    <img 
-                      src={rentalGame.image.startsWith('data:') ? rentalGame.image : `/${rentalGame.image}`} 
-                      alt={rentalGame.title} 
-                      className="main-image" 
-                      onError={(event) => { event.currentTarget.src = cover1; }} 
-                    />
+                  {galleryMedia[currentMediaIndex]?.type === 'video' ? (
+                    <video src={galleryMedia[currentMediaIndex].src} className="main-image" controls />
                   ) : (
-                    <img src={cover1} alt={rentalGame.title} className="main-image" />
+                    <img
+                      src={galleryMedia[currentMediaIndex]?.src || cover1}
+                      alt={rentalGame.title}
+                      className="main-image"
+                      onError={(event) => { event.currentTarget.src = cover1; }}
+                    />
                   )}
                 </div>
               </div>
               <div className="gallery-controls">
-                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>{t.prev}</span></button>
-                <button className="btn-nav-next" type="button"><span>{t.next}</span><FaChevronRight /></button>
+                <button className="btn-nav-prev" type="button" onClick={goToPreviousMedia}><FaChevronLeft /><span>{t.prev}</span></button>
+                <button className="btn-nav-next" type="button" onClick={goToNextMedia}><span>{t.next}</span><FaChevronRight /></button>
               </div>
             </div>
 
@@ -242,7 +290,7 @@ export default function MiAlquiler({ lang = 'ES' }) {
                       onClick={() => rentalGame.seller?.id && navigate(`/perfil-otro?id=${rentalGame.seller.id}`)}
                     />
                   ))}
-                  <span className="rating-value">{rentalGame.seller?.rating?.toFixed(1) || '0.0'}</span>
+                  <span className="rating-value">{Number(rentalGame.seller?.reviews || 0) > 0 ? Number(rentalGame.seller?.rating || 0).toFixed(1) : t.noRatings}</span>
                 </div>
                 <button className="btn-valorar" type="button" onClick={() => rentalGame.seller?.id && navigate(`/perfil-otro?id=${rentalGame.seller.id}`)}>
                   {t.rate}

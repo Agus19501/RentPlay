@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaUserCircle } from 'react-icons/fa';
 import { apiRequest, getSession } from '../api';
+import { notify } from '../utils/notify.js';
 import './PerfilOtro.css';
 
 const usuarioOtroFallback = {
@@ -66,7 +67,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
     }
 
     if (juegosOtro.length === 0) {
-      alert(t.noGamesToContact);
+      notify(t.noGamesToContact, 'info');
       return;
     }
 
@@ -86,7 +87,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
       }
     } catch (e) {
       console.error('Error al iniciar chat:', e);
-      alert(e.message || t.chatError);
+      notify(e.message || t.chatError, 'error');
     }
   }
 
@@ -126,7 +127,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
       });
       
       if (res.ok) {
-        alert(t.ratedOk);
+        notify(t.ratedOk, 'success');
         setUsuarioOtro(prev => ({
           ...prev,
           rating: res.rating,
@@ -138,9 +139,9 @@ export default function PerfilOtro({ lang = 'ES' }) {
       }
     } catch (error) {
       if (error.message.includes('Ya has valorado')) {
-        alert(t.alreadyRated);
+        notify(t.alreadyRated, 'info');
       } else {
-        alert(error.message || t.ratingError);
+        notify(error.message || t.ratingError, 'error');
       }
     }
   };

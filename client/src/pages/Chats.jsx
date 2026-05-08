@@ -100,6 +100,18 @@ export default function Chats({ lang }) {
     return conversations.find(c => c.id === activeChatId) || null;
   }, [conversations, activeChatId]);
 
+  const openActiveProfile = () => {
+    const userId = activeChat?.user?.id || activeChat?.userId || activeChat?.counterpartId;
+    if (!userId) return;
+    navigate(`/perfil-otro?id=${userId}`);
+  };
+
+  const openActiveGame = () => {
+    const gameId = activeChat?.game?.id || activeChat?.gameId;
+    if (!gameId) return;
+    navigate(`/ver-juego/${gameId}`);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeChatId || !session?.token) return;
@@ -158,7 +170,10 @@ export default function Chats({ lang }) {
               <header className="chat-header">
                 <div 
                   className="chat-header-user" 
-                  onClick={() => navigate(`/perfil_otro?id=${activeChat.user.id}`)}
+                  onClick={openActiveProfile}
+                  onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openActiveProfile()}
+                  role="button"
+                  tabIndex={0}
                   style={{ cursor: 'pointer' }}
                 >
                   <div className="user-avatar">
@@ -215,7 +230,7 @@ export default function Chats({ lang }) {
         {/* Columna Derecha: Info del Juego */}
         <aside className="chat-game-info">
           {activeChat && (
-            <div className="game-card-mini">
+            <div className="game-card-mini" onClick={openActiveGame} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openActiveGame()} role="button" tabIndex={0} style={{ cursor: activeChat?.game?.id || activeChat?.gameId ? 'pointer' : 'default' }}>
               <div className="game-card-image">
                 {activeChat.game?.image ? (
                   <img src={activeChat.game.image.startsWith('data:') ? activeChat.game.image : `/${activeChat.game.image}`} alt={activeChat.game.title} />

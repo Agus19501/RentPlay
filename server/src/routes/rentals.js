@@ -19,7 +19,9 @@ function normalizeGame(game) {
     rating: game.rating,
     platform: game.platform,
     image: game.image,
-    seller: game.seller || null
+    media: Array.isArray(game.media) ? game.media : [],
+    seller: game.seller || null,
+    uploadedBy: game.uploadedBy ? game.uploadedBy.toString() : null
   };
 }
 
@@ -35,8 +37,9 @@ router.get('/mine', authRequired, async (req, res) => {
       if (rawGame) {
         game = normalizeGame(rawGame);
         // Enriquecer con vendedor actual
-        if (game.uploadedBy && ObjectId.isValid(game.uploadedBy)) {
-          const seller = await users.findOne({ _id: new ObjectId(game.uploadedBy) });
+        const sellerId = game.uploadedBy || game.seller?.id || null;
+        if (sellerId && ObjectId.isValid(sellerId)) {
+          const seller = await users.findOne({ _id: new ObjectId(sellerId) });
           if (seller) {
             game.seller = {
               id: seller._id.toString(),

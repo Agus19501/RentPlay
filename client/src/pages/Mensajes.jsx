@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaPaperPlane, FaSearch, FaUserCircle, FaDotCircle, FaChevronRight } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
 import './Mensajes.css';
@@ -21,6 +22,7 @@ function formatDate(value, lang = 'ES') {
 }
 
 export default function Mensajes({ session, lang = 'ES' }) {
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [counterpart, setCounterpart] = useState(null);
@@ -251,6 +253,17 @@ export default function Mensajes({ session, lang = 'ES' }) {
     return <Navigate to="/login" replace />;
   }
 
+  const openCounterpartProfile = () => {
+    if (!selectedId) return;
+    navigate(`/perfil-otro?id=${selectedId}`);
+  };
+
+  const openRentalGame = () => {
+    const gameId = selectedRental?.game?.id || selectedRental?.gameId;
+    if (!gameId) return;
+    navigate(`/ver-juego/${gameId}`);
+  };
+
   return (
     <div className="messages-page container">
       <section className="messages-shell">
@@ -323,7 +336,7 @@ export default function Mensajes({ session, lang = 'ES' }) {
 
         <section className="messages-thread">
           <header className="thread-header">
-            <div>
+            <div onClick={openCounterpartProfile} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openCounterpartProfile()} role={selectedId ? 'button' : undefined} tabIndex={selectedId ? 0 : undefined} style={{ cursor: selectedId ? 'pointer' : 'default' }}>
               <p className="messages-eyebrow">{t.chat}</p>
               <h2>{counterpart?.name || t.selectConversation}</h2>
               <p>{counterpart?.email || t.sidebarHint}</p>
@@ -368,7 +381,7 @@ export default function Mensajes({ session, lang = 'ES' }) {
         </section>
 
         <aside className="messages-context">
-          <div className="context-card context-rental">
+          <div className="context-card context-rental" onClick={openRentalGame} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openRentalGame()} role={selectedRental?.game?.id || selectedRental?.gameId ? 'button' : undefined} tabIndex={selectedRental?.game?.id || selectedRental?.gameId ? 0 : undefined} style={{ cursor: selectedRental?.game?.id || selectedRental?.gameId ? 'pointer' : 'default' }}>
             <p className="messages-eyebrow">{t.context}</p>
             <h3>{t.activeRental}</h3>
             {selectedRental ? (

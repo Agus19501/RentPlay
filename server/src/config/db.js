@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 const databaseName = process.env.MONGODB_DB || 'rentplay';
 
+let client;
 let clientPromise;
 
 function getRootPath() {
@@ -14,22 +15,27 @@ function getRootPath() {
 
 export async function getDb() {
   if (!clientPromise) {
-    const client = new MongoClient(mongoUri, {
+    client = new MongoClient(mongoUri, {
+      maxPoolSize: 5,
+      minPoolSize: 1,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 10000,
-      retryWrites: false
+      socketTimeoutMS: 30000,
+      retryWrites: true,
     });
     clientPromise = client.connect().catch(error => {
       clientPromise = null;
+      client = null;
       throw new Error(`MongoDB connection error: ${error.message}`);
     });
   }
 
   try {
-    const client = await clientPromise;
+    await clientPromise;
     return client.db(databaseName);
   } catch (error) {
     clientPromise = null;
+    client = null;
     throw error;
   }
 }

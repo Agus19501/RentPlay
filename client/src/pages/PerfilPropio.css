@@ -11,7 +11,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: var(--color-dark-gray);
   border-radius: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .perfil-panel {
@@ -224,8 +224,8 @@
   gap: 1.5rem 1.7rem;
   align-content: start;
   padding-top: 0.2rem;
-  max-height: calc(100vh - 260px);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .juego-card {

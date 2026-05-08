@@ -4,15 +4,15 @@ import { apiRequest } from '../api.js';
 import './PerfilPropio.css';
 
 const tabs = [
-  { key: 'alquilados', label: 'Alquilados' },
-  { key: 'subidos', label: 'Subidos' },
-  { key: 'favoritos', label: 'Favoritos' }
+  { key: 'alquilados' },
+  { key: 'subidos' },
+  { key: 'favoritos' }
 ];
 
-function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, type, navigate }) {
+function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, type, navigate, t }) {
   if (isAddCard) {
     return (
-      <button type="button" className="juego-card juego-card-add" aria-label="Subir un juego" onClick={onAddClick}>
+      <button type="button" className="juego-card juego-card-add" aria-label={t.uploadGameAria} onClick={onAddClick}>
         <span className="add-icon">+</span>
       </button>
     );
@@ -28,8 +28,8 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
     const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
     
     if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h restantes`;
-    return 'Expirando pronto';
+    if (hours > 0) return `${hours}h ${t.remaining}`;
+    return t.expiringSoon;
   };
 
   return (
@@ -73,10 +73,10 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
             <button 
               className="overlay-btn overlay-btn-close" 
               type="button"
-              title="Borrar juego"
+              title={t.deleteGame}
               onClick={(e) => {
                 e.stopPropagation();
-                if (window.confirm('¿Estás seguro de que quieres borrar este juego por completo?')) {
+                if (window.confirm(t.deleteConfirm)) {
                   onDelete(juego.id);
                 }
               }}
@@ -86,7 +86,7 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
             <button 
               className="overlay-btn overlay-btn-more" 
               type="button"
-              title="Editar juego"
+              title={t.editGame}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(juego);
@@ -101,7 +101,7 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
   );
 }
 
-export default function PerfilPropio({ session }) {
+export default function PerfilPropio({ session, lang = 'ES' }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('alquilados');
   const [usuario, setUsuario] = useState(null);
@@ -117,6 +117,62 @@ export default function PerfilPropio({ session }) {
     correo: '',
     contrasena: ''
   });
+
+  const texts = {
+    ES: {
+      tabs: { alquilados: 'Alquilados', subidos: 'Subidos', favoritos: 'Favoritos' },
+      uploadGameAria: 'Subir un juego',
+      remaining: 'restantes',
+      expiringSoon: 'Expirando pronto',
+      deleteGame: 'Borrar juego',
+      deleteConfirm: '¿Estás seguro de que quieres borrar este juego por completo?',
+      editGame: 'Editar juego',
+      loading: 'Cargando...',
+      noData: 'No disponible',
+      name: 'Nombre',
+      birthDate: 'Fecha de nacimiento',
+      email: 'Correo',
+      password: 'Contraseña',
+      editData: 'EDITAR DATOS',
+      sectionsGames: 'Secciones de juegos',
+      editProfileData: 'Editar datos de perfil',
+      closeForm: 'Cerrar formulario',
+      cancel: 'Cancelar',
+      saveChanges: 'Guardar cambios',
+      updateImage: 'Actualizar imagen',
+      closeAvatarUpload: 'Cerrar carga de avatar',
+      selectImage: 'Selecciona una imagen',
+      file: 'Archivo',
+      uploadImage: 'Subir imagen'
+    },
+    EN: {
+      tabs: { alquilados: 'Rented', subidos: 'Uploaded', favoritos: 'Favorites' },
+      uploadGameAria: 'Upload a game',
+      remaining: 'left',
+      expiringSoon: 'Expiring soon',
+      deleteGame: 'Delete game',
+      deleteConfirm: 'Are you sure you want to fully delete this game?',
+      editGame: 'Edit game',
+      loading: 'Loading...',
+      noData: 'Not available',
+      name: 'Name',
+      birthDate: 'Birth date',
+      email: 'Email',
+      password: 'Password',
+      editData: 'EDIT DATA',
+      sectionsGames: 'Game sections',
+      editProfileData: 'Edit profile data',
+      closeForm: 'Close form',
+      cancel: 'Cancel',
+      saveChanges: 'Save changes',
+      updateImage: 'Update image',
+      closeAvatarUpload: 'Close avatar upload',
+      selectImage: 'Select an image',
+      file: 'File',
+      uploadImage: 'Upload image'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     async function cargarDatos() {
@@ -294,7 +350,7 @@ export default function PerfilPropio({ session }) {
   }
 
   if (!usuario) {
-    return <div className="perfil-page"><p>Cargando...</p></div>;
+    return <div className="perfil-page"><p>{t.loading}</p></div>;
   }
 
   return (
@@ -336,12 +392,12 @@ export default function PerfilPropio({ session }) {
           <div className="perfil-data-block">
             <div className="perfil-data-grid">
               <div className="perfil-field">
-                <span className="perfil-field-label">Nombre</span>
+                <span className="perfil-field-label">{t.name}</span>
                 <span className="perfil-field-value">{usuario.name}</span>
               </div>
               <div className="perfil-field">
-                <span className="perfil-field-label">Fecha de nacimiento</span>
-                <span className="perfil-field-value">{usuario.birthDate || 'No disponible'}</span>
+                <span className="perfil-field-label">{t.birthDate}</span>
+                <span className="perfil-field-value">{usuario.birthDate || t.noData}</span>
               </div>
             </div>
 
@@ -349,24 +405,24 @@ export default function PerfilPropio({ session }) {
 
             <div className="perfil-data-grid">
               <div className="perfil-field">
-                <span className="perfil-field-label">Correo</span>
+                <span className="perfil-field-label">{t.email}</span>
                 <span className="perfil-field-value">{usuario.email}</span>
               </div>
               <div className="perfil-field">
-                <span className="perfil-field-label">Contraseña</span>
+                <span className="perfil-field-label">{t.password}</span>
                 <span className="perfil-field-value">**********</span>
               </div>
             </div>
           </div>
 
           <button className="perfil-edit-button" type="button" onClick={abrirModalDatos}>
-            EDITAR DATOS
+            {t.editData}
             <span className="perfil-edit-icon">✎</span>
           </button>
         </aside>
 
         <section className="perfil-panel perfil-panel-right">
-          <div className="perfil-tabs" role="tablist" aria-label="Secciones de juegos">
+          <div className="perfil-tabs" role="tablist" aria-label={t.sectionsGames}>
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -376,7 +432,7 @@ export default function PerfilPropio({ session }) {
                 className={`perfil-tab ${activeTab === tab.key ? 'is-active' : ''}`}
                 onClick={() => setActiveTab(tab.key)}
               >
-                {tab.label}
+                {t.tabs[tab.key]}
               </button>
             ))}
           </div>
@@ -393,6 +449,7 @@ export default function PerfilPropio({ session }) {
                 onEdit={editarJuego}
                 type={item.type}
                 navigate={navigate}
+                t={t}
               />
             ))}
           </div>
@@ -409,12 +466,12 @@ export default function PerfilPropio({ session }) {
             onClick={(event) => event.stopPropagation()}
           >
             <header className="perfil-modal-header">
-              <h2 id="modal-datos-titulo">Editar datos de perfil</h2>
+              <h2 id="modal-datos-titulo">{t.editProfileData}</h2>
               <button
                 type="button"
                 className="perfil-modal-close"
                 onClick={() => setMostrarModalDatos(false)}
-                aria-label="Cerrar formulario"
+                aria-label={t.closeForm}
               >
                 ×
               </button>
@@ -422,7 +479,7 @@ export default function PerfilPropio({ session }) {
 
             <form className="perfil-modal-form" onSubmit={guardarDatos}>
               <label>
-                Nombre
+                {t.name}
                 <input
                   type="text"
                   value={formulario.nombre}
@@ -431,7 +488,7 @@ export default function PerfilPropio({ session }) {
                 />
               </label>
               <label>
-                Fecha de nacimiento
+                {t.birthDate}
                 <input
                   type="date"
                   value={formulario.fechaNacimiento}
@@ -439,7 +496,7 @@ export default function PerfilPropio({ session }) {
                 />
               </label>
               <label>
-                Correo
+                {t.email}
                 <input
                   type="email"
                   value={formulario.correo}
@@ -450,10 +507,10 @@ export default function PerfilPropio({ session }) {
 
               <div className="perfil-modal-actions">
                 <button type="button" className="perfil-modal-secondary" onClick={() => setMostrarModalDatos(false)}>
-                  Cancelar
+                  {t.cancel}
                 </button>
                 <button type="submit" className="perfil-modal-primary">
-                  Guardar cambios
+                  {t.saveChanges}
                 </button>
               </div>
             </form>
@@ -471,12 +528,12 @@ export default function PerfilPropio({ session }) {
             onClick={(event) => event.stopPropagation()}
           >
             <header className="perfil-modal-header">
-              <h2 id="modal-avatar-titulo">Actualizar imagen</h2>
+              <h2 id="modal-avatar-titulo">{t.updateImage}</h2>
               <button
                 type="button"
                 className="perfil-modal-close"
                 onClick={() => setMostrarModalAvatar(false)}
-                aria-label="Cerrar carga de avatar"
+                aria-label={t.closeAvatarUpload}
               >
                 ×
               </button>
@@ -484,7 +541,7 @@ export default function PerfilPropio({ session }) {
 
             <form className="perfil-modal-form" onSubmit={guardarAvatar}>
               <label>
-                Selecciona una imagen
+                {t.selectImage}
                 <input
                   type="file"
                   accept="image/*"
@@ -494,14 +551,14 @@ export default function PerfilPropio({ session }) {
                   }}
                 />
               </label>
-              {archivoAvatar && <p className="perfil-file-name">Archivo: {archivoAvatar}</p>}
+              {archivoAvatar && <p className="perfil-file-name">{t.file}: {archivoAvatar}</p>}
 
               <div className="perfil-modal-actions">
                 <button type="button" className="perfil-modal-secondary" onClick={() => setMostrarModalAvatar(false)}>
-                  Cancelar
+                  {t.cancel}
                 </button>
                 <button type="submit" className="perfil-modal-primary">
-                  Subir imagen
+                  {t.uploadImage}
                 </button>
               </div>
             </form>

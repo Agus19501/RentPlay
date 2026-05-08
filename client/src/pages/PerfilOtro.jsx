@@ -13,7 +13,7 @@ const usuarioOtroFallback = {
   avatar: null,
 };
 
-export default function PerfilOtro() {
+export default function PerfilOtro({ lang = 'ES' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [usuarioOtro, setUsuarioOtro] = useState(usuarioOtroFallback);
@@ -21,6 +21,42 @@ export default function PerfilOtro() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+
+  const texts = {
+    ES: {
+      noGamesToContact: 'Este usuario no tiene juegos disponibles para contactar.',
+      chatError: 'Error al iniciar el chat',
+      recently: 'Recientemente',
+      ratedOk: '¡Usuario valorado exitosamente!',
+      alreadyRated: 'Solo puedes valorar a un usuario una vez',
+      ratingError: 'Error al enviar la valoración',
+      rate: 'Valorar',
+      joinedOn: 'Se unió el',
+      contact: 'Contactar',
+      gamesForRent: 'JUEGOS PUESTOS EN ALQUILER',
+      uploadedGames: 'JUEGOS SUBIDOS',
+      rateTo: 'Valorar a',
+      accept: 'Aceptar',
+      cancel: 'Cancelar'
+    },
+    EN: {
+      noGamesToContact: 'This user has no available games to contact about.',
+      chatError: 'Error starting the chat',
+      recently: 'Recently',
+      ratedOk: 'User rated successfully!',
+      alreadyRated: 'You can only rate a user once',
+      ratingError: 'Error sending rating',
+      rate: 'Rate',
+      joinedOn: 'Joined on',
+      contact: 'Contact',
+      gamesForRent: 'GAMES LISTED FOR RENT',
+      uploadedGames: 'UPLOADED GAMES',
+      rateTo: 'Rate',
+      accept: 'Accept',
+      cancel: 'Cancel'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   async function handleContact() {
     const session = getSession();
@@ -30,7 +66,7 @@ export default function PerfilOtro() {
     }
 
     if (juegosOtro.length === 0) {
-      alert('Este usuario no tiene juegos disponibles para contactar.');
+      alert(t.noGamesToContact);
       return;
     }
 
@@ -50,7 +86,7 @@ export default function PerfilOtro() {
       }
     } catch (e) {
       console.error('Error al iniciar chat:', e);
-      alert(e.message || 'Error al iniciar el chat');
+      alert(e.message || t.chatError);
     }
   }
 
@@ -65,7 +101,7 @@ export default function PerfilOtro() {
           id: data.user.id,
           apodo: data.user.name,
           nombre: data.user.name,
-          fechaUnion: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString('es-ES') : 'Recientemente',
+          fechaUnion: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString(lang === 'EN' ? 'en-US' : 'es-ES') : t.recently,
           rating: data.user.rating || 0,
           reviews: data.user.reviews || 0,
           avatar: data.user.avatar || null
@@ -79,7 +115,7 @@ export default function PerfilOtro() {
 
   useEffect(() => {
     cargarOtro();
-  }, [searchParams]);
+  }, [searchParams, lang]);
 
   const handleRate = async () => {
     if (selectedRating === 0) return;
@@ -90,7 +126,7 @@ export default function PerfilOtro() {
       });
       
       if (res.ok) {
-        alert('¡Usuario valorado exitosamente!');
+        alert(t.ratedOk);
         setUsuarioOtro(prev => ({
           ...prev,
           rating: res.rating,
@@ -102,9 +138,9 @@ export default function PerfilOtro() {
       }
     } catch (error) {
       if (error.message.includes('Ya has valorado')) {
-        alert('Solo puedes valorar a un usuario una vez');
+        alert(t.alreadyRated);
       } else {
-        alert(error.message || 'Error al enviar la valoración');
+        alert(error.message || t.ratingError);
       }
     }
   };
@@ -137,18 +173,18 @@ export default function PerfilOtro() {
               <span className="otro-rating-value">{usuarioOtro.rating.toFixed(1)} ({usuarioOtro.reviews})</span>
             </div>
 
-            <button className="btn-valorar" type="button" onClick={() => setShowRatingModal(true)}>Valorar</button>
+            <button className="btn-valorar" type="button" onClick={() => setShowRatingModal(true)}>{t.rate}</button>
 
-            <div className="otro-joined">Se unió el {usuarioOtro.fechaUnion}</div>
+            <div className="otro-joined">{t.joinedOn} {usuarioOtro.fechaUnion}</div>
 
-            <button className="btn-contactar" type="button" onClick={handleContact}>Contactar</button>
+            <button className="btn-contactar" type="button" onClick={handleContact}>{t.contact}</button>
           </div>
         </aside>
 
         <section className="otro-right">
           <div className="otro-right-header">
-            <h3 className="otro-right-title">JUEGOS PUESTOS EN ALQUILER</h3>
-            <div className="otro-right-count">{juegosOtro.length} JUEGOS SUBIDOS</div>
+            <h3 className="otro-right-title">{t.gamesForRent}</h3>
+            <div className="otro-right-count">{juegosOtro.length} {t.uploadedGames}</div>
           </div>
           <div className="otro-right-body">
             <div className="perfil-games-grid">
@@ -174,7 +210,7 @@ export default function PerfilOtro() {
       {showRatingModal && (
         <div className="perfil-modal-backdrop" onClick={() => setShowRatingModal(false)}>
           <div className="perfil-modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '2rem' }}>
-            <h3>Valorar a {usuarioOtro.apodo}</h3>
+            <h3>{t.rateTo} {usuarioOtro.apodo}</h3>
             <div className="rating-stars-input">
               {[1, 2, 3, 4, 5].map((num) => (
                 <button
@@ -199,10 +235,10 @@ export default function PerfilOtro() {
                 onClick={handleRate}
                 disabled={selectedRating === 0}
               >
-                Aceptar
+                {t.accept}
               </button>
               <button className="perfil-modal-secondary" onClick={() => setShowRatingModal(false)}>
-                Cancelar
+                {t.cancel}
               </button>
             </div>
           </div>

@@ -18,6 +18,26 @@ export default function Chats({ lang }) {
   const session = getSession();
   const currentUserId = session?.userId || session?.user?.id || session?.sub;
 
+  const texts = {
+    ES: {
+      loadingChats: 'Cargando chats...',
+      writeMessage: 'Escribe un mensaje...',
+      selectConversation: 'Selecciona una conversación para empezar',
+      rental: 'Alquiler',
+      days: 'días',
+      price: 'Precio'
+    },
+    EN: {
+      loadingChats: 'Loading chats...',
+      writeMessage: 'Write a message...',
+      selectConversation: 'Select a conversation to start',
+      rental: 'Rental',
+      days: 'days',
+      price: 'Price'
+    }
+  };
+  const t = texts[lang] || texts.ES;
+
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -106,7 +126,7 @@ export default function Chats({ lang }) {
     }
   };
 
-  if (loading) return <div className="chats-container loading">Cargando chats...</div>;
+  if (loading) return <div className="chats-container loading">{t.loadingChats}</div>;
 
   return (
     <div className="chats-page">
@@ -177,7 +197,7 @@ export default function Chats({ lang }) {
                 <div className="input-wrapper">
                   <input 
                     type="text" 
-                    placeholder="Escribe un mensaje..."
+                    placeholder={t.writeMessage}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                   />
@@ -188,7 +208,7 @@ export default function Chats({ lang }) {
               </form>
             </>
           ) : (
-            <div className="no-chat-selected">Selecciona una conversación para empezar</div>
+            <div className="no-chat-selected">{t.selectConversation}</div>
           )}
         </main>
 
@@ -206,11 +226,11 @@ export default function Chats({ lang }) {
               <h3 className="game-card-title">{activeChat.game?.title}</h3>
               <div className="game-card-details">
                 <div className="game-detail-row">
-                  <span className="label">Alquiler</span>
-                  <span className="value highlight">{activeChat.game?.rentalDays} días</span>
+                  <span className="label">{t.rental}</span>
+                  <span className="value highlight">{activeChat.game?.rentalDays} {t.days}</span>
                 </div>
                 <div className="game-detail-row">
-                  <span className="label">Precio</span>
+                  <span className="label">{t.price}</span>
                   <span className="value highlight">{typeof activeChat.game?.price === 'number' ? activeChat.game.price.toFixed(2) : activeChat.game?.price} €</span>
                 </div>
               </div>

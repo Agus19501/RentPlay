@@ -17,7 +17,7 @@ const INITIAL_FORM = {
 
 const RAWG_API_KEY = '2fd7395ed6044fd8aa568558be497b46';
 
-export default function SubirJuego() {
+export default function SubirJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const editGame = location.state?.editGame;
@@ -29,6 +29,80 @@ export default function SubirJuego() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  const texts = {
+    ES: {
+      editSale: 'EDITAR VENTA',
+      putRent: 'PONER UN JUEGO EN ALQUILER',
+      editDesc: 'Actualiza los datos de tu videojuego.',
+      uploadDesc: 'Introduce los datos del videojuego que quieras subir a rentplay.',
+      hint: 'Si lo conocemos, completaremos los datos por ti ;)',
+      title: 'TÍTULO DEL JUEGO',
+      releaseDate: 'AÑO DE LANZAMIENTO',
+      genre: 'GÉNERO',
+      duration: 'DURACIÓN DE ALQUILER',
+      devs: 'DESARROLLADORES',
+      price: 'PRECIO',
+      loading: 'Cargando...',
+      publish: 'PUBLICAR',
+      update: 'GUARDAR CAMBIOS',
+      updateBtn: 'ACTUALIZAR',
+      prev: 'ANTERIOR',
+      next: 'SIGUIENTE',
+      dateLaunch: 'FECHA DE LANZAMIENTO',
+      dateTitle: 'Selecciona la fecha por día, mes y año',
+      uploadCoverAria: 'Haz clic para subir la portada del juego',
+      changeCover: 'Cambiar portada',
+      changeCoverAria: 'Cambiar foto de portada',
+      imagePreview: 'Vista previa',
+      secondaryCover: 'portada secundaria',
+      mainCover: 'portada principal',
+      mediaSelectorAria: 'Selector de archivo de imagen y video',
+      removeFile: 'Eliminar archivo',
+      requiredMsg: 'Por favor, indica título, precio y fecha.',
+      needLogin: 'Debes iniciar sesión para publicar/editar un juego.',
+      updated: '¡Juego actualizado con éxito!',
+      published: '¡Juego publicado correctamente!',
+      saveError: 'Error al guardar el juego',
+      saveErrorPrefix: 'Error al guardar:'
+    },
+    EN: {
+      editSale: 'EDIT LISTING',
+      putRent: 'LIST A GAME FOR RENT',
+      editDesc: 'Update your game information.',
+      uploadDesc: 'Enter the game information you want to upload to rentplay.',
+      hint: 'If we know it, we will complete the data for you ;)',
+      title: 'GAME TITLE',
+      releaseDate: 'RELEASE YEAR',
+      genre: 'GENRE',
+      duration: 'RENTAL DURATION',
+      devs: 'DEVELOPERS',
+      price: 'PRICE',
+      loading: 'Loading...',
+      publish: 'PUBLISH',
+      update: 'SAVE CHANGES',
+      updateBtn: 'UPDATE',
+      prev: 'PREVIOUS',
+      next: 'NEXT',
+      dateLaunch: 'RELEASE DATE',
+      dateTitle: 'Select the date by day, month and year',
+      uploadCoverAria: 'Click to upload game cover',
+      changeCover: 'Change cover',
+      changeCoverAria: 'Change cover photo',
+      imagePreview: 'Preview',
+      secondaryCover: 'secondary cover',
+      mainCover: 'main cover',
+      mediaSelectorAria: 'Image and video file selector',
+      removeFile: 'Remove file',
+      requiredMsg: 'Please provide title, price and date.',
+      needLogin: 'You must log in to publish/edit a game.',
+      updated: 'Game updated successfully!',
+      published: 'Game published successfully!',
+      saveError: 'Error while saving the game',
+      saveErrorPrefix: 'Save error:'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     if (editGame) {
@@ -222,7 +296,7 @@ export default function SubirJuego() {
     event.preventDefault();
 
     if (!formData.title.trim() || !formData.price || !dateValue) {
-      alert('Por favor, indica título, precio y fecha.');
+      alert(t.requiredMsg);
       return;
     }
 
@@ -240,7 +314,7 @@ export default function SubirJuego() {
     try {
       const session = await getSession();
       if (!session) {
-        alert('Debes iniciar sesión para publicar/editar un juego.');
+        alert(t.needLogin);
         return;
       }
 
@@ -254,13 +328,13 @@ export default function SubirJuego() {
       });
 
       if (response.ok) {
-        alert(editGame ? '¡Juego actualizado con éxito!' : '¡Juego publicado correctamente!');
+        alert(editGame ? t.updated : t.published);
         navigate('/perfil-propio');
       } else {
-        alert(response.message || 'Error al guardar el juego');
+        alert(response.message || t.saveError);
       }
     } catch (error) {
-      alert(`Error al guardar: ${error.message}`);
+      alert(`${t.saveErrorPrefix} ${error.message}`);
     }
   };
 
@@ -270,13 +344,13 @@ export default function SubirJuego() {
         <div className="upload-content">
           <div className="upload-form-section">
             <div className="upload-header">
-              <h1 className="upload-title">{editGame ? 'EDITAR VENTA' : 'PONER UN JUEGO EN ALQUILER'}</h1>
+              <h1 className="upload-title">{editGame ? t.editSale : t.putRent}</h1>
               <p className="upload-subtitle">
                 {editGame 
-                  ? 'Actualiza los datos de tu videojuego.' 
-                  : 'Introduce los datos del videojuego que quieras subir a rentplay.'}
+                  ? t.editDesc 
+                  : t.uploadDesc}
               </p>
-              <p className="upload-hint">Si lo conocemos, completaremos los datos por ti ;)</p>
+              <p className="upload-hint">{t.hint}</p>
             </div>
 
             <form className="upload-form" id="upload-game-form" onSubmit={handlePublish} autoComplete="off">
@@ -284,7 +358,7 @@ export default function SubirJuego() {
                 <input 
                   type="text" 
                   name="title" 
-                  placeholder="TÍTULO DEL JUEGO" 
+                  placeholder={t.title} 
                   className="upload-input" 
                   autoComplete="off"
                   value={formData.title} 
@@ -294,7 +368,7 @@ export default function SubirJuego() {
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="suggestions-dropdown">
                     {isLoadingSuggestions ? (
-                      <div className="suggestion-item loading">Cargando...</div>
+                      <div className="suggestion-item loading">{t.loading}</div>
                     ) : (
                       suggestions.map((game) => (
                         <div
@@ -325,21 +399,21 @@ export default function SubirJuego() {
                   </div>
                 )}
               </div>
-              <input type="text" name="releaseDate" placeholder="FECHA DE LANZAMIENTO" className="upload-input date-picker-input" title="Selecciona la fecha por día, mes y año" value={dateValue} onChange={handleDateChange} />
-              <input type="text" name="genre" placeholder="GÉNERO" className="upload-input" value={formData.genre} onChange={handleInputChange} />
-              <input type="text" name="duration" placeholder="DURACIÓN DE ALQUILER" className="upload-input" value={formData.duration} onChange={handleInputChange} />
-              <input type="text" name="developers" placeholder="DESARROLLADORES" className="upload-input" value={formData.developers} onChange={handleInputChange} />
-              <input type="text" name="price" placeholder="PRECIO" className="upload-input" value={formData.price} onChange={handleInputChange} required />
+              <input type="text" name="releaseDate" placeholder={t.dateLaunch} className="upload-input date-picker-input" title={t.dateTitle} value={dateValue} onChange={handleDateChange} />
+              <input type="text" name="genre" placeholder={t.genre} className="upload-input" value={formData.genre} onChange={handleInputChange} />
+              <input type="text" name="duration" placeholder={t.duration} className="upload-input" value={formData.duration} onChange={handleInputChange} />
+              <input type="text" name="developers" placeholder={t.devs} className="upload-input" value={formData.developers} onChange={handleInputChange} />
+              <input type="text" name="price" placeholder={t.price} className="upload-input" value={formData.price} onChange={handleInputChange} required />
             </form>
 
               <button className="btn-publicar" id="btn-publish-game" type="button" onClick={handlePublish}>
-                {editGame ? 'ACTUALIZAR' : 'PUBLICAR'}
+                {editGame ? t.updateBtn : t.publish}
               </button>
           </div>
 
           <div className="upload-image-section">
-            <div className="upload-image-wrapper" id="upload-image-wrapper" tabIndex={0} aria-label="Haz clic para subir la portada del juego" role="button" onClick={openFilePicker} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openFilePicker()}>
-              <button className="btn-edit-image" title="Cambiar portada" id="btn-upload-image" aria-label="Cambiar foto de portada" type="button" onClick={(event) => { event.stopPropagation(); openFilePicker(); }}>
+            <div className="upload-image-wrapper" id="upload-image-wrapper" tabIndex={0} aria-label={t.uploadCoverAria} role="button" onClick={openFilePicker} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openFilePicker()}>
+              <button className="btn-edit-image" title={t.changeCover} id="btn-upload-image" aria-label={t.changeCoverAria} type="button" onClick={(event) => { event.stopPropagation(); openFilePicker(); }}>
                 <FaPencilAlt />
               </button>
 
@@ -347,7 +421,7 @@ export default function SubirJuego() {
                 {mediaFiles.length > 0 ? (
                   <>
                     {mediaFiles[currentMediaIndex]?.type === 'image' ? (
-                      <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview" id="preview-img" crossOrigin="anonymous" />
+                      <img src={mediaFiles[currentMediaIndex].data} alt={t.imagePreview} className="upload-image-preview" id="preview-img" crossOrigin="anonymous" />
                     ) : (
                       <video src={mediaFiles[currentMediaIndex].data} controls className="upload-image-preview" id="preview-video" />
                     )}
@@ -355,12 +429,12 @@ export default function SubirJuego() {
                   </>
                 ) : (
                   <div className="cover-stack" id="upload-placeholder">
-                    <img src={cover2} alt="portada secundaria" className="cover-stack-back" />
-                    <img src={cover1} alt="portada principal" className="cover-stack-front" />
+                    <img src={cover2} alt={t.secondaryCover} className="cover-stack-back" />
+                    <img src={cover1} alt={t.mainCover} className="cover-stack-front" />
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" id="file-upload" className="hidden" hidden accept="image/*,video/*" multiple aria-label="Selector de archivo de imagen y video" onChange={handleFileChange} />
+              <input ref={fileInputRef} type="file" id="file-upload" className="hidden" hidden accept="image/*,video/*" multiple aria-label={t.mediaSelectorAria} onChange={handleFileChange} />
             </div>
 
             {mediaFiles.length > 0 && (
@@ -385,7 +459,7 @@ export default function SubirJuego() {
                         removeMedia(media.id);
                       }}
                       type="button"
-                      title="Eliminar archivo"
+                      title={t.removeFile}
                     >
                       ✕
                     </button>
@@ -395,8 +469,8 @@ export default function SubirJuego() {
             )}
 
             <div className="upload-image-nav">
-              <button className="upload-nav-btn" type="button" onClick={goToPreviousMedia}><div className="nav-icon-circle"><FaChevronLeft /></div><span>ANTERIOR</span></button>
-              <button className="upload-nav-btn" type="button" onClick={goToNextMedia}><div className="nav-icon-circle"><FaChevronRight /></div><span>SIGUIENTE</span></button>
+              <button className="upload-nav-btn" type="button" onClick={goToPreviousMedia}><div className="nav-icon-circle"><FaChevronLeft /></div><span>{t.prev}</span></button>
+              <button className="upload-nav-btn" type="button" onClick={goToNextMedia}><div className="nav-icon-circle"><FaChevronRight /></div><span>{t.next}</span></button>
             </div>
           </div>
         </div>

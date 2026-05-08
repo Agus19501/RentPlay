@@ -6,7 +6,7 @@ import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
 import { apiRequest } from '../../../api.js';
 
-export default function VerJuego() {
+export default function VerJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
   const { gameId: paramGameId } = useParams();
   const [searchParams] = useSearchParams();
@@ -18,6 +18,64 @@ export default function VerJuego() {
   const [wishlistActive, setWishlistActive] = useState(false);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
   const timerRef = useRef(null);
+
+  const texts = {
+    ES: {
+      loading: 'Cargando juego...',
+      notFound: 'No se ha encontrado ningún juego en el catálogo.',
+      home: 'Inicio',
+      prev: 'ANTERIOR',
+      next: 'SIGUIENTE',
+      gameDesc: 'Descripción del videojuego',
+      noDesc: 'Sin descripción disponible.',
+      genre: 'Género',
+      devs: 'Desarrolladores',
+      rentalDuration: 'DURACIÓN ALQUILER',
+      noData: 'SIN DATOS',
+      timeRemaining: 'TIEMPO RESTANTE',
+      price: 'PRECIO',
+      notAvailable: 'NO DISPONIBLE',
+      rented: 'ALQUILADO',
+      unavailableRented: 'NO DISPONIBLE (YA ALQUILADO)',
+      rentNow: '¡ALQUILAR YA!',
+      owner: 'PROPIETARIO',
+      noSeller: 'Sin vendedor',
+      rate: 'VALORAR',
+      rentalOk: '¡Juego alquilado correctamente!',
+      rentalFail: 'No se ha podido crear el alquiler.',
+      paymentMethods: 'MÉTODOS DE PAGO',
+      creditCard: 'Tarjeta Crédito',
+      rent: 'ALQUILAR'
+    },
+    EN: {
+      loading: 'Loading game...',
+      notFound: 'No game was found in the catalog.',
+      home: 'Home',
+      prev: 'PREVIOUS',
+      next: 'NEXT',
+      gameDesc: 'Game description',
+      noDesc: 'No description available.',
+      genre: 'Genre',
+      devs: 'Developers',
+      rentalDuration: 'RENTAL DURATION',
+      noData: 'NO DATA',
+      timeRemaining: 'TIME LEFT',
+      price: 'PRICE',
+      notAvailable: 'NOT AVAILABLE',
+      rented: 'RENTED',
+      unavailableRented: 'NOT AVAILABLE (ALREADY RENTED)',
+      rentNow: 'RENT NOW!',
+      owner: 'OWNER',
+      noSeller: 'No seller',
+      rate: 'RATE',
+      rentalOk: 'Game rented successfully!',
+      rentalFail: 'Rental could not be created.',
+      paymentMethods: 'PAYMENT METHODS',
+      creditCard: 'Credit Card',
+      rent: 'RENT'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     let active = true;
@@ -173,14 +231,14 @@ export default function VerJuego() {
       });
       
       if (response.ok) {
-        alert('¡Juego alquilado correctamente!');
+        alert(t.rentalOk);
         setRentalModalOpen(false);
         navigate(`/mi-alquiler?id=${selectedGame.id}`);
       } else {
-        alert(response.message || 'No se ha podido crear el alquiler.');
+        alert(response.message || t.rentalFail);
       }
     } catch (error) {
-      alert(error.message || 'No se ha podido crear el alquiler.');
+      alert(error.message || t.rentalFail);
     }
   };
 
@@ -188,7 +246,7 @@ export default function VerJuego() {
     return (
       <div className="main-content">
         <div className="container">
-          <p>Cargando juego...</p>
+          <p>{t.loading}</p>
         </div>
       </div>
     );
@@ -198,7 +256,7 @@ export default function VerJuego() {
     return (
       <div className="main-content">
         <div className="container">
-          <p>No se ha encontrado ningún juego en el catálogo.</p>
+          <p>{t.notFound}</p>
         </div>
       </div>
     );
@@ -208,7 +266,7 @@ export default function VerJuego() {
     <div className="main-content">
       <div className="container">
         <div className="breadcrumb">
-          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>Inicio</button> / <span>{selectedGame.title}</span>
+          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>{t.home}</button> / <span>{selectedGame.title}</span>
         </div>
 
         <section className="product-section">
@@ -229,8 +287,8 @@ export default function VerJuego() {
                 </div>
               </div>
               <div className="gallery-controls">
-                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>ANTERIOR</span></button>
-                <button className="btn-nav-next" type="button"><span>SIGUIENTE</span><FaChevronRight /></button>
+                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>{t.prev}</span></button>
+                <button className="btn-nav-next" type="button"><span>{t.next}</span><FaChevronRight /></button>
               </div>
             </div>
 
@@ -243,25 +301,25 @@ export default function VerJuego() {
               </div>
 
               <div className="description-section">
-                <h2 className="section-title">Descripción del videojuego</h2>
-                <p className="description-text">{selectedGame.description || 'Sin descripción disponible.'}</p>
-                <p className="description-text">{selectedGame.genre ? `Género: ${selectedGame.genre}.` : ''} {selectedGame.developers ? `Desarrolladores: ${selectedGame.developers}.` : ''}</p>
+                <h2 className="section-title">{t.gameDesc}</h2>
+                <p className="description-text">{selectedGame.description || t.noDesc}</p>
+                <p className="description-text">{selectedGame.genre ? `${t.genre}: ${selectedGame.genre}.` : ''} {selectedGame.developers ? `${t.devs}: ${selectedGame.developers}.` : ''}</p>
               </div>
 
               <div className="rental-details">
                 <div className="detail-item">
-                  <span className="detail-label">DURACIÓN ALQUILER</span>
-                  <span className="detail-value">{selectedGame.rentalDays ? `${selectedGame.rentalDays} DÍAS` : 'SIN DATOS'}</span>
+                  <span className="detail-label">{t.rentalDuration}</span>
+                  <span className="detail-value">{selectedGame.rentalDays ? `${selectedGame.rentalDays} ${lang === 'EN' ? 'DAYS' : 'DÍAS'}` : t.noData}</span>
                 </div>
                 {isRented.isRentedByMe ? (
                   <div className="detail-item">
-                    <span className="detail-label">TIEMPO RESTANTE</span>
+                    <span className="detail-label">{t.timeRemaining}</span>
                     <span className="detail-value countdown">{localTimeRemaining}</span>
                   </div>
                 ) : (
                   <div className="detail-item">
-                    <span className="detail-label">PRECIO</span>
-                    <span className="detail-value price">{selectedGame.price ? `${selectedGame.price} €` : 'NO DISPONIBLE'}</span>
+                    <span className="detail-label">{t.price}</span>
+                    <span className="detail-value price">{selectedGame.price ? `${selectedGame.price} €` : t.notAvailable}</span>
                   </div>
                 )}
               </div>
@@ -269,20 +327,20 @@ export default function VerJuego() {
               {isRented.isRentedByMe ? (
                 <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--orange)', fontWeight: '800', fontSize: '20px' }}>
                   <FaCheckCircle style={{ fontSize: '26px' }} />
-                  <span>ALQUILADO</span>
+                  <span>{t.rented}</span>
                 </div>
               ) : isRented.isRentedByAnyone ? (
                 <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#ff4444', fontWeight: '800', fontSize: '20px' }}>
                   <FaTimes style={{ fontSize: '26px' }} />
-                  <span>NO DISPONIBLE (YA ALQUILADO)</span>
+                  <span>{t.unavailableRented}</span>
                 </div>
               ) : (
-                <button className="btn-rent" type="button" onClick={() => setRentalModalOpen(true)}>¡ALQUILAR YA!</button>
+                <button className="btn-rent" type="button" onClick={() => setRentalModalOpen(true)}>{t.rentNow}</button>
               )}
             </div>
 
             <div className="seller-section">
-              <h3 className="section-title">PROPIETARIO</h3>
+              <h3 className="section-title">{t.owner}</h3>
               <div className="seller-card">
                 <div 
                   className="seller-avatar-placeholder" 
@@ -298,7 +356,7 @@ export default function VerJuego() {
                     <img src={avatar} alt="avatar" />
                   )}
                 </div>
-                <h4 className="seller-name">{selectedGame.seller?.name || 'Sin vendedor'}</h4>
+                <h4 className="seller-name">{selectedGame.seller?.name || t.noSeller}</h4>
                 <div className="seller-rating">
                   {[1, 2, 3, 4, 5].map((num) => (
                     <FaStar 
@@ -313,7 +371,7 @@ export default function VerJuego() {
                   <span className="rating-value">{selectedGame.seller?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
                 <button className="btn-valorar" type="button" onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}>
-                  VALORAR
+                  {t.rate}
                 </button>
               </div>
             </div>
@@ -349,7 +407,7 @@ export default function VerJuego() {
           <div className="modal active" id="modal-rental" onClick={e => e.stopPropagation()}>
             <div className="modal-content modal-rental-content">
               <button className="modal-close" type="button" onClick={() => setRentalModalOpen(false)}><FaTimes /></button>
-              <h2 className="modal-title">MÉTODOS DE PAGO</h2>
+              <h2 className="modal-title">{t.paymentMethods}</h2>
               <div className="payment-methods">
                 <label className={`payment-option ${paymentMethod === 'paypal' ? 'active' : ''}`}>
                   <input type="radio" name="payment" value="paypal" checked={paymentMethod === 'paypal'} onChange={(event) => setPaymentMethod(event.target.value)} />
@@ -360,7 +418,7 @@ export default function VerJuego() {
                 <label className={`payment-option ${paymentMethod === 'credit-card' ? 'active' : ''}`}>
                   <input type="radio" name="payment" value="credit-card" checked={paymentMethod === 'credit-card'} onChange={(event) => setPaymentMethod(event.target.value)} />
                   <div className="payment-icon"><i className="fas fa-credit-card"></i></div>
-                  <span className="payment-name">Tarjeta Crédito</span>
+                  <span className="payment-name">{t.creditCard}</span>
                   <div className="payment-dot"></div>
                 </label>
                 <label className={`payment-option ${paymentMethod === 'applepay' ? 'active' : ''}`}>
@@ -370,7 +428,7 @@ export default function VerJuego() {
                   <div className="payment-dot"></div>
                 </label>
               </div>
-              <button className="btn-rent modal-btn-rent" type="button" onClick={handleConfirmRental}>ALQUILAR</button>
+              <button className="btn-rent modal-btn-rent" type="button" onClick={handleConfirmRental}>{t.rent}</button>
             </div>
           </div>
         </div>

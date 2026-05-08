@@ -4,23 +4,23 @@ import { FaPaperPlane, FaSearch, FaUserCircle, FaDotCircle, FaChevronRight } fro
 import { apiRequest } from '../api.js';
 import './Mensajes.css';
 
-function formatTime(value) {
+function formatTime(value, lang = 'ES') {
   if (!value) {
     return '';
   }
 
-  return new Date(value).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return new Date(value).toLocaleTimeString(lang === 'EN' ? 'en-US' : 'es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatDate(value) {
+function formatDate(value, lang = 'ES') {
   if (!value) {
     return '';
   }
 
-  return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+  return new Date(value).toLocaleDateString(lang === 'EN' ? 'en-US' : 'es-ES', { day: '2-digit', month: 'short' });
 }
 
-export default function Mensajes({ session }) {
+export default function Mensajes({ session, lang = 'ES' }) {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [counterpart, setCounterpart] = useState(null);
@@ -33,6 +33,76 @@ export default function Mensajes({ session }) {
   const [searchBusy, setSearchBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [selectedRental, setSelectedRental] = useState(null);
+
+  const texts = {
+    ES: {
+      loginToView: 'Inicia sesión para ver tus mensajes.',
+      brand: 'Mensajes',
+      inbox: 'Tu bandeja',
+      startChatHint: 'Selecciona una conversación para empezar a chatear.',
+      searchPlaceholder: 'Buscar usuario por nombre o email',
+      loadingConversations: 'Cargando conversaciones...',
+      userFallback: 'Usuario',
+      noMessages: 'Sin mensajes',
+      results: 'Resultados',
+      noConversations: 'No tienes conversaciones todavía.',
+      searchUserHint: 'Busca un usuario para iniciar un chat real.',
+      searchingUsers: 'Buscando usuarios...',
+      chat: 'Chat',
+      selectConversation: 'Selecciona una conversación',
+      sidebarHint: 'Usa la barra lateral para abrir o crear un chat.',
+      loadingChat: 'Cargando chat...',
+      emptyConversation: 'Sin mensajes en esta conversación.',
+      writeFirstMessage: 'Escribe el primer mensaje para arrancar el hilo.',
+      writeMessage: 'Escribe un mensaje...',
+      selectUserToReply: 'Selecciona un usuario para responder',
+      context: 'Contexto',
+      activeRental: 'Alquiler activo',
+      gameFallback: 'Juego',
+      price: 'Precio',
+      noPrice: 'Precio no disponible',
+      durationUnavailable: 'Duración no disponible',
+      noActiveRental: 'No hay alquiler activo.',
+      notes: 'Notas',
+      chatStatus: 'Estado del chat',
+      chatStatusHint: 'Mantén conversaciones con otros usuarios sobre alquileres.',
+      sent: 'Mensaje enviado'
+    },
+    EN: {
+      loginToView: 'Log in to view your messages.',
+      brand: 'Messages',
+      inbox: 'Your inbox',
+      startChatHint: 'Select a conversation to start chatting.',
+      searchPlaceholder: 'Search user by name or email',
+      loadingConversations: 'Loading conversations...',
+      userFallback: 'User',
+      noMessages: 'No messages',
+      results: 'Results',
+      noConversations: 'You have no conversations yet.',
+      searchUserHint: 'Search a user to start a real chat.',
+      searchingUsers: 'Searching users...',
+      chat: 'Chat',
+      selectConversation: 'Select a conversation',
+      sidebarHint: 'Use the sidebar to open or create a chat.',
+      loadingChat: 'Loading chat...',
+      emptyConversation: 'No messages in this conversation.',
+      writeFirstMessage: 'Write the first message to start the thread.',
+      writeMessage: 'Write a message...',
+      selectUserToReply: 'Select a user to reply',
+      context: 'Context',
+      activeRental: 'Active rental',
+      gameFallback: 'Game',
+      price: 'Price',
+      noPrice: 'Price unavailable',
+      durationUnavailable: 'Duration unavailable',
+      noActiveRental: 'No active rental.',
+      notes: 'Notes',
+      chatStatus: 'Chat status',
+      chatStatusHint: 'Keep conversations with other users about rentals.',
+      sent: 'Message sent'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     if (!session?.token) {
@@ -164,7 +234,7 @@ export default function Mensajes({ session }) {
       });
 
       setDraft('');
-      setStatus(response.message || 'Mensaje enviado');
+      setStatus(response.message || t.sent);
 
       const refreshedThread = await apiRequest(`/api/messages/${selectedId}`, { token: session.token });
       setCounterpart(refreshedThread.counterpart || counterpart);
@@ -186,9 +256,9 @@ export default function Mensajes({ session }) {
       <section className="messages-shell">
         <aside className="messages-sidebar">
           <div className="messages-brand">
-            <p className="messages-eyebrow">Mensajes</p>
-            <h1>Tu bandeja</h1>
-            <p>Selecciona una conversación para empezar a chatear.</p>
+            <p className="messages-eyebrow">{t.brand}</p>
+            <h1>{t.inbox}</h1>
+            <p>{t.startChatHint}</p>
           </div>
 
           <label className="messages-search">
@@ -197,12 +267,12 @@ export default function Mensajes({ session }) {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar usuario por nombre o email"
+              placeholder={t.searchPlaceholder}
             />
           </label>
 
           <div className="messages-list" role="list">
-            {inboxLoading && <p className="messages-muted">Cargando conversaciones...</p>}
+            {inboxLoading && <p className="messages-muted">{t.loadingConversations}</p>}
 
             {!inboxLoading && conversations.map((conversation) => (
               <button
@@ -213,11 +283,11 @@ export default function Mensajes({ session }) {
               >
                 <span className="conversation-avatar"><FaUserCircle /></span>
                 <span className="conversation-copy">
-                  <strong>{conversation.counterpart?.name || 'Usuario'}</strong>
-                  <span>{conversation.lastMessage?.text || 'Sin mensajes'}</span>
+                  <strong>{conversation.counterpart?.name || t.userFallback}</strong>
+                  <span>{conversation.lastMessage?.text || t.noMessages}</span>
                 </span>
                 <span className="conversation-meta">
-                  <span>{formatDate(conversation.lastMessage?.createdAt)}</span>
+                  <span>{formatDate(conversation.lastMessage?.createdAt, lang)}</span>
                   {conversation.unreadCount > 0 && <span className="conversation-badge">{conversation.unreadCount}</span>}
                 </span>
               </button>
@@ -225,7 +295,7 @@ export default function Mensajes({ session }) {
 
             {!inboxLoading && results.length > 0 && (
               <div className="conversation-results">
-                <p className="messages-section-label">Resultados</p>
+                <p className="messages-section-label">{t.results}</p>
                 {results.map((user) => (
                   <button key={user.id} type="button" className="conversation-item result-item" onClick={() => startConversation(user)}>
                     <span className="conversation-avatar"><FaUserCircle /></span>
@@ -242,33 +312,33 @@ export default function Mensajes({ session }) {
             {!inboxLoading && conversations.length === 0 && results.length === 0 && (
               <div className="messages-empty-search">
                 <FaPaperPlane />
-                <p>No tienes conversaciones todavía.</p>
-                <span>Busca un usuario para iniciar un chat real.</span>
+                <p>{t.noConversations}</p>
+                <span>{t.searchUserHint}</span>
               </div>
             )}
 
-            {searchBusy && <p className="messages-muted">Buscando usuarios...</p>}
+            {searchBusy && <p className="messages-muted">{t.searchingUsers}</p>}
           </div>
         </aside>
 
         <section className="messages-thread">
           <header className="thread-header">
             <div>
-              <p className="messages-eyebrow">Chat</p>
-              <h2>{counterpart?.name || 'Selecciona una conversación'}</h2>
-              <p>{counterpart?.email || 'Usa la barra lateral para abrir o crear un chat.'}</p>
+              <p className="messages-eyebrow">{t.chat}</p>
+              <h2>{counterpart?.name || t.selectConversation}</h2>
+              <p>{counterpart?.email || t.sidebarHint}</p>
             </div>
             {status && <span className="thread-status">{status}</span>}
           </header>
 
           <div className="thread-body">
-            {threadLoading && <p className="messages-muted">Cargando chat...</p>}
+            {threadLoading && <p className="messages-muted">{t.loadingChat}</p>}
 
             {!threadLoading && messages.length === 0 && (
               <div className="thread-empty-state">
                 <FaDotCircle />
-                <p>Sin mensajes en esta conversación.</p>
-                <span>Escribe el primer mensaje para arrancar el hilo.</span>
+                <p>{t.emptyConversation}</p>
+                <span>{t.writeFirstMessage}</span>
               </div>
             )}
 
@@ -277,7 +347,7 @@ export default function Mensajes({ session }) {
               return (
                 <article key={message.id} className={`message-bubble${isMine ? ' is-own' : ''}`}>
                   <p>{message.text}</p>
-                  <span>{formatTime(message.createdAt)}</span>
+                  <span>{formatTime(message.createdAt, lang)}</span>
                 </article>
               );
             })}
@@ -287,7 +357,7 @@ export default function Mensajes({ session }) {
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder={selectedId ? 'Escribe un mensaje...' : 'Selecciona un usuario para responder'}
+              placeholder={selectedId ? t.writeMessage : t.selectUserToReply}
               disabled={!selectedId}
               rows={3}
             />
@@ -299,23 +369,23 @@ export default function Mensajes({ session }) {
 
         <aside className="messages-context">
           <div className="context-card context-rental">
-            <p className="messages-eyebrow">Contexto</p>
-            <h3>Alquiler activo</h3>
+            <p className="messages-eyebrow">{t.context}</p>
+            <h3>{t.activeRental}</h3>
             {selectedRental ? (
               <>
-                <strong>{selectedRental.game?.title || 'Juego'}</strong>
-                <p>{selectedRental.game?.price ? `Precio ${selectedRental.game.price}` : 'Precio no disponible'}</p>
-                <p>{selectedRental.game?.rentalDays ? `${selectedRental.game.rentalDays} días` : 'Duración no disponible'}</p>
+                <strong>{selectedRental.game?.title || t.gameFallback}</strong>
+                <p>{selectedRental.game?.price ? `${t.price} ${selectedRental.game.price}` : t.noPrice}</p>
+                <p>{selectedRental.game?.rentalDays ? `${selectedRental.game.rentalDays} ${lang === 'EN' ? 'days' : 'días'}` : t.durationUnavailable}</p>
               </>
             ) : (
-              <p>No hay alquiler activo.</p>
+              <p>{t.noActiveRental}</p>
             )}
           </div>
 
           <div className="context-card context-note">
-            <p className="messages-eyebrow">Notas</p>
-            <h3>Estado del chat</h3>
-            <p>Mantén conversaciones con otros usuarios sobre alquileres.</p>
+            <p className="messages-eyebrow">{t.notes}</p>
+            <h3>{t.chatStatus}</h3>
+            <p>{t.chatStatusHint}</p>
           </div>
         </aside>
       </section>

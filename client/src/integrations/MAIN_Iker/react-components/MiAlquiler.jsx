@@ -6,13 +6,55 @@ import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
 import { apiRequest } from '../../../api.js';
 
-export default function MiAlquiler() {
+export default function MiAlquiler({ lang = 'ES' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
   const timerRef = useRef(null);
+
+  const texts = {
+    ES: {
+      loading: 'Cargando alquileres...',
+      empty: 'No tienes ningún juego alquilado actualmente.',
+      goCatalog: 'Ir al catálogo',
+      rentals: 'Mis Alquileres',
+      prev: 'ANTERIOR',
+      next: 'SIGUIENTE',
+      desc: 'Descripción del videojuego',
+      noDesc: 'Sin descripción disponible.',
+      genre: 'Género',
+      devs: 'Desarrolladores',
+      duration: 'DURACIÓN ALQUILER',
+      noData: 'SIN DATOS',
+      remaining: 'TIEMPO RESTANTE',
+      rented: 'ALQUILADO',
+      owner: 'PROPIETARIO',
+      noSeller: 'Sin vendedor',
+      rate: 'VALORAR'
+    },
+    EN: {
+      loading: 'Loading rentals...',
+      empty: 'You currently have no rented games.',
+      goCatalog: 'Go to catalog',
+      rentals: 'My rentals',
+      prev: 'PREVIOUS',
+      next: 'NEXT',
+      desc: 'Game description',
+      noDesc: 'No description available.',
+      genre: 'Genre',
+      devs: 'Developers',
+      duration: 'RENTAL DURATION',
+      noData: 'NO DATA',
+      remaining: 'TIME LEFT',
+      rented: 'RENTED',
+      owner: 'OWNER',
+      noSeller: 'No seller',
+      rate: 'RATE'
+    }
+  };
+  const t = texts[lang] || texts.ES;
 
   useEffect(() => {
     let active = true;
@@ -94,7 +136,7 @@ export default function MiAlquiler() {
     return (
       <div className="main-content">
         <div className="container">
-          <p>Cargando alquileres...</p>
+          <p>{t.loading}</p>
         </div>
       </div>
     );
@@ -104,9 +146,9 @@ export default function MiAlquiler() {
     return (
       <div className="main-content">
         <div className="container">
-          <p>No tienes ningún juego alquilado actualmente.</p>
+          <p>{t.empty}</p>
           <button className="btn-rent" onClick={() => navigate('/home')} style={{ marginTop: '20px' }}>
-            Ir al catálogo
+            {t.goCatalog}
           </button>
         </div>
       </div>
@@ -117,7 +159,7 @@ export default function MiAlquiler() {
     <div className="main-content">
       <div className="container">
         <div className="breadcrumb">
-          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>Mis Alquileres</button> / <span>{rentalGame.title}</span>
+          <button type="button" onClick={() => navigate('/home')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0 }}>{t.rentals}</button> / <span>{rentalGame.title}</span>
         </div>
 
         <section className="product-section">
@@ -138,8 +180,8 @@ export default function MiAlquiler() {
                 </div>
               </div>
               <div className="gallery-controls">
-                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>ANTERIOR</span></button>
-                <button className="btn-nav-next" type="button"><span>SIGUIENTE</span><FaChevronRight /></button>
+                <button className="btn-nav-prev" type="button"><FaChevronLeft /><span>{t.prev}</span></button>
+                <button className="btn-nav-next" type="button"><span>{t.next}</span><FaChevronRight /></button>
               </div>
             </div>
 
@@ -149,30 +191,30 @@ export default function MiAlquiler() {
               </div>
 
               <div className="description-section">
-                <h2 className="section-title">Descripción del videojuego</h2>
-                <p className="description-text">{rentalGame.description || 'Sin descripción disponible.'}</p>
-                <p className="description-text">{rentalGame.genre ? `Género: ${rentalGame.genre}.` : ''} {rentalGame.developers ? `Desarrolladores: ${rentalGame.developers}.` : ''}</p>
+                <h2 className="section-title">{t.desc}</h2>
+                <p className="description-text">{rentalGame.description || t.noDesc}</p>
+                <p className="description-text">{rentalGame.genre ? `${t.genre}: ${rentalGame.genre}.` : ''} {rentalGame.developers ? `${t.devs}: ${rentalGame.developers}.` : ''}</p>
               </div>
 
               <div className="rental-details">
                 <div className="detail-item">
-                  <span className="detail-label">DURACIÓN ALQUILER</span>
-                  <span className="detail-value">{rentalGame.rentalDays ? `${rentalGame.rentalDays} DÍAS` : 'SIN DATOS'}</span>
+                  <span className="detail-label">{t.duration}</span>
+                  <span className="detail-value">{rentalGame.rentalDays ? `${rentalGame.rentalDays} ${lang === 'EN' ? 'DAYS' : 'DÍAS'}` : t.noData}</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">TIEMPO RESTANTE</span>
+                  <span className="detail-label">{t.remaining}</span>
                   <span className="detail-value countdown">{localTimeRemaining}</span>
                 </div>
               </div>
 
               <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--orange)', fontWeight: '800', fontSize: '20px' }}>
                 <FaCheckCircle style={{ fontSize: '26px' }} />
-                <span>ALQUILADO</span>
+                <span>{t.rented}</span>
               </div>
             </div>
 
             <div className="seller-section">
-              <h3 className="section-title">PROPIETARIO</h3>
+              <h3 className="section-title">{t.owner}</h3>
               <div className="seller-card">
                 <div 
                   className="seller-avatar-placeholder" 
@@ -188,7 +230,7 @@ export default function MiAlquiler() {
                     <img src={avatar} alt="avatar" />
                   )}
                 </div>
-                <h4 className="seller-name">{rentalGame.seller?.name || 'Sin vendedor'}</h4>
+                <h4 className="seller-name">{rentalGame.seller?.name || t.noSeller}</h4>
                 <div className="seller-rating">
                   {[1, 2, 3, 4, 5].map((num) => (
                     <FaStar 
@@ -203,7 +245,7 @@ export default function MiAlquiler() {
                   <span className="rating-value">{rentalGame.seller?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
                 <button className="btn-valorar" type="button" onClick={() => rentalGame.seller?.id && navigate(`/perfil-otro?id=${rentalGame.seller.id}`)}>
-                  VALORAR
+                  {t.rate}
                 </button>
               </div>
             </div>

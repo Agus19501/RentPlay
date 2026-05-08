@@ -104,7 +104,7 @@ export default function MiAlquiler({ lang = 'ES' }) {
 
   const rentalGame = useMemo(() => latestRental?.game || null, [latestRental]);
 
-  const galleryMedia = useMemo(() => {
+  const mediaFiles = useMemo(() => {
     if (!rentalGame) return [];
 
     const media = Array.isArray(rentalGame.media) ? rentalGame.media : [];
@@ -114,10 +114,15 @@ export default function MiAlquiler({ lang = 'ES' }) {
         const type = item.type || (String(item.data || item).startsWith('data:video') ? 'video' : 'image');
         const rawData = item.data || item.url || item;
         if (!rawData) return null;
-        const src = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
+        const data = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
           ? String(rawData)
           : `/${String(rawData)}`;
-        return { type, src };
+        return {
+          id: item.id || `${type}-${String(rawData).slice(0, 20)}`,
+          type,
+          name: item.name || 'media',
+          data
+        };
       })
       .filter(Boolean);
 
@@ -126,13 +131,13 @@ export default function MiAlquiler({ lang = 'ES' }) {
     }
 
     if (rentalGame.image) {
-      const src = rentalGame.image.startsWith('data:') || rentalGame.image.startsWith('/') || rentalGame.image.startsWith('http')
+      const data = rentalGame.image.startsWith('data:') || rentalGame.image.startsWith('/') || rentalGame.image.startsWith('http')
         ? rentalGame.image
         : `/${rentalGame.image}`;
-      return [{ type: 'image', src }];
+      return [{ id: 'main-image', type: 'image', name: 'image', data }];
     }
 
-    return [{ type: 'image', src: cover1 }];
+    return [{ id: 'fallback-image', type: 'image', name: 'image', data: cover1 }];
   }, [rentalGame]);
 
   useEffect(() => {
@@ -140,13 +145,15 @@ export default function MiAlquiler({ lang = 'ES' }) {
   }, [rentalGame?.id]);
 
   const goToPreviousMedia = () => {
-    if (!galleryMedia.length) return;
-    setCurrentMediaIndex((prev) => (prev === 0 ? galleryMedia.length - 1 : prev - 1));
+    if (mediaFiles.length > 0) {
+      setCurrentMediaIndex((prev) => (prev === 0 ? mediaFiles.length - 1 : prev - 1));
+    }
   };
 
   const goToNextMedia = () => {
-    if (!galleryMedia.length) return;
-    setCurrentMediaIndex((prev) => (prev === galleryMedia.length - 1 ? 0 : prev + 1));
+    if (mediaFiles.length > 0) {
+      setCurrentMediaIndex((prev) => (prev === mediaFiles.length - 1 ? 0 : prev + 1));
+    }
   };
 
   useEffect(() => {
@@ -215,21 +222,46 @@ export default function MiAlquiler({ lang = 'ES' }) {
             <div className="product-gallery">
               <div className="main-image-container">
                 <div className="image-frame">
-                  {galleryMedia[currentMediaIndex]?.type === 'video' ? (
-                    <video src={galleryMedia[currentMediaIndex].src} className="main-image" controls />
-                  ) : (
-                    <img
-                      src={galleryMedia[currentMediaIndex]?.src || cover1}
-                      alt={rentalGame.title}
-                      className="main-image"
-                      onError={(event) => { event.currentTarget.src = cover1; }}
-                    />
-                  )}
+                  <div className="upload-image-preview-container">
+                    {mediaFiles.length > 0 ? (
+                      <>
+                        {mediaFiles[currentMediaIndex]?.type === 'image' ? (
+                          <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview main-image" id="preview-img" crossOrigin="anonymous" onError={(event) => { event.currentTarget.src = cover1; }} />
+                        ) : (
+                          <video src={mediaFiles[currentMediaIndex].data} controls className="upload-image-preview main-image" id="preview-video" />
+                        )}
+                        {mediaFiles.length > 1 && <div className="media-counter">{currentMediaIndex + 1} / {mediaFiles.length}</div>}
+                      </>
+                    ) : (
+                      <img src={cover1} alt={rentalGame.title} className="main-image" />
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="gallery-controls">
-                <button className="btn-nav-prev" type="button" onClick={goToPreviousMedia}><FaChevronLeft /><span>{t.prev}</span></button>
-                <button className="btn-nav-next" type="button" onClick={goToNextMedia}><span>{t.next}</span><FaChevronRight /></button>
+
+              {mediaFiles.length > 0 && (
+                <div className="media-list">
+                  {mediaFiles.map((media, index) => (
+                    <div
+                      key={media.id}
+                      className={`media-thumbnail ${index === currentMediaIndex ? 'active' : ''}`}
+                      onClick={() => setCurrentMediaIndex(index)}
+                    >
+                      {media.type === 'image' ? (
+                        <img src={media.data} alt={`Media ${index + 1}`} />
+                      ) : (
+                        <div className="video-thumbnail">
+                          <span>VIDEO</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="upload-image-nav">
+                <button className="upload-nav-btn" type="button" onClick={goToPreviousMedia}><div className="nav-icon-circle"><FaChevronLeft /></div><span>{t.prev}</span></button>
+                <button className="upload-nav-btn" type="button" onClick={goToNextMedia}><div className="nav-icon-circle"><FaChevronRight /></div><span>{t.next}</span></button>
               </div>
             </div>
 

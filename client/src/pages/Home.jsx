@@ -5,6 +5,9 @@ import { apiRequest, getSession } from '../api.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Home.css';
 
+const HOME_GAMES_CACHE_KEY = 'rentplay_home_games_cache_v1';
+const HOME_GAMES_CACHE_TTL_MS = 20000;
+
 const Home = ({ lang }) => {
   const navigate = useNavigate();
   const gamesRef = useRef(null);
@@ -63,18 +66,25 @@ const Home = ({ lang }) => {
     let active = true;
 
     const session = getSession();
-    const fetchPromises = [apiRequest('/api/games')];
-    if (session?.token) {
-      fetchPromises.push(apiRequest('/api/rentals/mine', { token: session.token }));
+
+    // Pintar instantaneamente con cache local reciente si existe
+    try {
+      const cached = JSON.parse(localStorage.getItem(HOME_GAMES_CACHE_KEY) || 'null');
+      if (cached?.ts && Array.isArray(cached.games) && (Date.now() - cached.ts) < HOME_GAMES_CACHE_TTL_MS) {
+        setGames(cached.games);
+        setLoading(false);
+      }
+    } catch {
+      // Ignore cache parse failures
     }
 
-    Promise.all(fetchPromises)
-      .then(([gamesRes, rentalsRes]) => {
+    // Cargar juegos primero para pintar Home cuanto antes
+    apiRequest('/api/games?lite=1')
+      .then((gamesRes) => {
         if (active) {
-          setGames(gamesRes.games || []);
-          if (rentalsRes) {
-            setMyRentals(rentalsRes.rentals || []);
-          }
+          const nextGames = gamesRes.games || [];
+          setGames(nextGames);
+          localStorage.setItem(HOME_GAMES_CACHE_KEY, JSON.stringify({ ts: Date.now(), games: nextGames }));
         }
       })
       .catch(() => {
@@ -87,6 +97,21 @@ const Home = ({ lang }) => {
           setLoading(false);
         }
       });
+
+    // Cargar alquileres en paralelo, sin bloquear el render principal
+    if (session?.token) {
+      apiRequest('/api/rentals/mine', { token: session.token })
+        .then((rentalsRes) => {
+          if (active) {
+            setMyRentals(rentalsRes.rentals || []);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setMyRentals([]);
+          }
+        });
+    }
 
     return () => {
       active = false;
@@ -179,12 +204,24 @@ const Home = ({ lang }) => {
             {loading && <p className="section-description">{t.loading}</p>}
             {!loading && visibleGames.length === 0 && <p className="section-description">{t.noGames}</p>}
             {!loading && visibleGames.map((game) => (
-              <div key={game.id} className="game-item" onClick={() => navigate(`/comparativa?title=${encodeURIComponent(game.title)}`)} role="button" tabIndex={0}>
+              <div
+                key={game.id}
+                className="game-item"
+                onClick={() => navigate(`/comparativa?title=${encodeURIComponent(game.title)}`, {
+                  state: {
+                    prefetchedGames: games.filter((g) => (g.title || '').toLowerCase().trim() === (game.title || '').toLowerCase().trim())
+                  }
+                })}
+                role="button"
+                tabIndex={0}
+              >
                 <div className="game-image">
                   {game.image ? (
                     <img 
-                      src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                      src={game.image.startsWith('data:') || game.image.startsWith('http') || game.image.startsWith('/') ? game.image : `/${game.image}`} 
                       alt={game.title} 
+                      loading="lazy"
+                      decoding="async"
                       onError={(event) => { event.currentTarget.src = cover1; }} 
                     />
                   ) : (
@@ -244,7 +281,7 @@ const Home = ({ lang }) => {
                 <div className="profile-avatar">
                   {profile.avatar ? (
                     <img 
-                      src={profile.avatar.startsWith('data:') ? profile.avatar : `/${profile.avatar}`} 
+                      src={profile.avatar.startsWith('data:') || profile.avatar.startsWith('http') || profile.avatar.startsWith('/') ? profile.avatar : `/${profile.avatar}`} 
                       alt={profile.name} 
                       onError={(e) => { e.currentTarget.src = ''; e.currentTarget.parentElement.innerHTML = '👤'; }}
                       style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
@@ -294,7 +331,7 @@ const Home = ({ lang }) => {
                   <div className="game-image">
                     {rental.game?.image ? (
                       <img 
-                        src={rental.game.image.startsWith('data:') ? rental.game.image : `/${rental.game.image}`} 
+                        src={rental.game.image.startsWith('data:') || rental.game.image.startsWith('http') || rental.game.image.startsWith('/') ? rental.game.image : `/${rental.game.image}`} 
                         alt={rental.game.title} 
                         onError={(event) => { event.currentTarget.src = cover1; }} 
                       />

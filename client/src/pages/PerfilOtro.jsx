@@ -197,7 +197,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
                   style={{ cursor: 'pointer' }}
                 >
                   <img 
-                    src={juego.image ? (juego.image.startsWith('data:') ? juego.image : `/${juego.image}`) : 'https://via.placeholder.com/150'} 
+                    src={juego.image ? (juego.image.startsWith('data:') || juego.image.startsWith('http') || juego.image.startsWith('/') ? juego.image : `/${juego.image}`) : 'https://via.placeholder.com/150'} 
                     alt={juego.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />

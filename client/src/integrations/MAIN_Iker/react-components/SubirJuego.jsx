@@ -9,6 +9,7 @@ import cover2 from '../assets/images/cover2.svg';
 
 const INITIAL_FORM = {
   title: '',
+  description: '',
   releaseDate: '',
   genre: '',
   duration: '',
@@ -109,6 +110,7 @@ export default function SubirJuego({ lang = 'ES' }) {
     if (editGame) {
       setFormData({
         title: editGame.title || '',
+        description: editGame.description || '',
         releaseDate: editGame.releaseDate || '',
         genre: editGame.genre || '',
         duration: editGame.rentalDays || '',
@@ -116,12 +118,34 @@ export default function SubirJuego({ lang = 'ES' }) {
         price: editGame.price || ''
       });
       setDateValue(editGame.releaseDate || '');
-      if (editGame.image) {
+      const existingMedia = Array.isArray(editGame.media)
+        ? editGame.media
+          .map((item, index) => {
+            if (!item || !item.data) return null;
+            const rawData = String(item.data);
+            const data = rawData.startsWith('data:') || rawData.startsWith('http') || rawData.startsWith('/')
+              ? rawData
+              : `/${rawData}`;
+            return {
+              id: item.id || `${Date.now()}-${index}`,
+              type: item.type || (rawData.startsWith('data:video') ? 'video' : 'image'),
+              name: item.name || `media-${index + 1}`,
+              data
+            };
+          })
+          .filter(Boolean)
+        : [];
+
+      if (existingMedia.length > 0) {
+        setMediaFiles(existingMedia);
+      } else if (editGame.image) {
         setMediaFiles([{
           id: Date.now(),
           type: 'image',
           name: 'current-cover',
-          data: editGame.image.startsWith('data:') ? editGame.image : `/${editGame.image}`
+          data: editGame.image.startsWith('data:') || editGame.image.startsWith('http') || editGame.image.startsWith('/')
+            ? editGame.image
+            : `/${editGame.image}`
         }]);
       }
     } else {
@@ -191,10 +215,16 @@ export default function SubirJuego({ lang = 'ES' }) {
         const developers = detailedGame.developers?.length > 0
           ? detailedGame.developers.map(d => d.name).join(', ')
           : '';
+
+        const rawDescription = detailedGame.description_raw || (typeof detailedGame.description === 'string'
+          ? detailedGame.description.replace(/<[^>]*>/g, ' ')
+          : '');
+        const normalizedDescription = String(rawDescription).replace(/\s+/g, ' ').trim();
         
         setFormData((current) => ({
           ...current,
           developers: developers,
+          description: normalizedDescription,
         }));
       })
       .catch(error => console.error('Error fetching game details:', error));
@@ -230,37 +260,49 @@ export default function SubirJuego({ lang = 'ES' }) {
   const openFilePicker = () => fileInputRef.current?.click();
 
   const handleFileChange = (event) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) {
       return;
     }
 
-    const newFiles = [];
-    let loadedCount = 0;
+    const acceptedFiles = files.filter((file) => file.type.startsWith('image/') || file.type.startsWith('video/'));
+    if (acceptedFiles.length === 0) {
+      return;
+    }
 
-    Array.from(files).forEach((file) => {
-      // Aceptar imágenes y videos
-      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-        const reader = new FileReader();
-        reader.onload = (loadEvent) => {
-          newFiles.push({
-            id: Date.now() + Math.random(),
-            type: file.type.startsWith('image/') ? 'image' : 'video',
-            name: file.name,
-            data: String(loadEvent.target?.result || ''),
-          });
-          loadedCount++;
-
-          if (loadedCount === files.length) {
-            setMediaFiles((prev) => [...prev, ...newFiles]);
-            if (mediaFiles.length === 0) {
-              setCurrentMediaIndex(0);
-            }
+    Promise.all(
+      acceptedFiles.map(
+        (file) =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+              resolve({
+                id: Date.now() + Math.random(),
+                type: file.type.startsWith('image/') ? 'image' : 'video',
+                name: file.name,
+                data: String(loadEvent.target?.result || ''),
+              });
+            };
+            reader.onerror = () => reject(new Error(`No se pudo leer el archivo: ${file.name}`));
+            reader.readAsDataURL(file);
+          })
+      )
+    )
+      .then((newFiles) => {
+        setMediaFiles((prev) => {
+          const merged = [...prev, ...newFiles];
+          if (prev.length === 0 && merged.length > 0) {
+            setCurrentMediaIndex(0);
           }
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+          return merged;
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        event.target.value = '';
+      });
   };
 
   const goToPreviousMedia = () => {
@@ -294,6 +336,7 @@ export default function SubirJuego({ lang = 'ES' }) {
     const primaryImage = mediaFiles.find((m) => m.type === 'image')?.data || '';
     const payload = {
       title: formData.title,
+      description: formData.description,
       releaseDate: dateValue,
       genre: formData.genre,
       rentalDays: Number(formData.duration),
@@ -417,7 +460,7 @@ export default function SubirJuego({ lang = 'ES' }) {
                 {mediaFiles.length > 0 ? (
                   <>
                     {mediaFiles[currentMediaIndex]?.type === 'image' ? (
-                      <img src={mediaFiles[currentMediaIndex].data} alt={t.imagePreview} className="upload-image-preview" id="preview-img" crossOrigin="anonymous" />
+                      <img src={mediaFiles[currentMediaIndex].data} alt={t.imagePreview} className="upload-image-preview" id="preview-img" />
                     ) : (
                       <video src={mediaFiles[currentMediaIndex].data} controls className="upload-image-preview" id="preview-video" />
                     )}

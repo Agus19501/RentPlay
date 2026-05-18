@@ -56,13 +56,17 @@ export default function Perfil({ session, lang = 'ES' }) {
 
     const loadProfile = async () => {
       try {
-        const [meResponse, rentalsResponse] = await Promise.all([
-          apiRequest('/api/auth/me', { token: session.token }),
-          apiRequest('/api/rentals/mine', { token: session.token })
-        ]);
-
+        const meResponse = await apiRequest('/api/auth/me', { token: session.token });
         setProfile(meResponse.user || null);
-        setRentals(rentalsResponse.rentals || []);
+
+        // Cargar alquileres sin bloquear la vista principal de perfil
+        apiRequest('/api/rentals/mine', { token: session.token })
+          .then((rentalsResponse) => {
+            setRentals(rentalsResponse.rentals || []);
+          })
+          .catch(() => {
+            setRentals([]);
+          });
       } catch (error) {
         setMessage(error.message);
       }

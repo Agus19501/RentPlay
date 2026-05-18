@@ -100,9 +100,13 @@ const Header = ({ lang, setLang, session, onLogout }) => {
             <span className="action-text">{current.add}</span> <FaPlus />
           </button>
 
-          <button className="icon-btn action-item" onClick={() => setLang(lang === 'ES' ? 'EN' : 'ES')}>
-            <span className="icon-wrapper">{lang === 'ES' ? '🇪🇸' : '🇬🇧'}</span>
-            <span className="action-text">{current.langLabel}</span>
+          <button
+            className="icon-btn action-item language-toggle"
+            onClick={() => setLang(lang === 'ES' ? 'EN' : 'ES')}
+            aria-label={lang === 'ES' ? 'Cambiar idioma a inglés' : 'Switch language to Spanish'}
+            title={lang === 'ES' ? 'Cambiar idioma a inglés' : 'Switch language to Spanish'}
+          >
+            <span className="lang-text">{lang === 'ES' ? 'ES' : 'EN'}</span>
           </button>
 
           <button className="icon-btn action-item" onClick={() => navigate(isLoggedIn ? '/mensajes' : '/login')}>

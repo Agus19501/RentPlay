@@ -5,21 +5,31 @@ import { getCollections } from '../config/db.js';
 
 const router = Router();
 
+function isBase64Image(str) {
+  return typeof str === 'string' && str.startsWith('data:image/');
+}
+
 function normalizeGame(game) {
   if (!game) {
     return null;
   }
 
+  const rawImage = game.image || null;
+  const gameId = game._id ? game._id.toString() : game.id;
+  const image = isBase64Image(rawImage)
+    ? `/api/games/${gameId}/cover`
+    : rawImage;
+
   return {
-    id: game._id ? game._id.toString() : game.id,
+    id: gameId,
     title: game.title,
     description: game.description,
     price: game.price,
     rentalDays: game.rentalDays,
     rating: game.rating,
     platform: game.platform,
-    image: game.image,
-    media: Array.isArray(game.media) ? game.media : [],
+    image,
+    media: [],
     seller: game.seller || null,
     uploadedBy: game.uploadedBy ? game.uploadedBy.toString() : null
   };

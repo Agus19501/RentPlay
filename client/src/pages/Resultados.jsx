@@ -53,6 +53,8 @@ const Resultados = ({ lang }) => {
     if (minYear) params.append('minYear', minYear);
     if (maxYear) params.append('maxYear', maxYear);
 
+    params.set('lite', '1');
+
     apiRequest(`/api/games?${params.toString()}`)
       .then((response) => {
         if (active) {
@@ -131,11 +133,21 @@ const Resultados = ({ lang }) => {
             {loading && <p className="section-description">{t.loading}</p>}
             {!loading && uniqueGames.length === 0 && <p className="section-description">{t.empty}</p>}
             {!loading && uniqueGames.map((game) => (
-              <div key={game.id} className="game-item" onClick={() => navigate(`/comparativa?title=${encodeURIComponent(game.title)}`)} role="button" tabIndex={0}>
+              <div
+                key={game.id}
+                className="game-item"
+                onClick={() => navigate(`/comparativa?title=${encodeURIComponent(game.title)}`, {
+                  state: {
+                    prefetchedGames: games.filter((g) => (g.title || '').toLowerCase().trim() === (game.title || '').toLowerCase().trim())
+                  }
+                })}
+                role="button"
+                tabIndex={0}
+              >
                 <div className="game-image">
                   {game.image ? (
                     <img 
-                      src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                      src={game.image.startsWith('data:') || game.image.startsWith('http') || game.image.startsWith('/') ? game.image : `/${game.image}`} 
                       alt={game.title} 
                       onError={(event) => { event.currentTarget.src = cover1; }} 
                     />

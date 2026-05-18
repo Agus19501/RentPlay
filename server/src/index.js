@@ -6,7 +6,7 @@ import gamesRoutes from './routes/games.js';
 import messagesRoutes from './routes/messages.js';
 import rentalsRoutes from './routes/rentals.js';
 import chatsRoutes from './routes/chats.js';
-import { seedGamesIfNeeded } from './config/db.js';
+import { ensureIndexes, seedGamesIfNeeded } from './config/db.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -68,8 +68,22 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ ok: false, message: 'Error interno del servidor.' });
 });
 
+await ensureIndexes();
 await seedGamesIfNeeded();
 
 app.listen(port, () => {
   console.log(`RentPlay API listening on http://localhost:${port}`);
+
+  // Precalienta cache de Home para reducir latencia de la primera visita
+  setTimeout(async () => {
+    try {
+      await Promise.all([
+        fetch(`http://localhost:${port}/api/games?lite=1`),
+        fetch(`http://localhost:${port}/api/games`)
+      ]);
+      console.log('Games listing cache warmed.');
+    } catch (error) {
+      console.warn('Could not warm games cache on startup:', error.message);
+    }
+  }, 250);
 });

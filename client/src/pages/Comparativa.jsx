@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaChevronRight, FaChevronLeft, FaStar, FaChevronDown } from 'react-icons/fa';
-import { apiRequest } from '../api.js';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { FaChevronRight, FaChevronLeft, FaStar } from 'react-icons/fa';
+import { apiRequest, getSession } from '../api.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Home.css'; 
 import './Filtros.css'; // Importamos estilos de filtros
 
+const COMPARATIVA_CACHE_TTL_MS = 30000;
+
 const Comparativa = ({ lang }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const searchRef = useRef(null);
   const [showLeft, setShowLeft] = useState(false);
@@ -20,7 +23,8 @@ const Comparativa = ({ lang }) => {
   const [precioMax, setPrecioMax] = useState(50);
   const [alquilerMax, setAlquilerMax] = useState(30);
 
-  const titleQuery = searchParams.get('title') || '';
+  const rawTitleQuery = searchParams.get('title') || '';
+  const titleQuery = rawTitleQuery.replace(/\?+$/, '').trim();
 
   const t = {
     ES: {
@@ -62,24 +66,59 @@ const Comparativa = ({ lang }) => {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    const cacheKey = `rentplay_comparativa_${titleQuery.toLowerCase().trim()}`;
 
-    Promise.all([
-      apiRequest('/api/games'),
-      apiRequest('/api/rentals/mine').catch(() => ({ rentals: [] }))
-    ])
-      .then(([gamesRes, rentalsRes]) => {
+    const prefetchedGames = Array.isArray(location.state?.prefetchedGames)
+      ? location.state.prefetchedGames
+      : [];
+
+    if (prefetchedGames.length > 0) {
+      const prefetchedFiltered = prefetchedGames.filter(
+        (g) => (g.title || '').toLowerCase().trim() === titleQuery.toLowerCase().trim()
+      );
+      if (prefetchedFiltered.length > 0) {
+        setGames(prefetchedFiltered);
+        setFilteredGames(prefetchedFiltered);
+        const prices = prefetchedFiltered.map((g) => Number(g.price) || 0);
+        const durations = prefetchedFiltered.map((g) => Number(g.rentalDays) || 0);
+        setPrecioMax(Math.ceil(Math.max(...prices)));
+        setAlquilerMax(Math.ceil(Math.max(...durations)));
+        setLoading(false);
+      }
+    }
+
+    // Si no hay prefetch, intentar cache local por titulo
+    if (prefetchedGames.length === 0) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (cached?.ts && Array.isArray(cached.games) && (Date.now() - cached.ts) < COMPARATIVA_CACHE_TTL_MS) {
+          setGames(cached.games);
+          setFilteredGames(cached.games);
+          if (cached.games.length > 0) {
+            const prices = cached.games.map((g) => Number(g.price) || 0);
+            const durations = cached.games.map((g) => Number(g.rentalDays) || 0);
+            setPrecioMax(Math.ceil(Math.max(...prices)));
+            setAlquilerMax(Math.ceil(Math.max(...durations)));
+          }
+          setLoading(false);
+        }
+      } catch {
+        // Ignore cache parse failures
+      }
+    }
+
+    apiRequest(`/api/games?title=${encodeURIComponent(titleQuery)}&lite=1`)
+      .then((gamesRes) => {
         if (active) {
           const allGames = gamesRes.games || [];
-          const myRentals = rentalsRes.rentals || [];
-          setRentals(myRentals);
-
-          const filtered = allGames.filter(g => g.title.toLowerCase().trim() === titleQuery.toLowerCase().trim());
+          const filtered = allGames.filter((g) => (g.title || '').toLowerCase().trim() === titleQuery.toLowerCase().trim());
           setGames(filtered);
           setFilteredGames(filtered);
-          
+          localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), games: filtered }));
+
           if (filtered.length > 0) {
-            const prices = filtered.map(g => Number(g.price) || 0);
-            const durations = filtered.map(g => Number(g.rentalDays) || 0);
+            const prices = filtered.map((g) => Number(g.price) || 0);
+            const durations = filtered.map((g) => Number(g.rentalDays) || 0);
             setPrecioMax(Math.ceil(Math.max(...prices)));
             setAlquilerMax(Math.ceil(Math.max(...durations)));
           }
@@ -95,8 +134,25 @@ const Comparativa = ({ lang }) => {
         if (active) setLoading(false);
       });
 
+    const session = getSession();
+    if (session?.token) {
+      apiRequest('/api/rentals/mine', { token: session.token })
+        .then((rentalsRes) => {
+          if (active) {
+            setRentals(rentalsRes.rentals || []);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setRentals([]);
+          }
+        });
+    } else {
+      setRentals([]);
+    }
+
     return () => { active = false; };
-  }, [titleQuery]);
+  }, [titleQuery, location.state]);
 
   const handleGameClick = (game) => {
     const isRentedByMe = rentals.some(r => {
@@ -206,8 +262,10 @@ const Comparativa = ({ lang }) => {
                   <div className="game-image">
                     {game.image ? (
                       <img 
-                        src={game.image.startsWith('data:') ? game.image : `/${game.image}`} 
+                        src={game.image.startsWith('data:') || game.image.startsWith('http') || game.image.startsWith('/') ? game.image : `/${game.image}`} 
                         alt={game.title} 
+                        loading="lazy"
+                        decoding="async"
                         onError={(event) => { event.currentTarget.src = cover1; }} 
                       />
                     ) : (

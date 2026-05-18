@@ -13,6 +13,64 @@
   z-index: 1000;
 }
 
+[data-theme="light"] .main-header {
+  background-color: #fff;
+  border-bottom: 2px solid #cccccc;
+}
+
+[data-theme="light"] .logo {
+  color: #222;
+}
+[data-theme="light"] .logo-icon {
+  background-color: #FF6100;
+}
+[data-theme="light"] .play-svg {
+  color: white;
+}
+[data-theme="light"] .search-bar {
+  background-color: #ffffff;
+  border: 1px solid #d7dde5;
+}
+[data-theme="light"] .search-bar input {
+  background-color: #ffffff !important;
+  color: #222;
+}
+[data-theme="light"] .btn-filters {
+  color: #FF6100;
+  border-color: #FF6100;
+  background: #fff;
+}
+[data-theme="light"] .btn-filters:hover {
+  background: #FF6100;
+  color: #fff;
+}
+[data-theme="light"] .header-actions .action-item,
+[data-theme="light"] .header-actions .icon-btn {
+  color: #222;
+}
+[data-theme="light"] .btn-add {
+  background-color: #FF6100;
+  color: #fff;
+}
+[data-theme="light"] .profile-dropdown {
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+[data-theme="light"] .dropdown-item {
+  color: #222;
+}
+[data-theme="light"] .dropdown-item:hover {
+  background-color: #f5f5f5;
+  color: #FF6100;
+}
+[data-theme="light"] .logout:hover {
+  background-color: rgba(255, 0, 0, 0.08);
+  color: #ff4444;
+}
+[data-theme="light"] .language-toggle .lang-text {
+  color: #222;
+}
+
 .header-container {
   display: flex;
   align-items: center;
@@ -49,11 +107,12 @@
   max-width: 700px;
   background-color: #222222;
   border-radius: 30px;
-  padding: 0 6px 0 25px; 
+  padding: 0 8px 0 12px;
   height: 55px;
   margin: 0 50px;
   display: flex;
   align-items: center;
+  gap: 0;
   transition: all 0.3s ease;
   overflow: hidden; 
 }
@@ -61,13 +120,16 @@
 .search-icon { color: #888888; font-size: 18px; }
 
 .search-bar input {
-  background: transparent;
+  background-color: #222222 !important;
   border: none;
   color: #FFFFFF;
+  appearance: none;
+  -webkit-appearance: none;
   flex: 1; 
   min-width: 0; 
   height: 100%;
-  margin-left: 15px;
+  margin-left: 0;
+  padding: 0 10px;
   font-size: 18px;
   outline: none;
 }
@@ -172,6 +234,30 @@
   white-space: nowrap;
 }
 
+.language-toggle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  justify-content: center;
+  padding: 0;
+}
+
+.language-toggle .icon-wrapper {
+  display: none;
+}
+
+.language-toggle .lang-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -218,6 +304,8 @@
   /* En este tramo los iconos ya no tienen texto, preparamos el botón añadir para ser circular */
   .btn-add { padding: 0; width: 50px; height: 50px; justify-content: center; border-radius: 50%; }
   .main-header { padding: 20px 30px; }
+  .language-toggle { width: 38px; height: 38px; }
+  .language-toggle .icon-wrapper { font-size: 22px; }
 }
 
 /* TRAMO 850px: Cambio de texto a "FILTROS" y reducción simultánea del botón "+" */
@@ -256,7 +344,7 @@
     flex: 4; 
   }
   
-  .search-bar input { width: 80px; font-size: 10px; margin-left: 4px; }
+  .search-bar input { width: 80px; font-size: 10px; margin-left: 0; padding: 0 4px; }
   .search-icon { font-size: 10px; }
   
   .btn-filters { 
@@ -277,4 +365,6 @@
   
   .icon-wrapper { font-size: 22px; } 
   .btn-add { width: 30px; height: 30px; } 
+  .language-toggle { width: 32px; height: 32px; }
+  .language-toggle .icon-wrapper { font-size: 19px; }
 }

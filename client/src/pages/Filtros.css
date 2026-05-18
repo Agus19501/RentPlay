@@ -8,6 +8,10 @@
   min-height: calc(100vh - 160px);
 }
 
+[data-theme="light"] .filtros-page {
+  background-color: #f4f6f8;
+}
+
 @media (max-width: 1400px) {
   .filtros-page {
     --unit: calc(0.75px + 0.25 * (100vw - 600px) / 800);

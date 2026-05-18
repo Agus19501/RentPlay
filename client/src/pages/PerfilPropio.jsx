@@ -21,7 +21,7 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
   }
 
   const imageSrc = juego.image 
-    ? (juego.image.startsWith('data:') ? juego.image : `/${juego.image}`)
+    ? (juego.image.startsWith('data:') || juego.image.startsWith('http') || juego.image.startsWith('/') ? juego.image : `/${juego.image}`)
     : 'https://via.placeholder.com/150';
 
   const getTimeRemaining = (expiresAt) => {
@@ -44,9 +44,11 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
         } else if (type === 'subido') {
           // Opcional: navegar a ver-juego o dejar solo edición
           navigate(`/ver-juego?id=${juego.id}`);
+        } else if (type === 'favorito') {
+          navigate(`/ver-juego?id=${juego.id}`);
         }
       }}
-      style={{ cursor: type === 'alquilado' || type === 'subido' ? 'pointer' : 'default' }}
+      style={{ cursor: type === 'alquilado' || type === 'subido' || type === 'favorito' ? 'pointer' : 'default' }}
     >
       <img 
         src={imageSrc} 
@@ -109,6 +111,8 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const [usuario, setUsuario] = useState(null);
   const [juegosSubidos, setJuegosSubidos] = useState([]);
   const [alquileres, setAlquileres] = useState([]);
+  const [catalogoJuegos, setCatalogoJuegos] = useState([]);
+  const [juegosFavoritos, setJuegosFavoritos] = useState([]);
   const [mostrarModalDatos, setMostrarModalDatos] = useState(false);
   const [mostrarModalAvatar, setMostrarModalAvatar] = useState(false);
   const [archivoAvatar, setArchivoAvatar] = useState('');
@@ -180,6 +184,13 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const ratingValue = Number(usuario?.rating || 0);
   const reviewsValue = Number(usuario?.reviews || 0);
 
+  const syncFavoritos = (catalogo = catalogoJuegos) => {
+    const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const ids = new Set(savedWishlist.map((id) => String(id)));
+    const favoritos = (catalogo || []).filter((game) => ids.has(String(game.id)));
+    setJuegosFavoritos(favoritos);
+  };
+
   useEffect(() => {
     async function cargarDatos() {
       if (!session?.token) return;
@@ -196,8 +207,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
           });
 
           // Cargar juegos del usuario
-          const gamesData = await fetch(`/api/games/user/${userData.user.id}`);
-          const gamesJson = await gamesData.json();
+          const gamesJson = await apiRequest(`/api/games/user/${userData.user.id}?lite=1`);
           if (gamesJson.games) {
             setJuegosSubidos(gamesJson.games);
           }
@@ -207,6 +217,14 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
           if (rentalsData.rentals) {
             setAlquileres(rentalsData.rentals);
           }
+
+          // Cargar catálogo ligero para resolver favoritos guardados en wishlist
+          const gamesCatalogData = await apiRequest('/api/games?lite=1');
+          const catalogo = gamesCatalogData.games || [];
+          setCatalogoJuegos(catalogo);
+          const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+          const ids = new Set(savedWishlist.map((id) => String(id)));
+          setJuegosFavoritos(catalogo.filter((game) => ids.has(String(game.id))));
         }
       } catch (e) {
         console.error('Error cargando datos:', e);
@@ -215,6 +233,17 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
 
     cargarDatos();
   }, [session]);
+
+  useEffect(() => {
+    const onStorage = () => syncFavoritos();
+    const onFocus = () => syncFavoritos();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [catalogoJuegos]);
 
   async function borrarJuego(gameId) {
     try {
@@ -257,7 +286,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
           };
         });
       case 'favoritos':
-        return [];
+        return juegosFavoritos.map((j) => ({ ...j, type: 'favorito' }));
       default:
         return [];
     }

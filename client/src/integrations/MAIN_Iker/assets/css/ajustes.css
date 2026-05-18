@@ -99,10 +99,8 @@
   background: #444;
   border-radius: 40px;
   transition: background 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 6px;
+  display: block;
+  padding: 0;
   cursor: pointer;
 }
 
@@ -113,8 +111,24 @@
 .switch-icon {
   font-size: 18px;
   line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1;
   pointer-events: none;
+}
+
+.theme-switch .icon-sun {
+  left: 9px;
+}
+
+.theme-switch .icon-moon {
+  right: 9px;
 }
 
 .theme-switch .slider::after {
@@ -332,6 +346,61 @@
   font-weight: 900;
   font-size: 18px;
   letter-spacing: -1px;
+}
+
+/* Light theme overrides */
+[data-theme="light"] .settings-main {
+  background: #f3f5f8;
+}
+
+[data-theme="light"] .settings-card {
+  background: #ffffff;
+  border-color: #f36b24;
+}
+
+[data-theme="light"] .settings-description,
+[data-theme="light"] .radio-label,
+[data-theme="light"] .payment-name {
+  color: #444;
+}
+
+[data-theme="light"] .setting-label {
+  color: #1e1e1e;
+}
+
+[data-theme="light"] .settings-select {
+  background: #ffffff;
+  color: #1e1e1e;
+  border-color: #c8d0da;
+}
+
+[data-theme="light"] .select-arrow {
+  color: #1e1e1e;
+}
+
+[data-theme="light"] .payment-icon-wrapper {
+  background: #f7f9fc;
+  border-color: #c8d0da;
+  color: #1e1e1e;
+}
+
+[data-theme="light"] .radio-mark,
+[data-theme="light"] .payment-radio-mark {
+  background: #fff;
+  border-color: #9aa6b2;
+}
+
+[data-theme="light"] .theme-switch .slider {
+  background: #e8edf3;
+  border: 1px solid #c8d0da;
+}
+
+[data-theme="light"] .theme-switch .icon-sun {
+  color: #f5a623;
+}
+
+[data-theme="light"] .theme-switch .icon-moon {
+  color: #6b7280;
 }
 
 @media (max-width: 900px) {

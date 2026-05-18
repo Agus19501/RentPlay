@@ -8,6 +8,7 @@ const databaseName = process.env.MONGODB_DB || 'rentplay';
 
 let client;
 let clientPromise;
+let indexesEnsured = false;
 
 function getRootPath() {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../');
@@ -79,4 +80,20 @@ export async function seedGamesIfNeeded() {
   } catch (error) {
     console.error('Seed error:', error);
   }
+}
+
+export async function ensureIndexes() {
+  if (indexesEnsured) {
+    return;
+  }
+
+  const { games } = await getCollections();
+
+  await Promise.all([
+    games.createIndex({ title: 1 }, { name: 'games_title_idx' }),
+    games.createIndex({ genre: 1 }, { name: 'games_genre_idx' }),
+    games.createIndex({ developers: 1 }, { name: 'games_developers_idx' })
+  ]);
+
+  indexesEnsured = true;
 }

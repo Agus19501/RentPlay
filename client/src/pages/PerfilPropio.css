@@ -14,6 +14,10 @@
   overflow: visible;
 }
 
+[data-theme="light"] .perfil-shell {
+  background: #fff;
+}
+
 .perfil-panel {
   min-width: 0;
   padding: 1.8rem 1.8rem 2rem;

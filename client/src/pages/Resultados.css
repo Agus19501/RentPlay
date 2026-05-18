@@ -4,6 +4,10 @@
   background-color: #222222;
 }
 
+[data-theme="light"] .resultados-page {
+  background-color: #f4f6f8;
+}
+
 @media (max-width: 1400px) {
   .resultados-page {
     --unit: calc(0.75px + 0.25 * (100vw - 600px) / 800);

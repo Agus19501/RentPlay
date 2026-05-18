@@ -51,9 +51,10 @@
 }
 
 [data-theme="light"] .search-bar input {
-  background: #f0f2f5;
-  color: #111;
-  border: 1px solid #ddd;
+    background: transparent;
+    color: inherit;
+    border: 0;
+    box-shadow: none;
 }
 
 [data-theme="light"] .search-bar .search-icon {

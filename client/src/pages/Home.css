@@ -1,7 +1,14 @@
 .home-page {
   --unit: 1px;
-  padding-bottom: calc(80 * var(--unit));
+  min-height: 100vh;
   background-color: #222222;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+[data-theme="light"] .home-page {
+  background-color: #f4f6f8;
 }
 
 @media (max-width: 1400px) {
@@ -28,13 +35,17 @@
   margin-bottom: calc(12 * var(--unit));
 }
 
+[data-theme="light"] .home-page .section-title {
+  color: #FF6100;
+}
+
 .home-page .section-subtitle {
-  color: #BBBBBB;
+  color: #666;
   font-size: calc(16 * var(--unit));
 }
 
 .home-page .section-description {
-  color: #BBBBBB;
+  color: #888;
   font-size: calc(16 * var(--unit));
 }
 
@@ -59,7 +70,7 @@
   display: flex !important;
   gap: calc(20 * var(--unit));
   overflow-x: auto;
-  padding: calc(20 * var(--unit)) 0;
+  padding: calc(20 * var(--unit)) calc(10 * var(--unit));
   scroll-behavior: smooth;
   overflow-y: hidden;
 }
@@ -142,10 +153,14 @@
 }
 
 .home-page .game-item-label {
-  color: white;
+  color: #fff;
   margin-top: calc(15 * var(--unit));
   font-weight: 600;
   font-size: calc(14 * var(--unit));
+}
+
+[data-theme="light"] .home-page .game-item-label {
+  color: #222;
 }
 
 .home-page .profile-item {
@@ -179,10 +194,13 @@
 }
 
 .home-page .profile-name {
-  color: white;
+  color: #fff;
   margin-top: calc(15 * var(--unit));
   font-weight: 600;
   font-size: calc(15 * var(--unit));
+}
+[data-theme="light"] .home-page .profile-name {
+  color: #222;
 }
 
 .home-page .profile-rating {
@@ -209,6 +227,9 @@
   color: #888888;
   margin-top: calc(10 * var(--unit));
   font-size: calc(12 * var(--unit));
+}
+[data-theme="light"] .home-page .profile-description {
+  color: #555;
 }
 
 

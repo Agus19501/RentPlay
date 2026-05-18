@@ -4,7 +4,7 @@ import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfA
 import '../assets/css/ver-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
-import { apiRequest } from '../../../api.js';
+import { apiRequest, getSession } from '../../../api.js';
 import { notify } from '../../../utils/notify.js';
 
 export default function VerJuego({ lang = 'ES' }) {
@@ -86,26 +86,38 @@ export default function VerJuego({ lang = 'ES' }) {
     let active = true;
     setLoading(true);
 
-    const gamePromise = selectedGameId
-      ? apiRequest(`/api/games/${selectedGameId}`).then(r => r.game || null)
-      : apiRequest('/api/games').then(r => (r.games || [])[0] || null);
+    const session = getSession();
 
-    Promise.all([
-      gamePromise,
-      apiRequest('/api/games').catch(() => ({ games: [] })),
-      apiRequest('/api/rentals/mine').catch(() => ({ rentals: [] }))
-    ])
-      .then(([game, gamesRes, rentalsRes]) => {
+    const gamePromise = selectedGameId
+      ? apiRequest(`/api/games/${selectedGameId}?compact=1`).then(r => r.game || null)
+      : apiRequest('/api/games?lite=1').then(r => (r.games || [])[0] || null);
+
+    gamePromise
+      .then((game) => {
         if (active) {
           setSelectedGame(game);
-          setGames(gamesRes.games || []);
-          setRentals(rentalsRes.rentals || []);
         }
+
+        return Promise.all([
+          apiRequest('/api/games?lite=1').catch(() => ({ games: [] })),
+          session?.token
+            ? apiRequest('/api/rentals/mine', { token: session.token }).catch(() => ({ rentals: [] }))
+            : Promise.resolve({ rentals: [] })
+        ]);
+      })
+      .then((results) => {
+        if (!active || !results) {
+          return;
+        }
+        const [gamesRes, rentalsRes] = results;
+        setGames(gamesRes.games || []);
+        setRentals(rentalsRes.rentals || []);
       })
       .catch(() => {
         if (active) {
           setSelectedGame(null);
           setGames([]);
+          setRentals([]);
         }
       })
       .finally(() => {
@@ -328,7 +340,7 @@ export default function VerJuego({ lang = 'ES' }) {
                     {mediaFiles.length > 0 ? (
                       <>
                         {mediaFiles[currentMediaIndex]?.type === 'image' ? (
-                          <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview main-image" id="preview-img" crossOrigin="anonymous" onError={(event) => { event.currentTarget.src = cover1; }} />
+                          <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview main-image" id="preview-img" onError={(event) => { event.currentTarget.src = cover1; }} />
                         ) : (
                           <video src={mediaFiles[currentMediaIndex].data} controls className="upload-image-preview main-image" id="preview-video" />
                         )}

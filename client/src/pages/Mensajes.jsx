@@ -114,29 +114,26 @@ export default function Mensajes({ session, lang = 'ES' }) {
     const loadInbox = async () => {
       setInboxLoading(true);
       try {
-        const [inboxResponse, rentalsResponse] = await Promise.allSettled([
-          apiRequest('/api/messages/inbox', { token: session.token }),
-          apiRequest('/api/rentals/mine', { token: session.token })
-        ]);
-
-        if (inboxResponse.status === 'fulfilled') {
-          const list = inboxResponse.value.conversations || [];
-          setConversations(list);
-          if (list.length > 0) {
-            setSelectedId((current) => current || list[0].counterpartId);
-          }
-        } else {
-          setStatus(inboxResponse.reason.message);
-        }
-
-        if (rentalsResponse.status === 'fulfilled') {
-          setSelectedRental(rentalsResponse.value.rentals?.[0] || null);
+        const inboxResponse = await apiRequest('/api/messages/inbox', { token: session.token });
+        const list = inboxResponse.conversations || [];
+        setConversations(list);
+        if (list.length > 0) {
+          setSelectedId((current) => current || list[0].counterpartId);
         }
       } catch (error) {
         setStatus(error.message);
       } finally {
         setInboxLoading(false);
       }
+
+      // Cargar contexto de alquileres en paralelo, sin bloquear bandeja
+      apiRequest('/api/rentals/mine', { token: session.token })
+        .then((rentalsResponse) => {
+          setSelectedRental(rentalsResponse.rentals?.[0] || null);
+        })
+        .catch(() => {
+          setSelectedRental(null);
+        });
     };
 
     loadInbox();

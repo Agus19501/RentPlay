@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react';
 import '../assets/css/ajustes.css';
 
 const FONT_SCALES = {
-  small: '80%',
+  small: '90%',
   normal: '100%',
-  large: '125%'
+  large: '115%'
 };
+
+function applyGlobalFontScale(size) {
+  const scale = FONT_SCALES[size] || FONT_SCALES.normal;
+  // Keep root font size stable and scale all pages, including px-based legacy views.
+  document.documentElement.style.fontSize = '100%';
+  document.body.style.zoom = scale;
+}
 
 export default function Ajustes({ lang, setLang }) {
   const [theme, setTheme] = useState('dark');
@@ -67,7 +74,7 @@ export default function Ajustes({ lang, setLang }) {
     setFontSize(savedFontSize);
     setPaymentMethod(savedPayment);
     document.documentElement.setAttribute('data-theme', savedTheme === 'light' ? 'light' : 'dark');
-    document.documentElement.style.fontSize = FONT_SCALES[savedFontSize] || FONT_SCALES.normal;
+    applyGlobalFontScale(savedFontSize);
 
     const storedSettings = {
       // Backward compatible with previous key rentplay_filter-18
@@ -100,7 +107,7 @@ export default function Ajustes({ lang, setLang }) {
     const size = event.target.value;
     setFontSize(size);
     localStorage.setItem('rentplay_fontsize', size);
-    document.documentElement.style.fontSize = FONT_SCALES[size] || FONT_SCALES.normal;
+    applyGlobalFontScale(size);
     saveSettingToDB('fontSize', size);
   };
 

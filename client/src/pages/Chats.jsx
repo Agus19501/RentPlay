@@ -233,7 +233,7 @@ export default function Chats({ lang }) {
             <div className="game-card-mini" onClick={openActiveGame} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openActiveGame()} role="button" tabIndex={0} style={{ cursor: activeChat?.game?.id || activeChat?.gameId ? 'pointer' : 'default' }}>
               <div className="game-card-image">
                 {activeChat.game?.image ? (
-                  <img src={activeChat.game.image.startsWith('data:') ? activeChat.game.image : `/${activeChat.game.image}`} alt={activeChat.game.title} />
+                  <img src={activeChat.game.image.startsWith('data:') || activeChat.game.image.startsWith('http') || activeChat.game.image.startsWith('/') ? activeChat.game.image : `/${activeChat.game.image}`} alt={activeChat.game.title} />
                 ) : (
                   <div className="image-placeholder"><img src={cover1} alt="game" /></div>
                 )}

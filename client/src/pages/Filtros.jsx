@@ -52,7 +52,7 @@ const Filtros = ({ lang }) => {
 
   useEffect(() => {
     // 1. Cargamos TODOS los juegos para sacar Géneros/Desarrolladores únicos para los dropdowns
-    apiRequest('/api/games')
+    apiRequest('/api/games?lite=1')
       .then((response) => setGames(response.games || []))
       .catch(() => setGames([]));
 

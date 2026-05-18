@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { FaPlay } from 'react-icons/fa';
 import { apiRequest, clearSession, getSession, saveSession } from './api.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
@@ -13,6 +14,7 @@ import Perfil from './pages/Perfil.jsx';
 import PerfilPropio from './pages/PerfilPropio.jsx';
 import PerfilOtro from './pages/PerfilOtro.jsx';
 import Chats from './pages/Chats.jsx';
+import Terminos from './pages/Terminos.jsx';
 
 // Integración: componentes desde MAIN_Iker (se preservan estilos originales)
 import Ajustes from './integrations/MAIN_Iker/react-components/Ajustes.jsx';
@@ -154,11 +156,42 @@ function formatPrice(value) {
   }).format(value);
 }
 
+function getInitialTheme() {
+  const stored = localStorage.getItem('rentplay_theme');
+  if (stored === 'light' || stored === 'dark') return stored;
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+  return 'dark';
+}
+
+const FONT_SCALES = {
+  small: '90%',
+  normal: '100%',
+  large: '115%'
+};
+
+function applyGlobalFontScale(size) {
+  const scale = FONT_SCALES[size] || FONT_SCALES.normal;
+  // Keep root font size stable and scale UI globally for pages that rely on px sizes.
+  document.documentElement.style.fontSize = '100%';
+  document.body.style.zoom = scale;
+}
+
 function App() {
   const [session, setSession] = useState(getSession());
   const [lang, setLang] = useState('ES');
+  const [theme, setTheme] = useState(getInitialTheme());
   const location = useLocation();
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('rentplay_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    const savedFontSize = localStorage.getItem('rentplay_fontsize') || 'normal';
+    applyGlobalFontScale(savedFontSize);
+  }, []);
 
   useEffect(() => {
     const onStorage = () => setSession(getSession());
@@ -175,9 +208,12 @@ function App() {
     setSession(nextSession);
   };
 
+  // Permite cambiar el tema desde cualquier sitio
+  const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+
   return (
-    <div className="app-shell">
-      {!isAuthRoute && <Header lang={lang} setLang={setLang} session={session} onLogout={() => updateSession(null)} />}
+    <div className="app-shell" data-theme={theme}>
+      {!isAuthRoute && <Header lang={lang} setLang={setLang} session={session} onLogout={() => updateSession(null)} theme={theme} setTheme={setTheme} toggleTheme={toggleTheme} />}
       <main className={isAuthRoute ? 'app-main auth-route-main' : 'app-main'}>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -192,6 +228,8 @@ function App() {
           <Route path="/perfil-propio" element={<PerfilPropio session={session} lang={lang} />} />
           <Route path="/perfil_otro" element={<PerfilOtro lang={lang} />} />
           <Route path="/perfil-otro" element={<PerfilOtro lang={lang} />} />
+          <Route path="/terminos" element={<Terminos lang={lang} />} />
+          <Route path="/terms" element={<Terminos lang={lang} />} />
           <Route path="/mi-alquiler" element={<MiAlquiler lang={lang} />} />
           <Route path="/subir-juego" element={<SubirJuego lang={lang} />} />
           <Route path="/ver-juego/:gameId" element={<VerJuego lang={lang} />} />
@@ -339,7 +377,7 @@ function AuthPage({ mode, onAuth, session, lang }) {
 
                   <div className="terms-row">
                     <input type="checkbox" checked={form.acceptTerms} onChange={(event) => setForm({ ...form, acceptTerms: event.target.checked })} />
-                    <span>{copy.termsPrefix} <a href="#" className="auth-link">{copy.termsLink}</a> {copy.termsSuffix}</span>
+                    <span>{copy.termsPrefix} <Link to="/terminos" className="auth-link">{copy.termsLink}</Link> {copy.termsSuffix}</span>
                   </div>
                 </>
               )}
@@ -359,9 +397,7 @@ function AuthPage({ mode, onAuth, session, lang }) {
             <p className="auth-hero-line">
               {copy.heroLine}
               <span className="auth-play">
-                <svg viewBox="0 0 24 24" width="0.5em" height="0.5em" fill="currentColor">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+                <FaPlay className="play-svg" />
               </span>
               ?
             </p>

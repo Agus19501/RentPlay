@@ -7,6 +7,37 @@
   width: 100%;
 }
 
+[data-theme="light"] .main-footer {
+  background-color: #fff;
+  color: #222;
+  border-bottom: 2px solid #cccccc;
+}
+[data-theme="light"] .footer-section h3,
+[data-theme="light"] .footer-section h4 {
+  color: #FF6100;
+}
+[data-theme="light"] .footer-section p,
+[data-theme="light"] .footer-section.contact a {
+  color: #555;
+}
+[data-theme="light"] .footer-section.contact a:hover,
+[data-theme="light"] .footer-section a:hover .contact-icon {
+  color: #FF6100;
+}
+[data-theme="light"] .contact-icon {
+  color: #222;
+}
+[data-theme="light"] .footer-bottom {
+  color: #888;
+  border-top: 1px solid #eee;
+}
+[data-theme="light"] .social-grid a {
+  color: #222;
+}
+[data-theme="light"] .social-grid a:hover {
+  color: #FF6100;
+}
+
 .footer-content {
   display: flex;
   align-items: flex-start;

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { getDb } from '../config/db.js';
+import { getDb } from '../src/config/db.js';
 import bcrypt from 'bcryptjs';
 
 async function seedUsers() {
@@ -55,7 +55,7 @@ async function seedUsers() {
       const testGames = [
         {
           title: 'Elden Ring',
-          image: 'https://media.rawg.io/media/screenshots/7cf/7cfc87f6cd4f521d4551d1e618cdf87f.jpg',
+          image: 'https://picsum.photos/seed/elden-ring/1200/675',
           platform: 'PlayStation 5',
           price: 15,
           uploadedBy: result.insertedIds[0],
@@ -64,7 +64,7 @@ async function seedUsers() {
         },
         {
           title: 'The Legend of Zelda: Tears of the Kingdom',
-          image: 'https://media.rawg.io/media/screenshots/610/6101b1b305d3495b96995ce60129c905.jpg',
+          image: 'https://picsum.photos/seed/zelda-totk/1200/675',
           platform: 'Nintendo Switch',
           price: 12,
           uploadedBy: result.insertedIds[0],
@@ -73,7 +73,7 @@ async function seedUsers() {
         },
         {
           title: 'Cyberpunk 2077',
-          image: 'https://media.rawg.io/media/screenshots/f05/f05f4b47e91c5edd8e1cd737b3b6e3c0.jpg',
+          image: 'https://picsum.photos/seed/cyberpunk-2077/1200/675',
           platform: 'Xbox Series X',
           price: 20,
           uploadedBy: result.insertedIds[1],
@@ -82,7 +82,7 @@ async function seedUsers() {
         },
         {
           title: 'Spider-Man 2',
-          image: 'https://media.rawg.io/media/screenshots/b72/b72fab21309ca04e78caa70e16fafcc9.jpg',
+          image: 'https://picsum.photos/seed/spider-man-2/1200/675',
           platform: 'PlayStation 5',
           price: 18,
           uploadedBy: result.insertedIds[1],
@@ -91,7 +91,7 @@ async function seedUsers() {
         },
         {
           title: 'Starfield',
-          image: 'https://media.rawg.io/media/screenshots/8e0/8e0afaa34185b5b7534b16fdbdb79fdb.jpg',
+          image: 'https://picsum.photos/seed/starfield/1200/675',
           platform: 'Xbox Series X',
           price: 25,
           uploadedBy: result.insertedIds[2],

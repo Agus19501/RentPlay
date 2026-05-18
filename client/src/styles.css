@@ -480,14 +480,19 @@ select {
 .auth-play {
   display: inline-grid;
   place-items: center;
-  width: clamp(82px, 6.2vw, 122px);
-  height: clamp(82px, 6.2vw, 122px);
+  width: 50px;
+  height: 50px;
   margin: 0 8px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  font-size: 0.5em;
+  font-size: 18px;
   vertical-align: middle;
+}
+
+.auth-play .play-svg {
+  font-size: 18px;
+  margin-left: 3px;
 }
 
 .feedback {

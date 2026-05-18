@@ -1,6 +1,6 @@
 .home-page {
   --unit: 1px;
-  min-height: 100vh;
+  min-height: 100%;
   background-color: #222222;
   display: flex;
   flex-direction: column;

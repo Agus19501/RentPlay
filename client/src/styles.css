@@ -31,6 +31,11 @@ body {
   min-height: 100vh;
 }
 
+[data-theme="light"] body {
+  background: #f4f6f8;
+  color: #1f2937;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -56,6 +61,10 @@ select {
 .app-main {
   flex: 1;
   padding: 0 0 56px;
+}
+
+[data-theme="light"] .app-main {
+  background: #f4f6f8;
 }
 
 .site-header,

@@ -31,6 +31,8 @@ export default function SubirJuego({ lang = 'ES' }) {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   const texts = {
     ES: {
@@ -328,10 +330,17 @@ export default function SubirJuego({ lang = 'ES' }) {
   const handlePublish = async (event) => {
     event.preventDefault();
 
+    if (submitLockRef.current) {
+      return;
+    }
+
     if (!formData.title.trim() || !formData.price || !dateValue) {
       notify(t.requiredMsg, 'info');
       return;
     }
+
+    submitLockRef.current = true;
+    setIsSubmitting(true);
 
     const primaryImage = mediaFiles.find((m) => m.type === 'image')?.data || '';
     const payload = {
@@ -374,6 +383,9 @@ export default function SubirJuego({ lang = 'ES' }) {
       }
     } catch (error) {
       notify(`${t.saveErrorPrefix} ${error.message}`, 'error');
+    } finally {
+      submitLockRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -445,8 +457,15 @@ export default function SubirJuego({ lang = 'ES' }) {
               <input type="text" name="price" placeholder={t.price} className="upload-input" value={formData.price} onChange={handleInputChange} required />
             </form>
 
-              <button className="btn-publicar" id="btn-publish-game" type="button" onClick={handlePublish}>
-                {editGame ? t.updateBtn : t.publish}
+              <button
+                className={`btn-publicar${isSubmitting ? ' is-loading' : ''}`}
+                id="btn-publish-game"
+                type="button"
+                onClick={handlePublish}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
+              >
+                {isSubmitting ? t.loading : (editGame ? t.updateBtn : t.publish)}
               </button>
           </div>
 

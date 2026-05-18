@@ -306,3 +306,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Light theme overrides */
+[data-theme="light"] .perfil-otro-page {
+  background: #f3f5f8;
+  color: #1f2937;
+}
+
+[data-theme="light"] .otro-left {
+  border-right: 1px solid #d7dde5;
+}
+
+[data-theme="light"] .otro-apodo,
+[data-theme="light"] .otro-rating-value,
+[data-theme="light"] .otro-right-count {
+  color: #1f2937;
+}
+
+[data-theme="light"] .otro-joined {
+  color: #6b7280;
+}
+
+[data-theme="light"] .juego-card {
+  border: 2px solid #d7dde5;
+  background: #ffffff;
+}
+
+[data-theme="light"] .juego-cover {
+  color: #1f2937;
+}
+
+[data-theme="light"] .juego-cover::after {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(15, 23, 42, 0.1));
+}
+
+[data-theme="light"] .perfil-modal {
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d7dde5;
+}
+
+[data-theme="light"] .perfil-modal-secondary {
+  border-color: #d1d5db;
+  color: #374151;
+}

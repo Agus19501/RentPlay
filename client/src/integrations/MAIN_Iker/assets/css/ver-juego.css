@@ -248,6 +248,63 @@
   text-transform: uppercase;
 }
 
+/* Light theme overrides */
+[data-theme="light"] .product-section {
+  color: #1f2937;
+}
+
+[data-theme="light"] .breadcrumb {
+  color: #4b5563;
+}
+
+[data-theme="light"] .description-text,
+[data-theme="light"] .detail-label,
+[data-theme="light"] .seller-name,
+[data-theme="light"] .rating-value {
+  color: #1f2937;
+}
+
+[data-theme="light"] .upload-image-preview-container {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .media-thumbnail {
+  background: #eef2f7;
+}
+
+[data-theme="light"] .video-thumbnail {
+  color: #1f2937;
+  background: linear-gradient(135deg, rgba(243, 107, 36, 0.18), rgba(148, 163, 184, 0.22));
+}
+
+[data-theme="light"] .upload-nav-btn {
+  color: #1f2937;
+}
+
+[data-theme="light"] .upload-nav-btn span {
+  color: #374151;
+}
+
+[data-theme="light"] .wishlist-btn {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+[data-theme="light"] .modal.active {
+  background: #ffffff;
+}
+
+[data-theme="light"] .modal-close,
+[data-theme="light"] .payment-icon,
+[data-theme="light"] .payment-name {
+  color: #1f2937;
+}
+
+[data-theme="light"] .payment-dot {
+  border-color: #9ca3af;
+  background: #ffffff;
+}
+
 @media (max-width:1000px){
   .product-content{grid-template-columns:1fr;}
   .product-gallery{order:1}

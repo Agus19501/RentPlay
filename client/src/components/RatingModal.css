@@ -9,14 +9,16 @@
 }
 
 .rating-modal {
-  width: min(1100px, 96vw);
-  max-height: 92vh;
-  overflow: auto;
+  width: min(780px, 92vw);
+  max-height: 88vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   background: #202328;
-  border: 8px solid #ff6100;
+  border: 5px solid #ff6100;
   border-radius: 8px;
   color: #f5f5f5;
-  padding: 28px 34px;
+  padding: 18px 20px;
   position: relative;
 }
 
@@ -32,33 +34,45 @@
 }
 
 .rating-modal-title {
-  margin: 0 0 24px;
+  margin: 0 0 18px;
   color: #ff6100;
-  font-size: clamp(28px, 2.6vw, 52px);
+  font-size: clamp(18px, 1.8vw, 30px);
   font-weight: 800;
 }
 
 .rating-modal-list {
   display: grid;
-  gap: 20px;
+  gap: 0;
+  max-height: 40vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 6px;
 }
 
 .rating-modal-item {
   display: grid;
-  grid-template-columns: 68px 1fr;
-  gap: 14px;
+  grid-template-columns: 46px 1fr;
+  gap: 10px;
+  padding: 18px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+.rating-modal-item + .rating-modal-item {
+  border-top: 1.5px solid #ff6100;
 }
 
 .rating-modal-item-avatar {
-  width: 68px;
-  height: 68px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   overflow: hidden;
   background: #f3f4f6;
   color: #111;
   display: grid;
   place-items: center;
-  font-size: 42px;
+  font-size: 26px;
 }
 
 .rating-modal-item-avatar img {
@@ -74,15 +88,15 @@
 }
 
 .rating-modal-item-header strong {
-  font-size: 42px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .rating-modal-stars {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 36px;
+  gap: 6px;
+  font-size: 21px;
 }
 
 .rating-modal-stars .filled,
@@ -96,19 +110,25 @@
 }
 
 .rating-modal-score {
-  font-size: 48px;
+  font-size: 27px;
   line-height: 1;
 }
 
 .rating-modal-item-content p {
   margin: 10px 0 0;
-  font-size: 22px;
+  font-size: 15px;
   line-height: 1.32;
 }
 
 .rating-modal-empty {
   margin: 0;
   color: #d1d5db;
+}
+
+.rating-modal-cant-rate {
+  margin: 0;
+  color: #d1d5db;
+  font-size: 15px;
 }
 
 .rating-modal-separator {
@@ -120,7 +140,7 @@
 .rating-modal-form h3 {
   margin: 0 0 12px;
   color: #ff6100;
-  font-size: 48px;
+  font-size: 26px;
 }
 
 .rating-modal-input-row {
@@ -134,7 +154,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 56px;
+  font-size: 32px;
 }
 
 .rating-star-button {
@@ -148,28 +168,45 @@
 
 .rating-modal-input-row input {
   width: 100%;
-  height: 72px;
+  height: 50px;
   border-radius: 999px;
-  border: 4px solid #ff6100;
+  border: 3px solid #ff6100;
   background: #07090d;
   color: #fff;
-  font-size: 22px;
-  padding: 0 26px;
+  font-size: 16px;
+  padding: 0 20px;
 }
 
 .rating-modal-submit {
-  height: 72px;
+  height: 50px;
   border: 0;
   border-radius: 999px;
   background: #ff7a22;
   color: #fff;
-  font-size: 38px;
+  font-size: 21px;
   font-weight: 800;
-  padding: 0 28px;
+  padding: 0 18px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
+}
+
+.rating-modal::-webkit-scrollbar,
+.rating-modal-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.rating-modal::-webkit-scrollbar-track,
+.rating-modal-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.rating-modal::-webkit-scrollbar-thumb,
+.rating-modal-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 122, 34, 0.9);
+  border-radius: 999px;
 }
 
 .rating-modal-submit:disabled {
@@ -178,29 +215,33 @@
 }
 
 @media (max-width: 900px) {
+  .rating-modal-list {
+    max-height: 32vh;
+  }
+
   .rating-modal-item-header strong {
-    font-size: 28px;
+    font-size: 18px;
   }
 
   .rating-modal-stars {
-    font-size: 24px;
+    font-size: 16px;
     gap: 4px;
   }
 
   .rating-modal-score {
-    font-size: 30px;
+    font-size: 20px;
   }
 
   .rating-modal-item-content p {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .rating-modal-form h3 {
-    font-size: 30px;
+    font-size: 20px;
   }
 
   .rating-modal-stars-input {
-    font-size: 34px;
+    font-size: 24px;
   }
 
   .rating-modal-input-row {
@@ -210,7 +251,7 @@
 
   .rating-modal-submit,
   .rating-modal-input-row input {
-    height: 56px;
-    font-size: 20px;
+    height: 44px;
+    font-size: 15px;
   }
 }

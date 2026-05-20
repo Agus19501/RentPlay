@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaHeart, FaStar } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
 import { notify } from '../utils/notify.js';
+import RatingModal from '../components/RatingModal.jsx';
 import './PerfilPropio.css';
 
 const tabs = [
@@ -127,6 +128,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('alquilados');
   const [usuario, setUsuario] = useState(null);
+  const [showRatingsModal, setShowRatingsModal] = useState(false);
   const [juegosSubidos, setJuegosSubidos] = useState([]);
   const [alquileres, setAlquileres] = useState([]);
   const [catalogoJuegos, setCatalogoJuegos] = useState([]);
@@ -480,7 +482,16 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
                     <FaStar key={star} className={star <= Math.round(ratingValue) ? 'perfil-star-filled' : 'perfil-star-empty'} />
                   ))}
                 </span>
-                <span className="perfil-rating-value">{ratingValue.toFixed(1)} ({reviewsValue} {t.reviewsLabel || 'reseñas'})</span>
+                <span className="perfil-rating-value">
+                  {ratingValue.toFixed(1)}{' '}
+                  <button
+                    type="button"
+                    className="perfil-reviews-link"
+                    onClick={() => setShowRatingsModal(true)}
+                  >
+                    ({reviewsValue} {t.reviewsLabel || 'reseñas'})
+                  </button>
+                </span>
               </div>
             </div>
           </div>
@@ -699,6 +710,15 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
           </section>
         </div>
       )}
+
+      <RatingModal
+        isOpen={showRatingsModal}
+        onClose={() => setShowRatingsModal(false)}
+        targetUserId={usuario?.id}
+        targetUserName={usuario?.name}
+        lang={lang}
+        onRated={() => {}}
+      />
     </div>
   );
 }

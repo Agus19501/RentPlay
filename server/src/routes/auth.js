@@ -297,20 +297,21 @@ router.get('/:userId/ratings', async (req, res) => {
       return res.status(422).json({ ok: false, message: 'ID de usuario invalido.' });
     }
 
-    const { users } = await getCollections();
+    const { users, games, rentals } = await getCollections();
     const user = await users.findOne(
       { _id: new ObjectId(targetUserId) },
-      { projection: { ratingComments: 1 } }
+      { projection: { ratingComments: 1, voters: 1 } }
     );
 
     if (!user) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
     }
 
+    // oldest first
     const ratings = Array.isArray(user.ratingComments)
       ? user.ratingComments
           .slice()
-          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+          .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
           .map((entry) => ({
             id: entry.id || `${entry.reviewerId || 'unknown'}-${entry.createdAt || Date.now()}`,
             reviewerId: entry.reviewerId || null,
@@ -322,7 +323,35 @@ router.get('/:userId/ratings', async (req, res) => {
           }))
       : [];
 
-    return res.json({ ok: true, ratings });
+    // Determine if the requesting user can rate (has rented from target and hasn't rated yet)
+    let canRate = false;
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (token) {
+      try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET || 'rentplay-dev-secret');
+        const reviewerId = payload.sub;
+        if (reviewerId !== targetUserId) {
+          const alreadyRated = Array.isArray(user.voters) && user.voters.includes(reviewerId);
+          if (!alreadyRated && ObjectId.isValid(reviewerId)) {
+            const targetGames = await games
+              .find({ uploadedBy: new ObjectId(targetUserId) }, { projection: { _id: 1 } })
+              .toArray();
+            if (targetGames.length > 0) {
+              const rental = await rentals.findOne({
+                userId: new ObjectId(reviewerId),
+                gameId: { $in: targetGames.map((g) => g._id) }
+              });
+              canRate = !!rental;
+            }
+          }
+        }
+      } catch {
+        // invalid token — canRate stays false
+      }
+    }
+
+    return res.json({ ok: true, ratings, canRate });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener valoraciones.', error: error.message });
   }
@@ -371,9 +400,24 @@ router.post('/:userId/rate', async (req, res) => {
     }
 
     // Verificar si ya ha valorado anteriormente
-    const ratings = user.voters || [];
-    if (ratings.includes(reviewerId)) {
+    const votersList = user.voters || [];
+    if (votersList.includes(reviewerId)) {
       return res.status(409).json({ ok: false, message: 'Ya has valorado a este usuario.' });
+    }
+
+    // Verificar que el reviewer haya alquilado un juego del target
+    const { games, rentals } = await getCollections();
+    if (ObjectId.isValid(reviewerId)) {
+      const targetGames = await games
+        .find({ uploadedBy: new ObjectId(targetUserId) }, { projection: { _id: 1 } })
+        .toArray();
+      const hasRented = targetGames.length > 0 && !!(await rentals.findOne({
+        userId: new ObjectId(reviewerId),
+        gameId: { $in: targetGames.map((g) => g._id) }
+      }));
+      if (!hasRented) {
+        return res.status(403).json({ ok: false, message: 'Solo puedes valorar a usuarios cuyo juego hayas alquilado.' });
+      }
     }
 
     // Calculamos la nueva media

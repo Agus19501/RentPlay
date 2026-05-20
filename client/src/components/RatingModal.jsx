@@ -18,6 +18,7 @@ function StarRow({ value }) {
 
 export default function RatingModal({ isOpen, onClose, targetUserId, targetUserName, lang = 'ES', onRated }) {
   const [ratings, setRatings] = useState([]);
+  const [canRate, setCanRate] = useState(false);
   const [loadingRatings, setLoadingRatings] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -33,7 +34,8 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
       noRatings: 'Aun no hay valoraciones.',
       needComment: 'El comentario es obligatorio.',
       commentMax: `Maximo ${MAX_COMMENT_LENGTH} caracteres.`,
-      ratedOk: 'Valoracion enviada correctamente.'
+      ratedOk: 'Valoracion enviada correctamente.',
+      cantRate: 'Solo puedes valorar a usuarios cuyo juego hayas alquilado.'
     },
     EN: {
       title: 'OTHER USER RATINGS',
@@ -43,7 +45,8 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
       noRatings: 'There are no ratings yet.',
       needComment: 'Comment is required.',
       commentMax: `Maximum ${MAX_COMMENT_LENGTH} characters.`,
-      ratedOk: 'Rating sent successfully.'
+      ratedOk: 'Rating sent successfully.',
+      cantRate: 'You can only rate users whose game you have rented.'
     }
   })[lang] || ({
     title: 'VALORACIONES DE OTROS USUARIOS',
@@ -53,7 +56,8 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
     noRatings: 'Aun no hay valoraciones.',
     needComment: 'El comentario es obligatorio.',
     commentMax: `Maximo ${MAX_COMMENT_LENGTH} caracteres.`,
-    ratedOk: 'Valoracion enviada correctamente.'
+    ratedOk: 'Valoracion enviada correctamente.',
+    cantRate: 'Solo puedes valorar a usuarios cuyo juego hayas alquilado.'
   }), [lang]);
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
         const response = await apiRequest(`/api/auth/${targetUserId}/ratings`);
         if (!cancelled) {
           setRatings(response.ratings || []);
+          setCanRate(response.canRate || false);
         }
       } catch (error) {
         if (!cancelled) {
@@ -120,6 +125,7 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
 
       const listResponse = await apiRequest(`/api/auth/${targetUserId}/ratings`);
       setRatings(listResponse.ratings || []);
+      setCanRate(false); // ya valoró, ocultar form
     } catch (error) {
       notify(error.message || 'Error al enviar valoracion.', 'error');
     } finally {
@@ -160,7 +166,6 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
                 <div className="rating-modal-item-header">
                   <strong>{item.reviewerName}</strong>
                   <StarRow value={item.rating} />
-                  <span className="rating-modal-score">{Number(item.rating || 0).toFixed(1)}</span>
                 </div>
                 <p>{item.comment}</p>
               </div>
@@ -171,36 +176,42 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
         <div className="rating-modal-separator" />
 
         <div className="rating-modal-form">
-          <h3>{texts.yourRating}</h3>
-          <div className="rating-modal-input-row">
-            <div className="rating-modal-stars-input">
-              {[1, 2, 3, 4, 5].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  className="rating-star-button"
-                  onClick={() => setSelectedRating(num)}
-                  onMouseEnter={() => setHoverRating(num)}
-                  onMouseLeave={() => setHoverRating(0)}
-                >
-                  <FaStar className={num <= (hoverRating || selectedRating) ? 'filled' : 'empty'} />
+          {!canRate ? (
+            <p className="rating-modal-cant-rate">{texts.cantRate}</p>
+          ) : (
+            <>
+              <h3>{texts.yourRating}</h3>
+              <div className="rating-modal-input-row">
+                <div className="rating-modal-stars-input">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      className="rating-star-button"
+                      onClick={() => setSelectedRating(num)}
+                      onMouseEnter={() => setHoverRating(num)}
+                      onMouseLeave={() => setHoverRating(0)}
+                    >
+                      <FaStar className={num <= (hoverRating || selectedRating) ? 'filled' : 'empty'} />
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value.slice(0, MAX_COMMENT_LENGTH))}
+                  placeholder={texts.commentPlaceholder}
+                  maxLength={MAX_COMMENT_LENGTH}
+                />
+
+                <button type="button" className="rating-modal-submit" onClick={sendRating} disabled={submitting || !selectedRating || !comment.trim()}>
+                  <span>{texts.send}</span>
+                  <FaPaperPlane />
                 </button>
-              ))}
-            </div>
-
-            <input
-              type="text"
-              value={comment}
-              onChange={(event) => setComment(event.target.value.slice(0, MAX_COMMENT_LENGTH))}
-              placeholder={texts.commentPlaceholder}
-              maxLength={MAX_COMMENT_LENGTH}
-            />
-
-            <button type="button" className="rating-modal-submit" onClick={sendRating} disabled={submitting || !selectedRating || !comment.trim()}>
-              <span>{texts.send}</span>
-              <FaPaperPlane />
-            </button>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </section>
     </div>

@@ -112,6 +112,22 @@
   font-weight: 500;
 }
 
+.perfil-reviews-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #ff6100;
+  font-size: inherit;
+  font-weight: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.perfil-reviews-link:hover {
+  color: #ff8c3a;
+}
+
 .perfil-avatar-edit {
   position: absolute;
   right: 0.35rem;

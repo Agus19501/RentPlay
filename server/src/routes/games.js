@@ -16,18 +16,6 @@ function isBase64Image(str) {
   return typeof str === 'string' && str.startsWith('data:image/');
 }
 
-function getPublicAvatarValue(user) {
-  if (!user?.avatar || typeof user.avatar !== 'string') {
-    return null;
-  }
-
-  if (isBase64Image(user.avatar)) {
-    return `/api/auth/${user._id.toString()}/avatar`;
-  }
-
-  return user.avatar;
-}
-
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -268,7 +256,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: getPublicAvatarValue(user),
+            avatar: user.avatar,
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -284,7 +272,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: getPublicAvatarValue(user),
+            avatar: user.avatar,
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -339,43 +327,20 @@ router.get('/:gameId', async (req, res) => {
       return res.status(422).json({ ok: false, message: 'Juego invalido.' });
     }
 
-    const { games, users, rentals } = await getCollections();
+    const { games } = await getCollections();
     const game = await games.findOne({ _id: new ObjectId(gameId) });
 
     if (!game) {
       return res.status(404).json({ ok: false, message: 'Juego no encontrado.' });
     }
 
-    const normalizedGame = normalizeGame(game, {
-      includeBase64Image: !compact,
-      includeMedia: true
+    return res.json({
+      ok: true,
+      game: normalizeGame(game, {
+        includeBase64Image: !compact,
+        includeMedia: true
+      })
     });
-
-    const uploaderId = game.uploadedBy?.toString();
-    if (uploaderId && ObjectId.isValid(uploaderId)) {
-      const sellerUser = await users.findOne({ _id: new ObjectId(uploaderId) });
-      if (sellerUser) {
-        normalizedGame.seller = {
-          id: sellerUser._id.toString(),
-          name: sellerUser.name,
-          avatar: getPublicAvatarValue(sellerUser),
-          rating: sellerUser.rating || 0,
-          reviews: sellerUser.reviews || 0
-        };
-      }
-    }
-
-    const activeRental = await rentals.findOne({
-      gameId: new ObjectId(gameId),
-      status: 'active',
-      expiresAt: { $gt: new Date() }
-    }, { projection: { _id: 1 } });
-
-    if (activeRental) {
-      normalizedGame.status = 'rented';
-    }
-
-    return res.json({ ok: true, game: normalizedGame });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener juego.' });
   }

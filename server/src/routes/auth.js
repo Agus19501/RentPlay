@@ -7,22 +7,6 @@ import { clearGamesListCache } from './games.js';
 
 const router = Router();
 
-function isBase64Image(str) {
-  return typeof str === 'string' && str.startsWith('data:image/');
-}
-
-function toPublicAvatar(userId, avatar) {
-  if (!avatar || typeof avatar !== 'string') {
-    return null;
-  }
-
-  if (isBase64Image(avatar)) {
-    return `/api/auth/${userId}/avatar`;
-  }
-
-  return avatar;
-}
-
 function createSession(user) {
   const token = jwt.sign(
     {
@@ -246,7 +230,7 @@ router.get('/top-rated', async (req, res) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        avatar: toPublicAvatar(user._id.toString(), user.avatar),
+        avatar: user.avatar || null,
         rating: Number(user.rating || 0),
         reviews: Number(user.reviews || 0),
         gameCount: gameCountByUserId.get(user._id.toString()) || 0,
@@ -255,48 +239,6 @@ router.get('/top-rated', async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener perfiles destacados.', error: error.message });
-  }
-});
-
-router.get('/:userId/avatar', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    if (!ObjectId.isValid(userId)) {
-      return res.status(422).send('ID de usuario invalido.');
-    }
-
-    const { users } = await getCollections();
-    const user = await users.findOne(
-      { _id: new ObjectId(userId) },
-      { projection: { avatar: 1 } }
-    );
-
-    if (!user?.avatar) {
-      return res.status(404).send('Avatar no encontrado.');
-    }
-
-    if (isBase64Image(user.avatar)) {
-      const matches = user.avatar.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-      if (!matches) {
-        return res.status(400).send('Formato de avatar invalido.');
-      }
-
-      const mime = matches[1];
-      const data = matches[2];
-      const buffer = Buffer.from(data, 'base64');
-      res.set('Content-Type', mime);
-      res.set('Cache-Control', 'public, max-age=31536000');
-      return res.send(buffer);
-    }
-
-    if (typeof user.avatar === 'string' && /^https?:\/\//i.test(user.avatar)) {
-      return res.redirect(user.avatar);
-    }
-
-    return res.status(404).send('Avatar no encontrado.');
-  } catch {
-    return res.status(500).send('Error al servir avatar.');
   }
 });
 

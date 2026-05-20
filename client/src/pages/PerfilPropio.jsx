@@ -241,25 +241,25 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
             contrasena: ''
           });
 
-          // Cargar juegos del usuario
-          const gamesJson = await apiRequest(`/api/games/user/${userData.user.id}?lite=1`);
+          const [gamesJson, rentalsData, ownerRentalsData, gamesCatalogData] = await Promise.all([
+            apiRequest(`/api/games/user/${userData.user.id}?lite=1`).catch(() => ({ games: [] })),
+            apiRequest('/api/rentals/mine', { token: session.token }).catch(() => ({ rentals: [] })),
+            apiRequest('/api/rentals/owner-active', { token: session.token }).catch(() => ({ ok: false, activeRentals: [] })),
+            apiRequest('/api/games?lite=1').catch(() => ({ games: [] }))
+          ]);
+
           if (gamesJson.games) {
             setJuegosSubidos(gamesJson.games);
           }
 
-          // Cargar alquileres del usuario
-          const rentalsData = await apiRequest('/api/rentals/mine', { token: session.token });
           if (rentalsData.rentals) {
             setAlquileres(rentalsData.rentals);
           }
 
-          const ownerRentalsData = await apiRequest('/api/rentals/owner-active', { token: session.token });
           if (ownerRentalsData.ok && Array.isArray(ownerRentalsData.activeRentals)) {
             setOwnerActiveRentalGameIds(new Set(ownerRentalsData.activeRentals.map((rental) => String(rental.gameId)).filter(Boolean)));
           }
 
-          // Cargar catálogo ligero para resolver favoritos guardados en wishlist
-          const gamesCatalogData = await apiRequest('/api/games?lite=1');
           const catalogo = gamesCatalogData.games || [];
           setCatalogoJuegos(catalogo);
           const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');

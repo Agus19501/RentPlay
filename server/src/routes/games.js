@@ -16,6 +16,18 @@ function isBase64Image(str) {
   return typeof str === 'string' && str.startsWith('data:image/');
 }
 
+function getPublicAvatarValue(user) {
+  if (!user?.avatar || typeof user.avatar !== 'string') {
+    return null;
+  }
+
+  if (isBase64Image(user.avatar)) {
+    return `/api/auth/${user._id.toString()}/avatar`;
+  }
+
+  return user.avatar;
+}
+
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -256,7 +268,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: user.avatar,
+            avatar: getPublicAvatarValue(user),
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -272,7 +284,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: user.avatar,
+            avatar: getPublicAvatarValue(user),
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -346,7 +358,7 @@ router.get('/:gameId', async (req, res) => {
         normalizedGame.seller = {
           id: sellerUser._id.toString(),
           name: sellerUser.name,
-          avatar: sellerUser.avatar || null,
+          avatar: getPublicAvatarValue(sellerUser),
           rating: sellerUser.rating || 0,
           reviews: sellerUser.reviews || 0
         };

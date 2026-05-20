@@ -450,10 +450,13 @@ export default function VerJuego({ lang = 'ES' }) {
               {mediaFiles.length > 0 && (
                 <div className="media-list">
                   {mediaFiles.map((media, index) => (
-                    <div
+                    <button
                       key={media.id}
+                      type="button"
                       className={`media-thumbnail ${index === currentMediaIndex ? 'active' : ''}`}
                       onClick={() => setCurrentMediaIndex(index)}
+                      aria-label={`${lang === 'EN' ? 'Show media' : 'Mostrar media'} ${index + 1}`}
+                      aria-pressed={index === currentMediaIndex}
                     >
                       {media.type === 'image' ? (
                         <img src={media.data} alt={`Media ${index + 1}`} />
@@ -462,7 +465,7 @@ export default function VerJuego({ lang = 'ES' }) {
                           <span>VIDEO</span>
                         </div>
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -540,10 +543,11 @@ export default function VerJuego({ lang = 'ES' }) {
             <div className="seller-section">
               <h3 className="section-title">{t.owner}</h3>
               <div className="seller-card">
-                <div 
-                  className="seller-avatar-placeholder" 
+                <button 
+                  type="button"
+                  className="seller-avatar-placeholder seller-avatar-button" 
                   onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}
-                  style={{ cursor: 'pointer' }}
+                  aria-label={selectedGame.seller?.id ? `${lang === 'EN' ? 'Open profile of' : 'Abrir perfil de'} ${selectedGame.seller?.name || t.noSeller}` : undefined}
                 >
                   {selectedGame.seller?.avatar ? (
                     <img 
@@ -553,7 +557,7 @@ export default function VerJuego({ lang = 'ES' }) {
                   ) : (
                     <img src={avatar} alt="avatar" />
                   )}
-                </div>
+                </button>
                 <h4 className="seller-name">{selectedGame.seller?.name || t.noSeller}</h4>
                 <div className="seller-rating">
                   {[1, 2, 3, 4, 5].map((num) => (

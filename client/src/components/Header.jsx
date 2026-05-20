@@ -151,11 +151,11 @@ const Header = ({ lang, setLang, session, onLogout }) => {
             </div>
           ) : (
             <div className="auth-actions">
-              <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/login')}>
+              <button className="icon-btn action-item auth-action-btn btn-login" onClick={() => navigate('/login')}>
                 <span className="icon-wrapper"><FaSignInAlt /></span>
                 <span className="action-text">{current.login}</span>
               </button>
-              <button className="icon-btn action-item auth-action-btn" onClick={() => navigate('/register')}>
+              <button className="icon-btn action-item auth-action-btn btn-register" onClick={() => navigate('/register')}>
                 <span className="icon-wrapper"><FaUserPlus /></span>
                 <span className="action-text">{current.register}</span>
               </button>

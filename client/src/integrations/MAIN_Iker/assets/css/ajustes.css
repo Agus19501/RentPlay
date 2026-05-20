@@ -2,10 +2,15 @@
 .settings-main {
   background: #262626;
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 .settings-container {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
   padding: 48px 60px;
+  box-sizing: border-box;
 }
 
 .sr-only {
@@ -21,6 +26,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 28px;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Card */
@@ -32,6 +39,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .settings-card-title {
@@ -60,7 +69,8 @@
   color: #fff;
   font-size: 15px;
   font-weight: 500;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .settings-separator {
@@ -202,6 +212,7 @@
   display: flex;
   gap: 28px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .custom-radio {
@@ -238,7 +249,7 @@
 /* ── Language select ── */
 .custom-select-wrapper {
   position: relative;
-  width: 220px;
+  width: min(220px, 100%);
 }
 
 .settings-select {
@@ -421,5 +432,44 @@
   }
   .settings-container {
     padding: 24px 20px;
+  }
+  .settings-row {
+    flex-wrap: wrap;
+  }
+  .toggle-row {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .setting-label {
+    max-width: 100%;
+  }
+  .payment-methods-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-container {
+    padding: 18px 12px;
+  }
+  .settings-card {
+    padding: 20px 14px;
+  }
+  .theme-toggle-row {
+    gap: 12px;
+  }
+  .theme-switch {
+    width: 72px;
+    height: 36px;
+  }
+  .theme-switch .slider::after {
+    width: 28px;
+    height: 28px;
+    top: 4px;
+    left: 4px;
+  }
+  .theme-switch input:checked + .slider::after {
+    transform: translateX(36px);
   }
 }

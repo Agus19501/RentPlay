@@ -439,6 +439,7 @@ function AuthPage({ mode, onAuth, session, lang, setLang }) {
           </aside>
         </section>
       </main>
+      <Footer lang={lang} />
     </div>
   );
 }

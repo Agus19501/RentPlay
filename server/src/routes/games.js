@@ -327,20 +327,43 @@ router.get('/:gameId', async (req, res) => {
       return res.status(422).json({ ok: false, message: 'Juego invalido.' });
     }
 
-    const { games } = await getCollections();
+    const { games, users, rentals } = await getCollections();
     const game = await games.findOne({ _id: new ObjectId(gameId) });
 
     if (!game) {
       return res.status(404).json({ ok: false, message: 'Juego no encontrado.' });
     }
 
-    return res.json({
-      ok: true,
-      game: normalizeGame(game, {
-        includeBase64Image: !compact,
-        includeMedia: true
-      })
+    const normalizedGame = normalizeGame(game, {
+      includeBase64Image: !compact,
+      includeMedia: true
     });
+
+    const uploaderId = game.uploadedBy?.toString();
+    if (uploaderId && ObjectId.isValid(uploaderId)) {
+      const sellerUser = await users.findOne({ _id: new ObjectId(uploaderId) });
+      if (sellerUser) {
+        normalizedGame.seller = {
+          id: sellerUser._id.toString(),
+          name: sellerUser.name,
+          avatar: sellerUser.avatar || null,
+          rating: sellerUser.rating || 0,
+          reviews: sellerUser.reviews || 0
+        };
+      }
+    }
+
+    const activeRental = await rentals.findOne({
+      gameId: new ObjectId(gameId),
+      status: 'active',
+      expiresAt: { $gt: new Date() }
+    }, { projection: { _id: 1 } });
+
+    if (activeRental) {
+      normalizedGame.status = 'rented';
+    }
+
+    return res.json({ ok: true, game: normalizedGame });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener juego.' });
   }

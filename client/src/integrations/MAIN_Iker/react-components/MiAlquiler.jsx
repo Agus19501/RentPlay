@@ -174,14 +174,14 @@ export default function MiAlquiler({ lang = 'ES' }) {
     if (timerRef.current) clearInterval(timerRef.current);
     
     if (!latestRental?.expiresAt) {
-      setLocalTimeRemaining('00:00:00');
+      setLocalTimeRemaining('0 s');
       return;
     }
 
     const updateCountdown = () => {
       const total = Date.parse(latestRental.expiresAt) - Date.parse(new Date());
       if (total <= 0) {
-        setLocalTimeRemaining('0 días 0 horas 0 seg');
+        setLocalTimeRemaining('0 s');
         clearInterval(timerRef.current);
         return;
       }
@@ -191,16 +191,22 @@ export default function MiAlquiler({ lang = 'ES' }) {
       const minutes = Math.floor((total % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((total % (1000 * 60)) / 1000);
 
-      const parts = [];
-      if (days > 0) parts.push(`${days} día${days !== 1 ? 's' : ''}`);
-      if (hours > 0 || days > 0) parts.push(`${hours} h`);
       if (days > 0) {
-        parts.push(`${String(minutes).padStart(2, '0')}m`);
-      } else {
-        parts.push(`${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`);
+        setLocalTimeRemaining(`${days} d ${hours} h ${minutes} m`);
+        return;
       }
 
-      setLocalTimeRemaining(parts.join(' '));
+      if (hours > 0) {
+        setLocalTimeRemaining(`${hours} h ${minutes} m ${seconds} s`);
+        return;
+      }
+
+      if (minutes > 0) {
+        setLocalTimeRemaining(`${minutes} m ${seconds} s`);
+        return;
+      }
+
+      setLocalTimeRemaining(`${seconds} s`);
     };
 
     updateCountdown();

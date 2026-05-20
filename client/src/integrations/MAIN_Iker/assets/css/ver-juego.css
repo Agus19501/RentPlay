@@ -2,36 +2,29 @@
 :root{--bg:#262626;--orange:#f36b24;--white:#ffffff}
 
 .main-content{background:var(--bg);color:var(--white);padding:36px 48px}
-.container{max-width:1200px;margin:0 auto}
+.container{max-width:1280px;margin:0 auto}
+.breadcrumb{margin-bottom:18px;color:rgba(255,255,255,0.7);font-size:14px}
 .product-section{margin-top:12px}
 .product-content {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1.3fr) minmax(260px, 320px);
+  gap: 28px;
   align-items: start;
 }
 
 /* Ajustes para cada columna */
-.product-gallery { grid-column: 1 / 2; }
-.product-info { grid-column: 2 / 4; } /* Ocupa las dos del medio */
-.seller-section { grid-column: 4 / 5; }
-
-@media (max-width: 1000px) {
-  .product-content {
-    grid-template-columns: 1fr;
-  }
-  .product-gallery, .product-info, .seller-section {
-    grid-column: 1 / -1;
-  }
-}
+.product-gallery { grid-column: 1 / 2; display:flex; flex-direction:column; align-items:center; }
+.product-info { grid-column: 2 / 3; min-width:0; }
+.seller-section { grid-column: 3 / 4; }
 .image-frame{
-  width:260px;
+  width:min(100%, 320px);
   padding:3px;
   background:var(--orange);
   border:2px solid rgba(243, 107, 36, 0.55);
   border-radius:8px;
+  box-shadow:0 18px 36px rgba(0,0,0,0.28);
 }
-.main-image{width:100%;height:360px;object-fit:cover;display:block}
+.main-image{width:100%;height:420px;object-fit:cover;display:block}
 .gallery-controls{display:flex;gap:18px;margin-top:12px}
 .btn-nav-prev,.btn-nav-next{background:transparent;border:0;color:var(--white);cursor:pointer;display:flex;flex-direction:column;align-items:center}
 .btn-nav-prev span,.btn-nav-next span{margin-top:8px;font-size:13px}
@@ -44,27 +37,41 @@
 .product-title{flex:1;text-align:left;font-size:44px;color:var(--orange);letter-spacing:2px;margin:6px 0 12px}
 .product-header{display:flex;align-items:center;justify-content:flex-start;gap:18px}
 .wishlist-btn{background:transparent;border:3px solid rgba(255,255,255,0.2);width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);cursor:pointer}
+.wishlist-btn svg{font-size:22px}
 .section-title{color:var(--orange);font-size:20px;margin:18px 0}
 .description-text{color:rgba(255,255,255,0.85);line-height:1.8;font-size:18px}
-.rental-details{display:flex;gap:30px;margin-top:18px;align-items:center}
+.rental-details{display:flex;gap:30px;margin-top:18px;align-items:stretch;flex-wrap:wrap}
 .detail-item{display:flex;flex-direction:column}
 .detail-label{font-size:18px;letter-spacing:1px}
 .detail-value{font-size:20px;font-weight:800;color:var(--orange)}
 .detail-value.price{font-size:28px}
-.btn-rent{background:var(--orange);color:var(--white);border-radius:40px;padding:12px 36px;border:6px solid #fff;font-weight:800;cursor:pointer;margin-top:12px}
+.btn-rent{background:var(--orange);color:var(--white);border-radius:40px;padding:12px 36px;border:6px solid #fff;font-weight:800;cursor:pointer;margin-top:12px;min-width:220px;max-width:100%}
 
 /* right seller */
 .seller-section{padding-top:6px}
-.seller-card{text-align:center}
+.seller-card{text-align:center;background:rgba(17,17,17,0.82);border:1px solid rgba(243,107,36,0.2);border-radius:20px;padding:24px 22px;box-shadow:0 18px 38px rgba(0,0,0,0.2)}
 .seller-avatar-placeholder{width:160px;height:160px;margin:12px auto;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.seller-avatar-button{border:none;padding:0;cursor:pointer}
+.seller-avatar-button:focus-visible,
+.media-thumbnail:focus-visible,
+.btn-rent:focus-visible,
+.btn-valorar:focus-visible,
+.btn-contactar:focus-visible,
+.upload-nav-btn:focus-visible,
+.wishlist-btn:focus-visible{
+  outline:3px solid rgba(243,107,36,0.9);
+  outline-offset:3px;
+}
 .seller-avatar-placeholder img{width:100%;height:100%;object-fit:cover}
 .seller-name{font-size:22px;margin-top:8px}
 .seller-rating{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
 .seller-rating svg{color:var(--orange);font-size:22px}
-.btn-valorar{margin-top:12px;width:100%;box-sizing:border-box;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:15px;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
-.btn-valorar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
-.btn-contactar{margin-top:10px;width:100%;box-sizing:border-box;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:15px;text-align:center;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
-.btn-contactar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
+.seller-card .btn-valorar,
+.seller-card .btn-contactar{width:100%;box-sizing:border-box;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:15px;text-align:center;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
+.seller-card .btn-valorar{margin-top:12px}
+.seller-card .btn-contactar{margin-top:10px}
+.seller-card .btn-valorar:hover,
+.seller-card .btn-contactar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
 
 /* game meta tags (genre, devs) */
 .game-meta-tags{margin-top:14px;display:flex;flex-direction:column;gap:6px}
@@ -202,6 +209,9 @@
   position: relative;
   width: 80px;
   height: 100px;
+  padding: 0;
+  border: 3px solid transparent;
+  appearance: none;
   border: 3px solid transparent;
   border-radius: 8px;
   overflow: hidden;
@@ -272,6 +282,32 @@
   color: #1f2937;
 }
 
+[data-theme="light"] .game-meta-line {
+  color: #374151;
+}
+
+[data-theme="light"] .seller-card {
+  background: #ffffff;
+  border-color: #d7dde5;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .seller-rating {
+  color: #1f2937;
+}
+
+[data-theme="light"] .seller-card .btn-valorar,
+[data-theme="light"] .seller-card .btn-contactar {
+  border-color: #f36b24;
+  color: #f36b24;
+}
+
+[data-theme="light"] .seller-card .btn-valorar:hover,
+[data-theme="light"] .seller-card .btn-contactar:hover {
+  background: #f36b24;
+  color: #111827;
+}
+
 [data-theme="light"] .upload-image-preview-container {
   background: #f8fafc;
 }
@@ -313,9 +349,89 @@
   background: #ffffff;
 }
 
-@media (max-width:1000px){
-  .product-content{grid-template-columns:1fr;}
+@media (max-width: 1180px) {
+  .main-content{padding:28px 28px 40px}
+  .product-content{grid-template-columns:minmax(250px, 300px) minmax(0, 1fr);gap:24px}
+  .product-gallery{grid-column:1 / 2}
+  .product-info{grid-column:2 / 3}
+  .seller-section{grid-column:1 / -1}
+  .seller-card{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:18px;text-align:left}
+  .seller-avatar-placeholder{margin:0;width:116px;height:116px}
+  .seller-name{margin:0 0 8px}
+  .seller-rating{justify-content:flex-start}
+}
+
+@media (max-width: 1024px) {
+  .product-content{display:flex;flex-direction:column;gap:22px}
+  .product-gallery,.product-info,.seller-section{width:100%}
+  .product-gallery{align-items:flex-start}
+  .seller-section{padding-top:0}
+}
+
+@media (max-width: 920px) {
+  .main-content{padding:24px 20px 36px}
+  .product-content{gap:22px}
   .product-gallery{order:1}
   .product-info{order:2}
   .seller-section{order:3}
+  .image-frame{width:min(100%, 460px)}
+  .main-image{height:clamp(300px, 62vw, 420px)}
+  .product-header{align-items:flex-start}
+  .product-title{font-size:clamp(30px, 6vw, 42px);margin-bottom:4px}
+  .description-text{font-size:16px}
+  .detail-label{font-size:15px}
+  .detail-value{font-size:18px}
+  .detail-value.price{font-size:24px}
+  .btn-rent{width:100%;min-width:0}
+  .seller-card{display:block;text-align:center;padding:22px 18px}
+  .seller-avatar-placeholder{margin:8px auto 0;width:136px;height:136px}
+  .seller-rating{justify-content:center}
+}
+
+@media (max-width: 680px) {
+  .main-content{padding:18px 14px 28px}
+  .breadcrumb{font-size:12px;margin-bottom:12px}
+  .product-section{margin-top:0}
+  .image-frame{width:100%}
+  .main-image{height:clamp(240px, 78vw, 360px)}
+  .product-header{gap:12px}
+  .wishlist-btn{width:46px;height:46px;border-width:2px;flex:0 0 46px}
+  .wishlist-btn svg{font-size:18px}
+  .section-title{font-size:16px;margin:14px 0 10px}
+  .description-text{font-size:15px;line-height:1.65}
+  .game-meta-line{font-size:14px}
+  .rental-details{flex-direction:column;gap:12px;align-items:stretch}
+  .detail-item{padding:14px 16px;border-radius:14px;background:rgba(255,255,255,0.04)}
+  .detail-value.price{font-size:22px}
+  .rental-status{font-size:16px;line-height:1.4}
+  .rental-status svg{font-size:20px}
+  .media-list{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:6px}
+  .media-thumbnail{width:72px;height:92px;flex:0 0 auto}
+  .upload-image-nav{gap:12px}
+  .nav-icon-circle{width:46px;height:46px}
+  .upload-nav-btn span{font-size:12px}
+  .seller-card{padding:18px 16px;border-radius:16px}
+  .seller-avatar-placeholder{width:112px;height:112px}
+  .seller-name{font-size:20px}
+  .seller-rating{gap:6px;flex-wrap:wrap}
+  .seller-rating svg{font-size:18px}
+  .seller-card .btn-valorar,
+  .seller-card .btn-contactar{padding:12px 14px;font-size:14px;width:100%;max-width:280px;margin-left:auto;margin-right:auto}
+  .modal.active{width:min(94vw, 500px);max-height:88vh;overflow:auto}
+  .modal-rental-content{padding:24px 18px 20px}
+  .modal-title{font-size:20px;margin-bottom:20px;padding-right:28px}
+  .payment-methods{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:24px}
+  .payment-option{flex-direction:row;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.04)}
+  .payment-icon{font-size:28px;margin-bottom:0}
+  .payment-name{flex:1;text-align:left}
+  .modal-btn-rent{width:100%}
+}
+
+@media (max-width: 420px) {
+  .product-title{font-size:26px;letter-spacing:1px}
+  .detail-item{padding:12px 14px}
+  .btn-rent{border-width:4px;padding:12px 20px;font-size:14px}
+  .seller-card{padding:16px 14px}
+  .payment-option{padding:10px 12px}
+  .payment-name{font-size:13px}
 }

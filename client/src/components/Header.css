@@ -102,6 +102,7 @@
   justify-content: space-between;
   width: 100%;
   max-width: 1800px;
+  min-width: 0;
 }
 
 .logo {
@@ -183,10 +184,17 @@
 
 .header-actions { display: flex; align-items: center; gap: 35px; }
 
+
 .auth-actions {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .auth-actions .btn-register {
+    display: none;
+  }
 }
 
 .profile-menu-container {
@@ -334,12 +342,14 @@
 }
 
 /* TRAMO 850px: Cambio de texto a "FILTROS" y reducción simultánea del botón "+" */
-@media (max-width: 850px) {
-  .search-bar { margin: 0 10px; max-width: 300px; height: 45px; padding: 0 10px 0 15px; }
+@media (max-width: 1024px) {
+  .search-bar { margin: 0 10px; max-width: 420px; height: 45px; padding: 0 10px 0 15px; }
   .search-bar input { font-size: 14px; }
   .txt-full { display: none; }
   .txt-short { display: inline; }
   .btn-filters { padding: 0 12px; height: 35px; font-size: 11px; border-width: 1px; }
+  .language-toggle,
+  .btn-filters { display: none; }
   
   /* 👈 MODIFICA ESTE VALOR: Tamaño del botón Añadir para igualarlo a la circunferencia de Perfil */
   .btn-add { 
@@ -353,23 +363,26 @@
 
 /* TRAMO 600px: Vista Móvil Final (Ajustes de logo y separación de iconos derechos) */
 @media (max-width: 600px) {
-  .main-header { padding: 8px 10px; }
+  .main-header { padding: 8px 6px 8px 10px; }
   
-  /* 👈 MODIFICA ESTE VALOR: Sube los píxeles para mover el logo más a la derecha */
   .logo { 
-    margin-left: 12px; 
+    margin-left: -4px;
+    margin-right: 2px;
+    flex: 0 0 auto;
   } 
   .logo-icon { width: 30px; height: 30px; }
   .play-svg { font-size: 10px; }
 
   .search-bar { 
-    margin: 0 4px; 
+    margin: 0 1px; 
     height: 35px; 
     padding: 0 6px 0 8px; 
-    flex: 4; 
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
   }
   
-  .search-bar input { width: 80px; font-size: 10px; margin-left: 0; padding: 0 4px; }
+  .search-bar input { width: 100%; font-size: 10px; margin-left: 0; padding: 0 4px; }
   .search-icon { font-size: 10px; }
   
   .btn-filters { 
@@ -382,10 +395,10 @@
 
   /* 👈 MODIFICA ESTE VALOR: Sube los píxeles de margin-left para separar los botones del buscador */
   .header-actions { 
-    gap: 8px; 
-    flex: 1.5; 
+    gap: 6px; 
+    flex: 0 0 auto;
     justify-content: flex-end; 
-    margin-left: 15px; /* Empuja el bloque entero a la derecha */
+    margin-left: 20px;
   }
   
   .icon-wrapper { font-size: 22px; } 

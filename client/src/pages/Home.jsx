@@ -89,7 +89,11 @@ const Home = ({ lang }) => {
         if (active) {
           const nextGames = gamesRes.games || [];
           setGames(nextGames);
-          localStorage.setItem(HOME_GAMES_CACHE_KEY, JSON.stringify({ ts: Date.now(), games: nextGames }));
+          try {
+            localStorage.setItem(HOME_GAMES_CACHE_KEY, JSON.stringify({ ts: Date.now(), games: nextGames }));
+          } catch {
+            // Ignore cache write failures so a successful API response still renders Home.
+          }
         }
       })
       .catch(() => {

@@ -540,7 +540,8 @@ export default function SubirJuego({ lang = 'ES' }) {
                   <span className="upload-input-suffix">{t.eurUnit}</span>
                 </div>
               </div>
-            </form>
+
+
 
               <button
                 className={`btn-publicar${isSubmitting ? ' is-loading' : ''}`}
@@ -552,6 +553,7 @@ export default function SubirJuego({ lang = 'ES' }) {
               >
                 {isSubmitting ? t.loading : (editGame ? t.updateBtn : t.publish)}
               </button>
+            </form>
           </div>
 
           <div className="upload-image-section">

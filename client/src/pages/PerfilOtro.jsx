@@ -26,15 +26,12 @@ export default function PerfilOtro({ lang = 'ES' }) {
 
   const texts = {
     ES: {
-      noGamesToContact: 'Este usuario no tiene juegos disponibles para contactar.',
-      chatError: 'Error al iniciar el chat',
       recently: 'Recientemente',
       ratedOk: '¡Usuario valorado exitosamente!',
       alreadyRated: 'Solo puedes valorar a un usuario una vez',
       ratingError: 'Error al enviar la valoración',
       rate: 'Valorar',
       joinedOn: 'Se unió el',
-      contact: 'Contactar',
       gamesForRent: 'JUEGOS PUESTOS EN ALQUILER',
       uploadedGames: 'JUEGOS SUBIDOS',
       rateTo: 'Valorar a',
@@ -44,15 +41,12 @@ export default function PerfilOtro({ lang = 'ES' }) {
       noProvided: 'No proporcionado'
     },
     EN: {
-      noGamesToContact: 'This user has no available games to contact about.',
-      chatError: 'Error starting the chat',
       recently: 'Recently',
       ratedOk: 'User rated successfully!',
       alreadyRated: 'You can only rate a user once',
       ratingError: 'Error sending rating',
       rate: 'Rate',
       joinedOn: 'Joined on',
-      contact: 'Contact',
       gamesForRent: 'GAMES LISTED FOR RENT',
       uploadedGames: 'UPLOADED GAMES',
       rateTo: 'Rate',
@@ -63,38 +57,6 @@ export default function PerfilOtro({ lang = 'ES' }) {
     }
   };
   const t = texts[lang] || texts.ES;
-
-  async function handleContact() {
-    const session = getSession();
-    if (!session?.token) {
-      notify(loginRequiredMessage, 'info');
-      return;
-    }
-
-    if (juegosOtro.length === 0) {
-      notify(t.noGamesToContact, 'info');
-      return;
-    }
-
-    try {
-      // Creamos un chat vinculado al primer juego del vendedor (o podríamos dejar que el usuario elija)
-      const res = await apiRequest('/api/chats', {
-        method: 'POST',
-        token: session.token,
-        body: {
-          sellerId: usuarioOtro.id,
-          gameId: juegosOtro[0].id
-        }
-      });
-
-      if (res.chatId) {
-        navigate(`/chats?id=${res.chatId}`);
-      }
-    } catch (e) {
-      console.error('Error al iniciar chat:', e);
-      notify(e.message || t.chatError, 'error');
-    }
-  }
 
   function handleOpenRateModal() {
     const session = getSession();
@@ -152,16 +114,19 @@ export default function PerfilOtro({ lang = 'ES' }) {
 
             <h2 className="otro-apodo">{usuarioOtro.apodo}</h2>
 
-            <div className="otro-rating">
-              <span className="otro-stars">
+
+            <div className="otro-rating" aria-label={`Valoración: ${usuarioOtro.rating.toFixed(1)} de 5`}>
+              <span className="otro-stars" role="img" aria-label={`Estrellas: ${usuarioOtro.rating.toFixed(1)} de 5`}>
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <FaStar key={s} style={{ color: s <= Math.round(usuarioOtro.rating) ? 'var(--color-primary)' : '#ccc' }} />
+                  <FaStar key={s} style={{ color: s <= Math.round(usuarioOtro.rating) ? 'var(--color-primary)' : '#888' }} aria-hidden="true" />
                 ))}
               </span>
-              <span className="otro-rating-value">{usuarioOtro.rating.toFixed(1)} ({usuarioOtro.reviews})</span>
+              <span className="otro-rating-value">{usuarioOtro.rating.toFixed(1)} <span className="sr-only">puntuación</span> ({usuarioOtro.reviews})</span>
             </div>
 
-            <button className="btn-valorar" type="button" onClick={handleOpenRateModal}>{t.rate}</button>
+            <button className="btn-valorar" type="button" onClick={handleOpenRateModal} tabIndex={0} aria-label={t.rate}>
+              {t.rate}
+            </button>
 
             <div className="otro-joined">{t.joinedOn} {usuarioOtro.fechaUnion}</div>
             <div className="otro-birth">{t.birthDate}: {usuarioOtro.birthDate || t.noProvided}</div>
@@ -174,18 +139,22 @@ export default function PerfilOtro({ lang = 'ES' }) {
             <div className="otro-right-count">{juegosOtro.length} {t.uploadedGames}</div>
           </div>
           <div className="otro-right-body">
-            <div className="perfil-games-grid">
+            <div className="perfil-games-grid" role="list" aria-label="Juegos en alquiler">
               {juegosOtro.map((juego) => (
                 <article 
                   key={juego.id} 
                   className="juego-card" 
+                  tabIndex={0}
+                  role="listitem"
+                  aria-label={`Ver juego: ${juego.title}`}
                   onClick={() => navigate(`/ver-juego/${juego.id}`)}
-                  style={{ cursor: 'pointer' }}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(`/ver-juego/${juego.id}`); }}
+                  style={{ cursor: 'pointer', outline: 'none' }}
                 >
                   <img 
                     src={juego.image ? (juego.image.startsWith('data:') || juego.image.startsWith('http') || juego.image.startsWith('/') ? juego.image : `/${juego.image}`) : 'https://via.placeholder.com/150'} 
                     alt={juego.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', maxHeight: '320px', borderRadius: '8px', display: 'block' }}
                   />
                 </article>
               ))}

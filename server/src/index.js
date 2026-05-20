@@ -76,16 +76,18 @@ await seedGamesIfNeeded();
 app.listen(port, () => {
   console.log(`RentPlay API listening on http://localhost:${port}`);
 
-  // Precalienta cache de Home para reducir latencia de la primera visita
-  setTimeout(async () => {
-    try {
-      await Promise.all([
-        fetch(`http://localhost:${port}/api/games?lite=1`),
-        fetch(`http://localhost:${port}/api/games`)
-      ]);
-      console.log('Games listing cache warmed.');
-    } catch (error) {
-      console.warn('Could not warm games cache on startup:', error.message);
-    }
-  }, 250);
+  if (process.env.WARMUP_HOME_CACHE === '1') {
+    // Opcional: solo activar en entornos donde el warmup esté controlado.
+    setTimeout(async () => {
+      try {
+        await Promise.all([
+          fetch(`http://localhost:${port}/api/games?lite=1`),
+          fetch(`http://localhost:${port}/api/games`)
+        ]);
+        console.log('Games listing cache warmed.');
+      } catch (error) {
+        console.warn('Could not warm games cache on startup:', error.message);
+      }
+    }, 250);
+  }
 });

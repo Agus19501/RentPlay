@@ -16,6 +16,18 @@ function isBase64Image(str) {
   return typeof str === 'string' && str.startsWith('data:image/');
 }
 
+function getPublicAvatarValue(user) {
+  if (!user?.avatar || typeof user.avatar !== 'string') {
+    return null;
+  }
+
+  if (isBase64Image(user.avatar)) {
+    return `/api/auth/${user._id.toString()}/avatar`;
+  }
+
+  return user.avatar;
+}
+
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -168,6 +180,24 @@ router.get('/', async (req, res) => {
     }
 
     const { games, users, rentals } = await getCollections();
+    const projection = isLiteListing
+      ? {
+          title: 1,
+          description: 1,
+          price: 1,
+          rentalDays: 1,
+          rating: 1,
+          platform: 1,
+          image: 1,
+          features: 1,
+          releaseDate: 1,
+          genre: 1,
+          developers: 1,
+          uploadedBy: 1,
+          available: 1,
+          createdAt: 1
+        }
+      : undefined;
     
     let filter = {};
     if (title) {
@@ -219,7 +249,7 @@ router.get('/', async (req, res) => {
 
     console.log('Final Mongo Filter:', JSON.stringify(filter));
 
-    const catalog = await games.find(filter).sort({ createdAt: -1 }).toArray();
+    const catalog = await games.find(filter, projection ? { projection } : undefined).sort({ createdAt: -1 }).toArray();
 
     // Determinar qué juegos tienen un alquiler activo ahora mismo
     const catalogIds = catalog.map((g) => g._id);
@@ -239,7 +269,13 @@ router.get('/', async (req, res) => {
     )];
 
     const uploaderUsers = uploaderIds.length
-      ? await users.find({ _id: { $in: uploaderIds.map((id) => new ObjectId(id)) } }).toArray()
+      ? await users.find(
+          { _id: { $in: uploaderIds.map((id) => new ObjectId(id)) } },
+          { projection: isLiteListing
+            ? { name: 1, rating: 1, reviews: 1 }
+            : { name: 1, avatar: 1, rating: 1, reviews: 1 }
+          }
+        ).toArray()
       : [];
 
     const usersById = new Map(
@@ -256,7 +292,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: user.avatar,
+            avatar: isLiteListing ? null : getPublicAvatarValue(user),
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -272,7 +308,7 @@ router.get('/', async (req, res) => {
           normalized.seller = {
             id: user._id.toString(),
             name: user.name,
-            avatar: user.avatar,
+            avatar: getPublicAvatarValue(user),
             rating: user.rating || 0,
             reviews: user.reviews || 0
           };
@@ -304,7 +340,12 @@ router.get('/user/:userId', async (req, res) => {
     }
 
     const { games } = await getCollections();
-    const userGames = await games.find({ uploadedBy: new ObjectId(userId) }).sort({ createdAt: -1 }).toArray();
+    const userGames = await games.find(
+      { uploadedBy: new ObjectId(userId) },
+      lite
+        ? { projection: { title: 1, description: 1, price: 1, rentalDays: 1, rating: 1, platform: 1, image: 1, features: 1, releaseDate: 1, genre: 1, developers: 1, uploadedBy: 1, available: 1, createdAt: 1 } }
+        : undefined
+    ).sort({ createdAt: -1 }).toArray();
 
     return res.json({
       ok: true,

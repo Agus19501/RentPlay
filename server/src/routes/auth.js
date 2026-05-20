@@ -6,6 +6,28 @@ import { getCollections } from '../config/db.js';
 import { clearGamesListCache } from './games.js';
 
 const router = Router();
+const TOP_RATED_CACHE_TTL_MS = 15000;
+let topRatedCache = null;
+
+function isBase64Image(str) {
+  return typeof str === 'string' && str.startsWith('data:image/');
+}
+
+function toPublicAvatar(userId, avatar) {
+  if (!avatar || typeof avatar !== 'string') {
+    return null;
+  }
+
+  if (isBase64Image(avatar)) {
+    return `/api/auth/${userId}/avatar`;
+  }
+
+  return avatar;
+}
+
+function clearTopRatedCache() {
+  topRatedCache = null;
+}
 
 function createSession(user) {
   const token = jwt.sign(
@@ -146,6 +168,48 @@ router.get('/me', async (req, res) => {
   }
 });
 
+router.get('/:userId/avatar', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    if (!ObjectId.isValid(userId)) {
+      return res.status(422).send('ID de usuario invalido.');
+    }
+
+    const { users } = await getCollections();
+    const user = await users.findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { avatar: 1 } }
+    );
+
+    if (!user?.avatar) {
+      return res.status(404).send('Avatar no encontrado.');
+    }
+
+    if (isBase64Image(user.avatar)) {
+      const matches = user.avatar.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+      if (!matches) {
+        return res.status(400).send('Formato de avatar invalido.');
+      }
+
+      const mime = matches[1];
+      const data = matches[2];
+      const buffer = Buffer.from(data, 'base64');
+      res.set('Content-Type', mime);
+      res.set('Cache-Control', 'public, max-age=31536000');
+      return res.send(buffer);
+    }
+
+    if (typeof user.avatar === 'string' && /^https?:\/\//i.test(user.avatar)) {
+      return res.redirect(user.avatar);
+    }
+
+    return res.status(404).send('Avatar no encontrado.');
+  } catch {
+    return res.status(500).send('Error al servir avatar.');
+  }
+});
+
 router.put('/update', async (req, res) => {
   try {
     const authHeader = req.headers.authorization || '';
@@ -205,6 +269,11 @@ router.get('/top-rated', async (req, res) => {
       ? Math.min(Math.max(requestedLimit, 1), 50)
       : 10;
 
+    const cacheKey = String(limit);
+    if (topRatedCache?.expiresAt > Date.now() && topRatedCache.cacheKey === cacheKey) {
+      return res.json(topRatedCache.payload);
+    }
+
     const { users, games } = await getCollections();
     const topUsers = await users
       .find({}, { projection: { name: 1, email: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1 } })
@@ -212,31 +281,27 @@ router.get('/top-rated', async (req, res) => {
       .limit(limit)
       .toArray();
 
-    const userIds = topUsers.map((user) => user._id);
-    const gameCounts = userIds.length
-      ? await games.aggregate([
-          { $match: { uploadedBy: { $in: userIds } } },
-          { $group: { _id: '$uploadedBy', count: { $sum: 1 } } }
-        ]).toArray()
-      : [];
-
-    const gameCountByUserId = new Map(
-      gameCounts.map((item) => [item._id.toString(), item.count])
-    );
-
-    return res.json({
+    const payload = {
       ok: true,
       users: topUsers.map((user) => ({
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        avatar: user.avatar || null,
+        avatar: toPublicAvatar(user._id.toString(), user.avatar),
         rating: Number(user.rating || 0),
         reviews: Number(user.reviews || 0),
-        gameCount: gameCountByUserId.get(user._id.toString()) || 0,
+        gameCount: 0,
         createdAt: user.createdAt || null
       }))
-    });
+    };
+
+    topRatedCache = {
+      cacheKey,
+      expiresAt: Date.now() + TOP_RATED_CACHE_TTL_MS,
+      payload
+    };
+
+    return res.json(payload);
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener perfiles destacados.', error: error.message });
   }
@@ -458,6 +523,7 @@ router.post('/:userId/rate', async (req, res) => {
     );
 
     clearGamesListCache();
+    clearTopRatedCache();
 
     return res.json({ 
       ok: true, 

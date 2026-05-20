@@ -211,8 +211,9 @@
 
 .home-page .rating-count {
   color: #FF6100;
-  font-weight: 700;
-  font-size: calc(14 * var(--unit));
+  font-weight: 400;
+  font-size: calc(13 * var(--unit));
+  opacity: 0.7;
 }
 
 .home-page .profile-description {

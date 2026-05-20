@@ -4,6 +4,7 @@ import { FaChevronDown, FaPaperPlane, FaStar, FaUserCircle } from 'react-icons/f
 import { apiRequest, getSession } from '../api.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Chats.css';
+import UnreadSyncer from '../hooks/UnreadSyncer.js';
 
 function getMessageDateKey(value) {
   const date = new Date(value);
@@ -204,6 +205,7 @@ export default function Chats({ lang }) {
 
   return (
     <div className="chats-page">
+      <UnreadSyncer activeChatId={activeChatId} conversations={conversations} />
       <div className="chats-layout">
         <section className="chats-mobile-switcher" aria-label={t.conversations}>
           <button

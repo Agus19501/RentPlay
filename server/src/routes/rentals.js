@@ -149,6 +149,45 @@ router.get('/mine', authRequired, async (req, res) => {
   return res.json({ ok: true, rentals: rentalsWithGame });
 });
 
+router.get('/owner-active', authRequired, async (req, res) => {
+  try {
+    const { rentals, games } = await getCollections();
+    const ownerId = req.user.sub;
+
+    if (!ObjectId.isValid(ownerId)) {
+      return res.status(422).json({ ok: false, message: 'Usuario invalido.' });
+    }
+
+    const ownedGames = await games
+      .find({ uploadedBy: new ObjectId(ownerId) }, { projection: { _id: 1 } })
+      .toArray();
+
+    if (ownedGames.length === 0) {
+      return res.json({ ok: true, activeRentals: [] });
+    }
+
+    const now = new Date();
+    const ownedGameIds = ownedGames.map((game) => game._id);
+
+    const activeRentals = await rentals.find({
+      gameId: { $in: ownedGameIds },
+      status: 'active',
+      expiresAt: { $gt: now }
+    }).toArray();
+
+    return res.json({
+      ok: true,
+      activeRentals: activeRentals.map((rental) => ({
+        id: rental._id.toString(),
+        gameId: rental.gameId?.toString() || null,
+        expiresAt: rental.expiresAt || null
+      }))
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Error al obtener alquileres activos del propietario.' });
+  }
+});
+
 router.post('/', authRequired, async (req, res) => {
   const { gameId, paymentMethod = 'paypal' } = req.body;
 

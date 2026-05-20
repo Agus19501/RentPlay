@@ -485,6 +485,19 @@ select {
   line-height: 0.96;
 }
 
+.auth-hero-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-hero-title-line {
+  display: block;
+}
+
+.auth-hero-title-line-nowrap {
+  white-space: nowrap;
+}
+
 .auth-hero-line {
   font-size: clamp(3rem, 6vw, 6rem);
   line-height: 1.02;
@@ -572,8 +585,7 @@ select {
   }
 
   .auth-hero {
-    text-align: left;
-    padding-top: 24px;
+    display: none;
   }
 
   .header-grid,

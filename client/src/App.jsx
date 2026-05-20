@@ -10,7 +10,6 @@ import Filtros from './pages/Filtros.jsx';
 import Resultados from './pages/Resultados.jsx';
 import Comparativa from './pages/Comparativa.jsx';
 import Mensajes from './pages/Mensajes.jsx';
-import Perfil from './pages/Perfil.jsx';
 import PerfilPropio from './pages/PerfilPropio.jsx';
 import PerfilOtro from './pages/PerfilOtro.jsx';
 import Chats from './pages/Chats.jsx';
@@ -28,11 +27,12 @@ const authCopy = {
       eyebrow: 'INICIAR SESIÓN',
       helperPrefix: '¿No tienes una cuenta aún?',
       helperLink: 'Regístrate',
-      title: '¡Bienvenido de nuevo!',
+      heroTitleTop: 'Bienvenido',
+      heroTitleBottom: 'de nuevo',
       emailLabel: 'Correo Electrónico',
       emailPlaceholder: 'Correo Electrónico',
-      nameLabel: 'Nombre',
-      namePlaceholder: 'Nombre',
+      nameLabel: 'Nombre de usuario',
+      namePlaceholder: 'Nombre de usuario',
       passwordLabel: 'Contraseña',
       passwordPlaceholder: 'Contraseña',
       repeatPasswordLabel: 'Repetir contraseña',
@@ -53,7 +53,8 @@ const authCopy = {
       eyebrow: 'CREAR UNA CUENTA',
       helperPrefix: '¿Ya tienes una cuenta?',
       helperLink: 'Accede',
-      title: '¡Bienvenido a RentPlay!'
+      heroTitleTop: 'Bienvenido',
+      heroTitleBottom: 'de nuevo'
     }
   },
   EN: {
@@ -61,11 +62,12 @@ const authCopy = {
       eyebrow: 'LOG IN',
       helperPrefix: "Don't have an account yet?",
       helperLink: 'Sign up',
-      title: 'Welcome back!',
+      heroTitleTop: 'Welcome',
+      heroTitleBottom: 'back',
       emailLabel: 'Email',
       emailPlaceholder: 'Email',
-      nameLabel: 'Name',
-      namePlaceholder: 'Name',
+      nameLabel: 'Username',
+      namePlaceholder: 'Username',
       passwordLabel: 'Password',
       passwordPlaceholder: 'Password',
       repeatPasswordLabel: 'Repeat password',
@@ -86,7 +88,8 @@ const authCopy = {
       eyebrow: 'CREATE ACCOUNT',
       helperPrefix: 'Already have an account?',
       helperLink: 'Log in',
-      title: 'Welcome to RentPlay!'
+      heroTitleTop: 'Welcome',
+      heroTitleBottom: 'back'
     }
   }
 };
@@ -393,7 +396,10 @@ function AuthPage({ mode, onAuth, session, lang }) {
           </article>
 
           <aside className="auth-hero" aria-label={copy.heroAria}>
-            <h2 className="auth-hero-title">{copy.title}</h2>
+            <h2 className="auth-hero-title">
+              <span className="auth-hero-title-line">{copy.heroTitleTop}</span>
+              <span className="auth-hero-title-line auth-hero-title-line-nowrap">{copy.heroTitleBottom}</span>
+            </h2>
             <p className="auth-hero-line">
               {copy.heroLine}
               <span className="auth-play">

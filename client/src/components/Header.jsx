@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; 
 import { FaSearch, FaPaperPlane, FaUserCircle, FaPlus, FaPlay, FaCog, FaSignOutAlt, FaUser, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+
+import useUnreadMessages from '../hooks/useUnreadMessages.js';
 import './Header.css';
 
 const Header = ({ lang, setLang, session, onLogout }) => {
+    const [unreadCount] = useUnreadMessages(session);
   const navigate = useNavigate();
   const location = useLocation(); 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -109,8 +112,14 @@ const Header = ({ lang, setLang, session, onLogout }) => {
             <span className="lang-text">{lang === 'ES' ? 'ES' : 'EN'}</span>
           </button>
 
-          <button className="icon-btn action-item" onClick={() => navigate(isLoggedIn ? '/mensajes' : '/login')}>
-            <span className="icon-wrapper"><FaPaperPlane /></span>
+
+          <button className="icon-btn action-item messages-btn" onClick={() => navigate(isLoggedIn ? '/mensajes' : '/login')}>
+            <span className="icon-wrapper" style={{ position: 'relative' }}>
+              <FaPaperPlane />
+              {isLoggedIn && unreadCount > 0 && (
+                <span className="messages-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
+            </span>
             <span className="action-text">{current.chats}</span>
           </button>
 

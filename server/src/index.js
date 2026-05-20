@@ -6,6 +6,7 @@ import gamesRoutes from './routes/games.js';
 import messagesRoutes from './routes/messages.js';
 import rentalsRoutes from './routes/rentals.js';
 import chatsRoutes from './routes/chats.js';
+import chatsReadRoutes from './routes/chats-read.js';
 import { ensureIndexes, seedGamesIfNeeded } from './config/db.js';
 
 const app = express();
@@ -58,6 +59,7 @@ app.post('/api/download-image', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/chats', chatsReadRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/rentals', rentalsRoutes);

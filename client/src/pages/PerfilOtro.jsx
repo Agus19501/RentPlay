@@ -8,6 +8,7 @@ import './PerfilOtro.css';
 const usuarioOtroFallback = {
   apodo: 'Cargando...',
   nombre: 'Cargando...',
+  birthDate: null,
   fechaUnion: '...',
   rating: 0,
   reviews: 0,
@@ -38,7 +39,9 @@ export default function PerfilOtro({ lang = 'ES' }) {
       uploadedGames: 'JUEGOS SUBIDOS',
       rateTo: 'Valorar a',
       accept: 'Aceptar',
-      cancel: 'Cancelar'
+      cancel: 'Cancelar',
+      birthDate: 'Fecha de nacimiento',
+      noProvided: 'No proporcionado'
     },
     EN: {
       noGamesToContact: 'This user has no available games to contact about.',
@@ -54,7 +57,9 @@ export default function PerfilOtro({ lang = 'ES' }) {
       uploadedGames: 'UPLOADED GAMES',
       rateTo: 'Rate',
       accept: 'Accept',
-      cancel: 'Cancel'
+      cancel: 'Cancel',
+      birthDate: 'Birth date',
+      noProvided: 'Not provided'
     }
   };
   const t = texts[lang] || texts.ES;
@@ -102,6 +107,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
           id: data.user.id,
           apodo: data.user.name,
           nombre: data.user.name,
+          birthDate: data.user.birthDate || null,
           fechaUnion: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString(lang === 'EN' ? 'en-US' : 'es-ES') : t.recently,
           rating: data.user.rating || 0,
           reviews: data.user.reviews || 0,
@@ -177,6 +183,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
             <button className="btn-valorar" type="button" onClick={() => setShowRatingModal(true)}>{t.rate}</button>
 
             <div className="otro-joined">{t.joinedOn} {usuarioOtro.fechaUnion}</div>
+            <div className="otro-birth">{t.birthDate}: {usuarioOtro.birthDate || t.noProvided}</div>
 
             <button className="btn-contactar" type="button" onClick={handleContact}>{t.contact}</button>
           </div>

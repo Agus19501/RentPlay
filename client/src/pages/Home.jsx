@@ -294,7 +294,7 @@ const Home = ({ lang }) => {
                 <div className="profile-rating">
                   <span className="rating-value">{Number(profile.rating || 0).toFixed(1)}</span>
                   <FaStar style={{ color: '#FFD700' }} />
-                  <span className="rating-count">{profile.reviews}</span>
+                  <span className="rating-count">({profile.reviews})</span>
                 </div>
                 <p className="profile-description">{profile.gameCount} {t.gameCount}</p>
               </div>

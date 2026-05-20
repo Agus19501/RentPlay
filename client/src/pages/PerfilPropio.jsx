@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaStar } from 'react-icons/fa';
+import { FaHeart, FaStar } from 'react-icons/fa';
 import { apiRequest } from '../api.js';
 import { notify } from '../utils/notify.js';
 import './PerfilPropio.css';
@@ -11,7 +11,7 @@ const tabs = [
   { key: 'favoritos' }
 ];
 
-function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, type, navigate, t }) {
+function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, onRequestRemoveFavorite, type, navigate, t, isCurrentlyRented = false }) {
   if (isAddCard) {
     return (
       <button type="button" className="juego-card juego-card-add" aria-label={t.uploadGameAria} onClick={onAddClick}>
@@ -71,6 +71,11 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
           {getTimeRemaining(rental.expiresAt)}
         </div>
       )}
+
+      {type === 'subido' && isCurrentlyRented && (
+        <div className="juego-rented-badge">{t.rentedLabel}</div>
+      )}
+
       <div className="juego-overlay" aria-hidden="true">
         {type === 'subido' && (
           <>
@@ -100,6 +105,19 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
             </button>
           </>
         )}
+        {type === 'favorito' && (
+          <button
+            className="overlay-btn overlay-btn-favorite"
+            type="button"
+            title={t.removeFavorite}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestRemoveFavorite?.(juego);
+            }}
+          >
+            <FaHeart />
+          </button>
+        )}
       </div>
     </article>
   );
@@ -113,8 +131,10 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const [alquileres, setAlquileres] = useState([]);
   const [catalogoJuegos, setCatalogoJuegos] = useState([]);
   const [juegosFavoritos, setJuegosFavoritos] = useState([]);
+  const [ownerActiveRentalGameIds, setOwnerActiveRentalGameIds] = useState(new Set());
   const [mostrarModalDatos, setMostrarModalDatos] = useState(false);
   const [mostrarModalAvatar, setMostrarModalAvatar] = useState(false);
+  const [favoritoPendienteEliminar, setFavoritoPendienteEliminar] = useState(null);
   const [archivoAvatar, setArchivoAvatar] = useState('');
   const [formulario, setFormulario] = useState({
     apodo: '',
@@ -134,7 +154,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       deleteConfirm: '¿Estás seguro de que quieres borrar este juego por completo?',
       editGame: 'Editar juego',
       loading: 'Cargando...',
-      noData: 'No disponible',
+      noData: 'No proporcionado',
       name: 'Nombre',
       birthDate: 'Fecha de nacimiento',
       email: 'Correo',
@@ -150,7 +170,12 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       selectImage: 'Selecciona una imagen',
       file: 'Archivo',
       uploadImage: 'Subir imagen',
-      reviewsLabel: 'reseñas'
+      reviewsLabel: 'reseñas',
+      removeFavorite: 'Quitar de favoritos',
+      removeFavoriteQuestion: '¿Quieres eliminar este juego de favoritos?',
+      removeFavoriteTitle: 'Eliminar favorito',
+      accept: 'Aceptar',
+      rentedLabel: 'Alquilado'
     },
     EN: {
       tabs: { alquilados: 'Rented', subidos: 'Uploaded', favoritos: 'Favorites' },
@@ -161,7 +186,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       deleteConfirm: 'Are you sure you want to fully delete this game?',
       editGame: 'Edit game',
       loading: 'Loading...',
-      noData: 'Not available',
+      noData: 'Not provided',
       name: 'Name',
       birthDate: 'Birth date',
       email: 'Email',
@@ -177,7 +202,12 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       selectImage: 'Select an image',
       file: 'File',
       uploadImage: 'Upload image',
-      reviewsLabel: 'reviews'
+      reviewsLabel: 'reviews',
+      removeFavorite: 'Remove from favorites',
+      removeFavoriteQuestion: 'Do you want to remove this game from favorites?',
+      removeFavoriteTitle: 'Remove favorite',
+      accept: 'Accept',
+      rentedLabel: 'Rented'
     }
   };
   const t = texts[lang] || texts.ES;
@@ -216,6 +246,11 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
           const rentalsData = await apiRequest('/api/rentals/mine', { token: session.token });
           if (rentalsData.rentals) {
             setAlquileres(rentalsData.rentals);
+          }
+
+          const ownerRentalsData = await apiRequest('/api/rentals/owner-active', { token: session.token });
+          if (ownerRentalsData.ok && Array.isArray(ownerRentalsData.activeRentals)) {
+            setOwnerActiveRentalGameIds(new Set(ownerRentalsData.activeRentals.map((rental) => String(rental.gameId)).filter(Boolean)));
           }
 
           // Cargar catálogo ligero para resolver favoritos guardados en wishlist
@@ -267,10 +302,32 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
     navigate('/subir-juego', { state: { editGame: juego } });
   }
 
+  function solicitarEliminarFavorito(juego) {
+    setFavoritoPendienteEliminar(juego);
+  }
+
+  function confirmarEliminarFavorito() {
+    if (!favoritoPendienteEliminar) return;
+
+    const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const nextWishlist = savedWishlist.filter((id) => String(id) !== String(favoritoPendienteEliminar.id));
+    localStorage.setItem('wishlist', JSON.stringify(nextWishlist));
+    syncFavoritos();
+    window.dispatchEvent(new Event('storage'));
+    setFavoritoPendienteEliminar(null);
+  }
+
   const setJuegosVisualizar = () => {
     switch(activeTab) {
       case 'subidos':
-        return [...juegosSubidos.map(j => ({ ...j, type: 'subido' })), { id: 'add-card', isAddCard: true }];
+        return [
+          ...juegosSubidos.map(j => ({
+            ...j,
+            type: 'subido',
+            isCurrentlyRented: ownerActiveRentalGameIds.has(String(j.id))
+          })),
+          { id: 'add-card', isAddCard: true }
+        ];
       case 'alquilados':
         // Mapeamos los alquileres asegurando que el ID del juego existe
         return alquileres.map(r => {
@@ -486,7 +543,9 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
                 onAddClick={() => navigate('/subir-juego')}
                 onDelete={borrarJuego}
                 onEdit={editarJuego}
+                onRequestRemoveFavorite={solicitarEliminarFavorito}
                 type={item.type}
+                isCurrentlyRented={item.isCurrentlyRented}
                 navigate={navigate}
                 t={t}
               />
@@ -601,6 +660,42 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
                 </button>
               </div>
             </form>
+          </section>
+        </div>
+      )}
+
+      {favoritoPendienteEliminar && (
+        <div className="perfil-modal-backdrop" role="presentation" onClick={() => setFavoritoPendienteEliminar(null)}>
+          <section
+            className="perfil-modal perfil-modal-small"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-favorito-titulo"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="perfil-modal-header">
+              <h2 id="modal-favorito-titulo">{t.removeFavoriteTitle}</h2>
+              <button
+                type="button"
+                className="perfil-modal-close"
+                onClick={() => setFavoritoPendienteEliminar(null)}
+                aria-label={t.cancel}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="perfil-modal-form">
+              <p className="perfil-confirm-text">{t.removeFavoriteQuestion}</p>
+              <div className="perfil-modal-actions">
+                <button type="button" className="perfil-modal-secondary" onClick={() => setFavoritoPendienteEliminar(null)}>
+                  {t.cancel}
+                </button>
+                <button type="button" className="perfil-modal-primary" onClick={confirmarEliminarFavorito}>
+                  {t.accept}
+                </button>
+              </div>
+            </div>
           </section>
         </div>
       )}

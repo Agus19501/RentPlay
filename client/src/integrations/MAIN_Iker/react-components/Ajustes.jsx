@@ -258,7 +258,7 @@ export default function Ajustes({ lang, setLang }) {
 
               <label className={`payment-card-label${paymentMethod === 'apple' ? ' checked' : ''}`}>
                 <div className="payment-icon-wrapper">
-                  <span style={{ fontWeight: 600, fontSize: 14, color: '#fff', fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: 0.5 }}>Apple Pay</span>
+                  <span className="apple-pay-brand">Apple Pay</span>
                 </div>
                 <span className="payment-name">ApplePay</span>
                 <input type="radio" name="payment-method" value="apple" checked={paymentMethod === 'apple'} onChange={handlePaymentChange} />

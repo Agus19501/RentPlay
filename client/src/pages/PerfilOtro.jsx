@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaUserCircle } from 'react-icons/fa';
 import { apiRequest, getSession } from '../api';
 import { notify } from '../utils/notify.js';
+import RatingModal from '../components/RatingModal.jsx';
 import './PerfilOtro.css';
 
 const usuarioOtroFallback = {
@@ -21,8 +22,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
   const [usuarioOtro, setUsuarioOtro] = useState(usuarioOtroFallback);
   const [juegosOtro, setJuegosOtro] = useState([]);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [selectedRating, setSelectedRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
+  const loginRequiredMessage = 'Debes iniciar sesión para realizar esta accion';
 
   const texts = {
     ES: {
@@ -66,8 +66,8 @@ export default function PerfilOtro({ lang = 'ES' }) {
 
   async function handleContact() {
     const session = getSession();
-    if (!session) {
-      navigate('/login');
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
       return;
     }
 
@@ -94,6 +94,15 @@ export default function PerfilOtro({ lang = 'ES' }) {
       console.error('Error al iniciar chat:', e);
       notify(e.message || t.chatError, 'error');
     }
+  }
+
+  function handleOpenRateModal() {
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    setShowRatingModal(true);
   }
 
   async function cargarOtro() {
@@ -124,34 +133,6 @@ export default function PerfilOtro({ lang = 'ES' }) {
     cargarOtro();
   }, [searchParams, lang]);
 
-  const handleRate = async () => {
-    if (selectedRating === 0) return;
-    try {
-      const res = await apiRequest(`/api/auth/${usuarioOtro.id}/rate`, {
-        method: 'POST',
-        body: { rating: selectedRating }
-      });
-      
-      if (res.ok) {
-        notify(t.ratedOk, 'success');
-        setUsuarioOtro(prev => ({
-          ...prev,
-          rating: res.rating,
-          reviews: res.reviews
-        }));
-        setShowRatingModal(false);
-        setSelectedRating(0);
-        window.dispatchEvent(new Event('storage'));
-      }
-    } catch (error) {
-      if (error.message.includes('Ya has valorado')) {
-        notify(t.alreadyRated, 'info');
-      } else {
-        notify(error.message || t.ratingError, 'error');
-      }
-    }
-  };
-
   return (
     <div className="perfil-otro-page">
       <section className="perfil-otro-shell">
@@ -180,7 +161,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
               <span className="otro-rating-value">{usuarioOtro.rating.toFixed(1)} ({usuarioOtro.reviews})</span>
             </div>
 
-            <button className="btn-valorar" type="button" onClick={() => setShowRatingModal(true)}>{t.rate}</button>
+            <button className="btn-valorar" type="button" onClick={handleOpenRateModal}>{t.rate}</button>
 
             <div className="otro-joined">{t.joinedOn} {usuarioOtro.fechaUnion}</div>
             <div className="otro-birth">{t.birthDate}: {usuarioOtro.birthDate || t.noProvided}</div>
@@ -215,43 +196,17 @@ export default function PerfilOtro({ lang = 'ES' }) {
         </section>
       </section>
 
-      {showRatingModal && (
-        <div className="perfil-modal-backdrop" onClick={() => setShowRatingModal(false)}>
-          <div className="perfil-modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '2rem' }}>
-            <h3>{t.rateTo} {usuarioOtro.apodo}</h3>
-            <div className="rating-stars-input">
-              {[1, 2, 3, 4, 5].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  className="rating-star-btn"
-                  onClick={() => setSelectedRating(num)}
-                  onMouseEnter={() => setHoverRating(num)}
-                  onMouseLeave={() => setHoverRating(0)}
-                >
-                  <FaStar 
-                    style={{ 
-                      color: num <= (hoverRating || selectedRating) ? 'var(--color-primary)' : '#ccc' 
-                    }} 
-                  />
-                </button>
-              ))}
-            </div>
-            <div className="rating-actions">
-              <button 
-                className="btn-valorar-confirm" 
-                onClick={handleRate}
-                disabled={selectedRating === 0}
-              >
-                {t.accept}
-              </button>
-              <button className="perfil-modal-secondary" onClick={() => setShowRatingModal(false)}>
-                {t.cancel}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        targetUserId={usuarioOtro.id}
+        targetUserName={usuarioOtro.apodo}
+        lang={lang}
+        onRated={({ rating, reviews }) => {
+          setUsuarioOtro((prev) => ({ ...prev, rating, reviews }));
+          window.dispatchEvent(new Event('storage'));
+        }}
+      />
     </div>
   );
 }

@@ -90,6 +90,11 @@
   flex-direction: column;
 }
 
+[data-theme="light"] .filtros-page .filter-box {
+  background-color: #ffffff;
+  border-color: #ff6100;
+}
+
 .filtros-page .centered-select-wrapper {
   flex: 1;
   display: flex;
@@ -113,6 +118,10 @@
   font-weight: 700;
   font-size: calc(16 * var(--unit));
   margin: calc(12 * var(--unit)) 0 0 0;
+}
+
+[data-theme="light"] .filtros-page .range-result-text {
+  color: #111827;
 }
 
 .filtros-page .uppercase { text-transform: uppercase; }
@@ -187,6 +196,10 @@
   font-weight: 600;
 }
 
+[data-theme="light"] .filtros-page .toggle-item {
+  color: #111827;
+}
+
 .filtros-page .custom-select {
   background: #222;
   border: calc(1 * var(--unit)) solid #444;
@@ -202,7 +215,15 @@
   font-size: calc(16 * var(--unit));
 }
 
+[data-theme="light"] .filtros-page .custom-select {
+  background: #ffffff;
+  border-color: #c8d0da;
+  color: #111827;
+}
+
 .filtros-page .selected-text.placeholder { color: #888888; }
+
+[data-theme="light"] .filtros-page .selected-text.placeholder { color: #6b7280; }
 
 .filtros-page .options-panel {
   position: absolute;
@@ -216,6 +237,11 @@
   z-index: 100;
 }
 
+[data-theme="light"] .filtros-page .options-panel {
+  background: #ffffff;
+  border-color: #ff6100;
+}
+
 .filtros-page .option-search-wrap {
   position: sticky;
   top: 0;
@@ -223,6 +249,11 @@
   padding: calc(8 * var(--unit));
   border-bottom: calc(1 * var(--unit)) solid #444;
   z-index: 2;
+}
+
+[data-theme="light"] .filtros-page .option-search-wrap {
+  background: #ffffff;
+  border-bottom-color: #d1d5db;
 }
 
 .filtros-page .option-search-input {
@@ -235,6 +266,12 @@
   outline: none;
 }
 
+[data-theme="light"] .filtros-page .option-search-input {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
 .filtros-page .option-search-input:focus {
   border-color: #FF6100;
 }
@@ -243,6 +280,10 @@
   padding: calc(12 * var(--unit));
   transition: 0.2s;
   font-size: calc(15 * var(--unit));
+}
+
+[data-theme="light"] .filtros-page .option {
+  color: #111827;
 }
 
 .filtros-page .option:hover { background: #FF6100; }

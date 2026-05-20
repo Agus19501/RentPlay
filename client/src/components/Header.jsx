@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; 
 import { FaSearch, FaPaperPlane, FaUserCircle, FaPlus, FaPlay, FaCog, FaSignOutAlt, FaUser, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
+import { notify } from '../utils/notify.js';
 
 import useUnreadMessages from '../hooks/useUnreadMessages.js';
 import './Header.css';
 
 const Header = ({ lang, setLang, session, onLogout }) => {
-    const [unreadCount] = useUnreadMessages(session);
+  const [unreadCount] = useUnreadMessages(session);
   const navigate = useNavigate();
   const location = useLocation(); 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -45,6 +46,15 @@ const Header = ({ lang, setLang, session, onLogout }) => {
   const current = texts[lang];
   const isLoggedIn = Boolean(session?.token);
   const [searchQuery, setSearchQuery] = useState("");
+  const loginRequiredMessage = 'Debes iniciar sesión para realizar esta accion';
+
+  const handleProtectedNavigation = (path) => {
+    if (!isLoggedIn) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    navigate(path);
+  };
 
   const handleLogout = () => {
     setShowProfileMenu(false);
@@ -99,7 +109,7 @@ const Header = ({ lang, setLang, session, onLogout }) => {
         </div>
 
         <nav className="header-actions">
-          <button className="btn-add" onClick={() => navigate(isLoggedIn ? '/subir-juego' : '/login')}>
+          <button className="btn-add" onClick={() => handleProtectedNavigation('/subir-juego')}>
             <span className="action-text">{current.add}</span> <FaPlus />
           </button>
 
@@ -113,7 +123,7 @@ const Header = ({ lang, setLang, session, onLogout }) => {
           </button>
 
 
-          <button className="icon-btn action-item messages-btn" onClick={() => navigate(isLoggedIn ? '/mensajes' : '/login')}>
+          <button className="icon-btn action-item messages-btn" onClick={() => handleProtectedNavigation('/mensajes')}>
             <span className="icon-wrapper" style={{ position: 'relative' }}>
               <FaPaperPlane />
               {isLoggedIn && unreadCount > 0 && (

@@ -154,7 +154,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       deleteConfirm: '¿Estás seguro de que quieres borrar este juego por completo?',
       editGame: 'Editar juego',
       loading: 'Cargando...',
-      noData: 'No proporcionado',
+      noData: 'No proporcionada',
       name: 'Nombre',
       birthDate: 'Fecha de nacimiento',
       email: 'Correo',
@@ -477,7 +477,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
               <div className="perfil-rating">
                 <span className="perfil-stars">
                   {[1, 2, 3, 4, 5].map((star) => (
-                    <FaStar key={star} style={{ color: star <= Math.round(ratingValue) ? 'var(--color-primary)' : 'rgba(255,255,255,0.4)' }} />
+                    <FaStar key={star} className={star <= Math.round(ratingValue) ? 'perfil-star-filled' : 'perfil-star-empty'} />
                   ))}
                 </span>
                 <span className="perfil-rating-value">{ratingValue.toFixed(1)} ({reviewsValue} {t.reviewsLabel || 'reseñas'})</span>

@@ -327,6 +327,9 @@ select {
   flex-direction: column;
   background: #000;
 }
+[data-theme="light"] .auth-page {
+  background: #f3f5f8;
+}
 
 .auth-page .site-header {
   background: transparent;
@@ -372,6 +375,9 @@ select {
   font-size: clamp(1.4rem, 1.7vw, 1.9rem);
   color: #f4f4f4;
 }
+[data-theme="light"] .auth-switch {
+  color: #374151;
+}
 
 .auth-switch a,
 .terms-row a,
@@ -402,10 +408,18 @@ select {
   font-size: clamp(1.2rem, 2.1vw, 2.1rem);
   outline: none;
 }
+[data-theme="light"] .auth-input {
+  background: #ffffff;
+  color: #111827;
+  border-color: #ff7a18;
+}
 
 .auth-input::placeholder {
   color: #f0f0f0;
   opacity: 1;
+}
+[data-theme="light"] .auth-input::placeholder {
+  color: #6b7280;
 }
 
 .auth-input:focus {
@@ -418,6 +432,9 @@ select {
   gap: 12px;
   color: #f1f1f1;
   font-size: clamp(1rem, 1.4vw, 1.8rem);
+}
+[data-theme="light"] .terms-row {
+  color: #374151;
 }
 
 .terms-row input {
@@ -490,6 +507,12 @@ select {
   flex-direction: column;
 }
 
+[data-theme="light"] .auth-hero h1,
+[data-theme="light"] .auth-hero-title,
+[data-theme="light"] .auth-hero-line {
+  color: #1f2937;
+}
+
 .auth-hero-title-line {
   display: block;
 }
@@ -524,6 +547,9 @@ select {
 .feedback {
   color: #ffd36e;
   font-size: 1rem;
+}
+[data-theme="light"] .feedback {
+  color: #b45309;
 }
 
 .detail-layout {

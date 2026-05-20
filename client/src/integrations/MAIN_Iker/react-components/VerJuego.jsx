@@ -6,6 +6,7 @@ import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
 import { apiRequest, getSession } from '../../../api.js';
 import { notify } from '../../../utils/notify.js';
+import RatingModal from '../../../components/RatingModal.jsx';
 
 export default function VerJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function VerJuego({ lang = 'ES' }) {
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRentalModalOpen, setRentalModalOpen] = useState(false);
+  const [isRatingModalOpen, setRatingModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [wishlistActive, setWishlistActive] = useState(false);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
@@ -78,6 +80,7 @@ export default function VerJuego({ lang = 'ES' }) {
     }
   };
   const t = texts[lang] || texts.ES;
+  const loginRequiredMessage = 'Debes iniciar sesión para realizar esta accion';
 
   const selectedGameId = paramGameId || searchParams.get('id') || searchParams.get('gameId');
   const [selectedGame, setSelectedGame] = useState(null);
@@ -266,6 +269,12 @@ export default function VerJuego({ lang = 'ES' }) {
       return;
     }
 
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+
     const saved = JSON.parse(localStorage.getItem('wishlist') || '[]');
     const key = String(selectedGame.id);
 
@@ -280,6 +289,13 @@ export default function VerJuego({ lang = 'ES' }) {
 
   const handleConfirmRental = async () => {
     if (!selectedGame) {
+      return;
+    }
+
+    const session = getSession();
+    if (!session?.token) {
+      setRentalModalOpen(false);
+      notify(loginRequiredMessage, 'info');
       return;
     }
 
@@ -302,6 +318,27 @@ export default function VerJuego({ lang = 'ES' }) {
     } catch (error) {
       notify(error.message || t.rentalFail, 'error');
     }
+  };
+
+  const handleOpenRentalModal = () => {
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    setRentalModalOpen(true);
+  };
+
+  const handleOpenRatingModal = () => {
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    if (!selectedGame?.seller?.id) {
+      return;
+    }
+    setRatingModalOpen(true);
   };
 
   if (loading) {
@@ -422,7 +459,7 @@ export default function VerJuego({ lang = 'ES' }) {
                   <span>{t.unavailableRented}</span>
                 </div>
               ) : (
-                <button className="btn-rent" type="button" onClick={() => setRentalModalOpen(true)}>{t.rentNow}</button>
+                <button className="btn-rent" type="button" onClick={handleOpenRentalModal}>{t.rentNow}</button>
               )}
             </div>
 
@@ -457,7 +494,7 @@ export default function VerJuego({ lang = 'ES' }) {
                   ))}
                   <span className="rating-value">{selectedGame.seller?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
-                <button className="btn-valorar" type="button" onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}>
+                <button className="btn-valorar" type="button" onClick={handleOpenRatingModal}>
                   {t.rate}
                 </button>
               </div>
@@ -520,6 +557,28 @@ export default function VerJuego({ lang = 'ES' }) {
           </div>
         </div>
       )}
+
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setRatingModalOpen(false)}
+        targetUserId={selectedGame?.seller?.id}
+        targetUserName={selectedGame?.seller?.name}
+        lang={lang}
+        onRated={({ rating, reviews }) => {
+          setSelectedGame((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              seller: {
+                ...(prev.seller || {}),
+                rating,
+                reviews
+              }
+            };
+          });
+          window.dispatchEvent(new Event('storage'));
+        }}
+      />
     </div>
   );
 }

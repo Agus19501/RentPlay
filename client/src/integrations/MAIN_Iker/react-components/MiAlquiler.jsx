@@ -4,13 +4,16 @@ import { FaChevronLeft, FaChevronRight, FaHeart, FaRegHeart, FaStar, FaStarHalfA
 import '../assets/css/ver-juego.css';
 import cover1 from '../assets/images/cover1.svg';
 import avatar from '../assets/images/avatar.svg';
-import { apiRequest } from '../../../api.js';
+import { apiRequest, getSession } from '../../../api.js';
+import { notify } from '../../../utils/notify.js';
+import RatingModal from '../../../components/RatingModal.jsx';
 
 export default function MiAlquiler({ lang = 'ES' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRatingModalOpen, setRatingModalOpen] = useState(false);
   const [localTimeRemaining, setLocalTimeRemaining] = useState('00:00:00');
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const timerRef = useRef(null);
@@ -58,6 +61,17 @@ export default function MiAlquiler({ lang = 'ES' }) {
     }
   };
   const t = texts[lang] || texts.ES;
+  const loginRequiredMessage = 'Debes iniciar sesión para realizar esta accion';
+
+  const handleOpenRatingModal = () => {
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    if (!rentalGame?.seller?.id) return;
+    setRatingModalOpen(true);
+  };
 
   useEffect(() => {
     let active = true;
@@ -324,7 +338,7 @@ export default function MiAlquiler({ lang = 'ES' }) {
                   ))}
                   <span className="rating-value">{Number(rentalGame.seller?.reviews || 0) > 0 ? Number(rentalGame.seller?.rating || 0).toFixed(1) : t.noRatings}</span>
                 </div>
-                <button className="btn-valorar" type="button" onClick={() => rentalGame.seller?.id && navigate(`/perfil-otro?id=${rentalGame.seller.id}`)}>
+                <button className="btn-valorar" type="button" onClick={handleOpenRatingModal}>
                   {t.rate}
                 </button>
               </div>
@@ -332,6 +346,33 @@ export default function MiAlquiler({ lang = 'ES' }) {
           </div>
         </section>
       </div>
+
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setRatingModalOpen(false)}
+        targetUserId={rentalGame?.seller?.id}
+        targetUserName={rentalGame?.seller?.name}
+        lang={lang}
+        onRated={({ rating, reviews }) => {
+          setRentals((current) => current.map((item) => {
+            if (!item?.game?.seller?.id || item.game.seller.id !== rentalGame?.seller?.id) {
+              return item;
+            }
+
+            return {
+              ...item,
+              game: {
+                ...item.game,
+                seller: {
+                  ...item.game.seller,
+                  rating,
+                  reviews
+                }
+              }
+            };
+          }));
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaPlay } from 'react-icons/fa';
 import { apiRequest, clearSession, getSession, saveSession } from './api.js';
@@ -82,7 +82,7 @@ const authCopy = {
       mismatch: 'Passwords do not match.',
       mustAccept: 'You must accept the terms of service.',
       heroAria: 'Welcome message',
-      heroLine: 'Ready to press play'
+      heroLine: 'Ready to press'
     },
     register: {
       eyebrow: 'CREATE ACCOUNT',
@@ -183,8 +183,11 @@ function App() {
   const [session, setSession] = useState(getSession());
   const [lang, setLang] = useState('ES');
   const [theme, setTheme] = useState(getInitialTheme());
+  const previousUserIdRef = useRef(localStorage.getItem('rentplay_last_user_id'));
   const location = useLocation();
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
+
+  const currentUserId = session?.user?.id || session?.userId || session?.sub || null;
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
@@ -202,9 +205,35 @@ function App() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  useEffect(() => {
+    const previousUserId = previousUserIdRef.current;
+
+    if (previousUserId && currentUserId && previousUserId !== currentUserId) {
+      setTheme('dark');
+      localStorage.setItem('rentplay_theme', 'dark');
+      localStorage.setItem('rentplay_fontsize', 'normal');
+      applyGlobalFontScale('normal');
+    }
+
+    previousUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
   const updateSession = (nextSession) => {
+    const nextUserId = nextSession?.user?.id || nextSession?.userId || nextSession?.sub || null;
+    const lastUserId = localStorage.getItem('rentplay_last_user_id');
+
+    if (nextUserId && lastUserId && nextUserId !== lastUserId) {
+      setTheme('dark');
+      localStorage.setItem('rentplay_theme', 'dark');
+      localStorage.setItem('rentplay_fontsize', 'normal');
+      applyGlobalFontScale('normal');
+    }
+
     if (nextSession) {
       saveSession(nextSession);
+      if (nextUserId) {
+        localStorage.setItem('rentplay_last_user_id', nextUserId);
+      }
     } else {
       clearSession();
     }
@@ -239,8 +268,8 @@ function App() {
           <Route path="/ver-juego" element={<VerJuego lang={lang} />} />
           <Route path="/mensajes" element={<Chats lang={lang} />} />
           <Route path="/chats" element={<Chats lang={lang} />} />
-          <Route path="/login" element={<AuthPage mode="login" onAuth={updateSession} session={session} lang={lang} />} />
-          <Route path="/register" element={<AuthPage mode="register" onAuth={updateSession} session={session} lang={lang} />} />
+          <Route path="/login" element={<AuthPage mode="login" onAuth={updateSession} session={session} lang={lang} setLang={setLang} />} />
+          <Route path="/register" element={<AuthPage mode="register" onAuth={updateSession} session={session} lang={lang} setLang={setLang} />} />
           <Route path="/games/:gameId" element={<GameDetailPage session={session} lang={lang} onAuth={updateSession} />} />
           <Route path="/rentals" element={<RentalsPage session={session} lang={lang} />} />
           <Route path="*" element={<Navigate to="/home" replace />} />
@@ -252,7 +281,7 @@ function App() {
   );
 }
 
-function AuthPage({ mode, onAuth, session, lang }) {
+function AuthPage({ mode, onAuth, session, lang, setLang }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', name: '', password: '', passwordRepeat: '', acceptTerms: false });
   const [message, setMessage] = useState('');
@@ -305,7 +334,7 @@ function AuthPage({ mode, onAuth, session, lang }) {
 
   return (
     <div className="auth-page">
-      <Header session={null} lang={lang} onLanguageChange={() => {}} setLang={() => {}} onLogout={() => {}} />
+      <Header session={null} lang={lang} setLang={setLang} onLogout={() => {}} />
       <main className="auth-main">
         <section className="auth-layout">
           <article className="auth-card">

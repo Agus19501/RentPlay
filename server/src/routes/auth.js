@@ -289,10 +289,49 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
+router.get('/:userId/ratings', async (req, res) => {
+  try {
+    const targetUserId = req.params.userId;
+
+    if (!ObjectId.isValid(targetUserId)) {
+      return res.status(422).json({ ok: false, message: 'ID de usuario invalido.' });
+    }
+
+    const { users } = await getCollections();
+    const user = await users.findOne(
+      { _id: new ObjectId(targetUserId) },
+      { projection: { ratingComments: 1 } }
+    );
+
+    if (!user) {
+      return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
+    }
+
+    const ratings = Array.isArray(user.ratingComments)
+      ? user.ratingComments
+          .slice()
+          .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+          .map((entry) => ({
+            id: entry.id || `${entry.reviewerId || 'unknown'}-${entry.createdAt || Date.now()}`,
+            reviewerId: entry.reviewerId || null,
+            reviewerName: entry.reviewerName || 'Usuario',
+            reviewerAvatar: entry.reviewerAvatar || null,
+            rating: Number(entry.rating || 0),
+            comment: String(entry.comment || ''),
+            createdAt: entry.createdAt || null
+          }))
+      : [];
+
+    return res.json({ ok: true, ratings });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Error al obtener valoraciones.', error: error.message });
+  }
+});
+
 router.post('/:userId/rate', async (req, res) => {
   try {
     const targetUserId = req.params.userId;
-    const { rating } = req.body; // valor del 1 al 5
+    const { rating, comment } = req.body; // valor del 1 al 5 + comentario
 
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -310,6 +349,14 @@ router.post('/:userId/rate', async (req, res) => {
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(422).json({ ok: false, message: 'Valoracion invalida (1-5).' });
+    }
+
+    const normalizedComment = String(comment || '').trim();
+    if (!normalizedComment) {
+      return res.status(422).json({ ok: false, message: 'El comentario es obligatorio.' });
+    }
+    if (normalizedComment.length > 140) {
+      return res.status(422).json({ ok: false, message: 'El comentario no puede superar 140 caracteres.' });
     }
 
     if (!ObjectId.isValid(targetUserId)) {
@@ -336,6 +383,21 @@ router.post('/:userId/rate', async (req, res) => {
     const newReviews = currentReviews + 1;
     const newRating = ((currentRating * currentReviews) + rating) / newReviews;
 
+    const reviewer = await users.findOne(
+      { _id: new ObjectId(reviewerId) },
+      { projection: { name: 1, avatar: 1 } }
+    );
+
+    const ratingEntry = {
+      id: new ObjectId().toString(),
+      reviewerId,
+      reviewerName: reviewer?.name || 'Usuario',
+      reviewerAvatar: reviewer?.avatar || null,
+      rating: Number(rating),
+      comment: normalizedComment,
+      createdAt: new Date()
+    };
+
     await users.updateOne(
       { _id: new ObjectId(targetUserId) },
       { 
@@ -343,7 +405,10 @@ router.post('/:userId/rate', async (req, res) => {
           rating: Number(newRating.toFixed(1)), 
           reviews: newReviews 
         },
-        $push: { voters: reviewerId }
+        $push: {
+          voters: reviewerId,
+          ratingComments: ratingEntry
+        }
       }
     );
 
@@ -351,7 +416,8 @@ router.post('/:userId/rate', async (req, res) => {
       ok: true, 
       message: 'Valoracion enviada.', 
       rating: Number(newRating.toFixed(1)),
-      reviews: newReviews
+      reviews: newReviews,
+      entry: ratingEntry
     });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

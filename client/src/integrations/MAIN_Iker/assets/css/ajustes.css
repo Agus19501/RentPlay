@@ -348,6 +348,14 @@
   letter-spacing: -1px;
 }
 
+.apple-pay-brand {
+  font-weight: 600;
+  font-size: 14px;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.5px;
+}
+
 /* Light theme overrides */
 [data-theme="light"] .settings-main {
   background: #f3f5f8;
@@ -382,6 +390,10 @@
   background: #f7f9fc;
   border-color: #c8d0da;
   color: #1e1e1e;
+}
+
+[data-theme="light"] .apple-pay-brand {
+  color: #111827;
 }
 
 [data-theme="light"] .radio-mark,

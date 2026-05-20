@@ -119,6 +119,12 @@
   font-weight: 700;
   cursor: pointer;
   justify-self: start;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-valorar:hover {
+  background: #ff8c3a;
+  transform: scale(1.04);
 }
 
 .otro-joined {

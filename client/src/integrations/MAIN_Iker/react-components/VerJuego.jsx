@@ -45,6 +45,8 @@ export default function VerJuego({ lang = 'ES' }) {
       owner: 'PROPIETARIO',
       noSeller: 'Sin vendedor',
       rate: 'VALORAR',
+      contact: 'CONTACTAR VENDEDOR',
+      chatError: 'Error al iniciar el chat.',
       rentalOk: '¡Juego alquilado correctamente!',
       rentalFail: 'No se ha podido crear el alquiler.',
       paymentMethods: 'MÉTODOS DE PAGO',
@@ -72,6 +74,8 @@ export default function VerJuego({ lang = 'ES' }) {
       owner: 'OWNER',
       noSeller: 'No seller',
       rate: 'RATE',
+      contact: 'CONTACT SELLER',
+      chatError: 'Error starting chat.',
       rentalOk: 'Game rented successfully!',
       rentalFail: 'Rental could not be created.',
       paymentMethods: 'PAYMENT METHODS',
@@ -341,6 +345,26 @@ export default function VerJuego({ lang = 'ES' }) {
     setRatingModalOpen(true);
   };
 
+  const handleContact = async () => {
+    const session = getSession();
+    if (!session?.token) {
+      notify(loginRequiredMessage, 'info');
+      return;
+    }
+    if (!selectedGame?.seller?.id || !selectedGame?.id) return;
+    try {
+      const res = await apiRequest('/api/chats', {
+        method: 'POST',
+        body: { sellerId: selectedGame.seller.id, gameId: selectedGame.id }
+      });
+      if (res.chatId) {
+        navigate(`/chats?id=${res.chatId}`);
+      }
+    } catch (e) {
+      notify(e.message || t.chatError, 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="main-content">
@@ -496,6 +520,9 @@ export default function VerJuego({ lang = 'ES' }) {
                 </div>
                 <button className="btn-valorar" type="button" onClick={handleOpenRatingModal}>
                   {t.rate}
+                </button>
+                <button className="btn-contactar" type="button" onClick={handleContact}>
+                  {t.contact}
                 </button>
               </div>
             </div>

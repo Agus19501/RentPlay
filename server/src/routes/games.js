@@ -167,7 +167,7 @@ router.get('/', async (req, res) => {
       return res.json(cached.payload);
     }
 
-    const { games, users } = await getCollections();
+    const { games, users, rentals } = await getCollections();
     
     let filter = {};
     if (title) {
@@ -221,9 +221,24 @@ router.get('/', async (req, res) => {
 
     const catalog = await games.find(filter).sort({ createdAt: -1 }).toArray();
 
+    // Determinar qué juegos tienen un alquiler activo ahora mismo
+    const catalogIds = catalog.map((g) => g._id);
+    const activeRentals = catalogIds.length
+      ? await rentals.find({
+          gameId: { $in: catalogIds },
+          status: 'active',
+          expiresAt: { $gt: new Date() }
+        }, { projection: { gameId: 1 } }).toArray()
+      : [];
+    const rentedGameIds = new Set(activeRentals.map((r) => r.gameId.toString()));
+
     let enrichedGames = [];
     if (isLiteListing) {
-      enrichedGames = catalog.map((game) => normalizeGame(game, { includeBase64Image: false, includeMedia: false }));
+      enrichedGames = catalog.map((game) => {
+        const normalized = normalizeGame(game, { includeBase64Image: false, includeMedia: false });
+        if (rentedGameIds.has(normalized.id)) normalized.status = 'rented';
+        return normalized;
+      });
     } else {
       // Enriquecer juegos con datos actuales de usuarios en una sola consulta
       const uploaderIds = [...new Set(
@@ -242,6 +257,7 @@ router.get('/', async (req, res) => {
 
       enrichedGames = catalog.map((game) => {
         const normalized = normalizeGame(game, { includeBase64Image: false });
+        if (rentedGameIds.has(normalized.id)) normalized.status = 'rented';
         const user = normalized.uploadedBy ? usersById.get(normalized.uploadedBy) : null;
         if (user) {
           normalized.seller = {

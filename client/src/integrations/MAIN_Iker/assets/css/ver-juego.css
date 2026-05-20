@@ -61,7 +61,10 @@
 .seller-name{font-size:22px;margin-top:8px}
 .seller-rating{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
 .seller-rating svg{color:var(--orange);font-size:22px}
-.btn-valorar{margin-top:12px;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:8px 18px;border-radius:6px;cursor:pointer}
+.btn-valorar{margin-top:12px;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:8px 18px;border-radius:6px;cursor:pointer;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
+.btn-valorar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
+.btn-contactar{margin-top:10px;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:700;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
+.btn-contactar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
 
 /* recommended */
 .recommended-section{margin-top:28px}

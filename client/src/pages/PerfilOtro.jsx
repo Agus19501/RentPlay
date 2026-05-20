@@ -165,8 +165,6 @@ export default function PerfilOtro({ lang = 'ES' }) {
 
             <div className="otro-joined">{t.joinedOn} {usuarioOtro.fechaUnion}</div>
             <div className="otro-birth">{t.birthDate}: {usuarioOtro.birthDate || t.noProvided}</div>
-
-            <button className="btn-contactar" type="button" onClick={handleContact}>{t.contact}</button>
           </div>
         </aside>
 

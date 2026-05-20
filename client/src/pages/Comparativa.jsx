@@ -30,7 +30,7 @@ const Comparativa = ({ lang }) => {
     ES: {
       searchTitle: 'COMPARATIVA DE OFERTAS',
       searchSub: `Mostrando todas las ofertas para "${titleQuery}"`,
-      empty: 'No hay ofertas disponibles para este título actualmente.',
+      empty: 'No hay ofertas disponibles para este título bajo los parámetros de búsqueda indicados',
       precio: 'PRECIO MÁXIMO',
       alquiler: 'ALQUILER MÁXIMO',
       apply: 'FILTRAR',
@@ -41,7 +41,7 @@ const Comparativa = ({ lang }) => {
     EN: {
       searchTitle: 'OFFER COMPARISON',
       searchSub: `Showing all offers for "${titleQuery}"`,
-      empty: 'No offers available for this title at the moment.',
+      empty: 'No offers available for this title under the indicated search parameters.',
       precio: 'MAX PRICE',
       alquiler: 'MAX RENTAL',
       apply: 'FILTER',
@@ -53,7 +53,7 @@ const Comparativa = ({ lang }) => {
     ES: {
       searchTitle: 'COMPARATIVA DE OFERTAS',
       searchSub: `Mostrando todas las ofertas para "${titleQuery}"`,
-      empty: 'No hay ofertas disponibles para este título actualmente.',
+      empty: 'No hay ofertas disponibles para este título bajo los parámetros de búsqueda indicados',
       precio: 'PRECIO MÁXIMO',
       alquiler: 'ALQUILER MÁXIMO',
       apply: 'FILTRAR',
@@ -322,9 +322,10 @@ const Comparativa = ({ lang }) => {
                   </div>
                   <div className="game-info" style={{ padding: '10px 0' }}>
                     <p className="game-item-label" style={{ marginBottom: '4px' }}>{game.title}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', opacity: 0.8 }}>
+                    <div className="profile-rating">
+                      <span className="rating-value">{Number(game.seller?.rating || 0).toFixed(1)}</span>
                       <FaStar style={{ color: '#FFD700' }} />
-                      <span>{game.seller?.rating?.toFixed(1) || '0.0'}</span>
+                      <span className="rating-count">({Number(game.seller?.reviews || 0)})</span>
                     </div>
                     <p style={{ fontSize: '11px', marginTop: '4px', opacity: 0.6 }}>Vendedor: {game.seller?.name || 'Anon'}</p>
                   </div>

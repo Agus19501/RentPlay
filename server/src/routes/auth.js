@@ -11,6 +11,18 @@ function isBase64Image(str) {
   return typeof str === 'string' && str.startsWith('data:image/');
 }
 
+function toPublicAvatar(userId, avatar) {
+  if (!avatar || typeof avatar !== 'string') {
+    return null;
+  }
+
+  if (isBase64Image(avatar)) {
+    return `/api/auth/${userId}/avatar`;
+  }
+
+  return avatar;
+}
+
 function createSession(user) {
   const token = jwt.sign(
     {
@@ -234,7 +246,7 @@ router.get('/top-rated', async (req, res) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        avatar: user.avatar || null,
+        avatar: toPublicAvatar(user._id.toString(), user.avatar),
         rating: Number(user.rating || 0),
         reviews: Number(user.reviews || 0),
         gameCount: gameCountByUserId.get(user._id.toString()) || 0,

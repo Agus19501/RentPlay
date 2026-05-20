@@ -197,6 +197,50 @@ router.put('/update', async (req, res) => {
   }
 });
 
+router.get('/top-rated', async (req, res) => {
+  try {
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isInteger(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 50)
+      : 10;
+
+    const { users, games } = await getCollections();
+    const topUsers = await users
+      .find({}, { projection: { name: 1, email: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1 } })
+      .sort({ rating: -1, reviews: -1, createdAt: 1 })
+      .limit(limit)
+      .toArray();
+
+    const userIds = topUsers.map((user) => user._id);
+    const gameCounts = userIds.length
+      ? await games.aggregate([
+          { $match: { uploadedBy: { $in: userIds } } },
+          { $group: { _id: '$uploadedBy', count: { $sum: 1 } } }
+        ]).toArray()
+      : [];
+
+    const gameCountByUserId = new Map(
+      gameCounts.map((item) => [item._id.toString(), item.count])
+    );
+
+    return res.json({
+      ok: true,
+      users: topUsers.map((user) => ({
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar || null,
+        rating: Number(user.rating || 0),
+        reviews: Number(user.reviews || 0),
+        gameCount: gameCountByUserId.get(user._id.toString()) || 0,
+        createdAt: user.createdAt || null
+      }))
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Error al obtener perfiles destacados.', error: error.message });
+  }
+});
+
 router.get('/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;

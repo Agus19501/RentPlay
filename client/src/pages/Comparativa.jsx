@@ -186,7 +186,7 @@ const Comparativa = ({ lang }) => {
   };
 
   return (
-    <div className="home-page" style={{ paddingBottom: '40px' }}>
+    <div className="home-page">
       <section className="home-section">
         <div className="section-header" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <div className="section-info">

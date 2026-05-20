@@ -35,6 +35,79 @@ function normalizeGame(game) {
   };
 }
 
+router.get('/owner-notifications', authRequired, async (req, res) => {
+  try {
+    const { rentals, games, users } = await getCollections();
+    const ownerId = req.user.sub;
+    const ownerObjectId = new ObjectId(ownerId);
+
+    const ownedGames = await games
+      .find({ uploadedBy: ownerObjectId }, { projection: { title: 1 } })
+      .toArray();
+
+    if (ownedGames.length === 0) {
+      return res.json({ ok: true, notifications: [] });
+    }
+
+    const ownedGameIds = ownedGames.map((game) => game._id);
+    const gameById = new Map(ownedGames.map((game) => [game._id.toString(), game]));
+
+    const pendingRentals = await rentals.find({
+      gameId: { $in: ownedGameIds },
+      ownerHomeNotifiedAt: null
+    }).sort({ createdAt: -1 }).toArray();
+
+    if (pendingRentals.length === 0) {
+      return res.json({ ok: true, notifications: [] });
+    }
+
+    const renterIds = [...new Set(
+      pendingRentals
+        .map((rental) => rental.userId?.toString())
+        .filter((userId) => userId && ObjectId.isValid(userId) && userId !== ownerId)
+    )];
+
+    const renters = renterIds.length
+      ? await users.find(
+          { _id: { $in: renterIds.map((userId) => new ObjectId(userId)) } },
+          { projection: { name: 1 } }
+        ).toArray()
+      : [];
+
+    const renterById = new Map(renters.map((user) => [user._id.toString(), user]));
+    const notifications = pendingRentals
+      .map((rental) => {
+        const renter = renterById.get(rental.userId?.toString());
+        const game = gameById.get(rental.gameId?.toString());
+
+        if (!renter?.name || !game?.title) {
+          return null;
+        }
+
+        return {
+          id: rental._id.toString(),
+          rentalId: rental._id.toString(),
+          renterName: renter.name,
+          gameTitle: game.title,
+          createdAt: rental.createdAt,
+          message: `${renter.name} te ha alquilado ${game.title}`
+        };
+      })
+      .filter(Boolean);
+
+    if (notifications.length > 0) {
+      await rentals.updateMany(
+        { _id: { $in: notifications.map((item) => new ObjectId(item.rentalId)) } },
+        { $set: { ownerHomeNotifiedAt: new Date() } }
+      );
+    }
+
+    return res.json({ ok: true, notifications });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Error al obtener notificaciones de alquiler.', error: error.message });
+  }
+});
+
 router.get('/mine', authRequired, async (req, res) => {
   const { rentals, games, users } = await getCollections();
   const userId = new ObjectId(req.user.sub);
@@ -115,7 +188,8 @@ router.post('/', authRequired, async (req, res) => {
     paymentMethod,
     status: 'active',
     createdAt,
-    expiresAt
+    expiresAt,
+    ownerHomeNotifiedAt: null
   });
 
   // MENSAJE AUTOMATIZADO DEL PROPIETARIO

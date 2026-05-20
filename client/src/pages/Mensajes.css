@@ -184,6 +184,22 @@
   overflow: auto;
 }
 
+.message-date-group {
+  display: grid;
+  gap: 12px;
+}
+
+.message-date-header {
+  justify-self: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4dbea;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .message-bubble {
   max-width: min(84%, 520px);
   padding: 14px 18px;

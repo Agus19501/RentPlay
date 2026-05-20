@@ -59,8 +59,12 @@ select {
 }
 
 .app-main {
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.app-main.auth-route-main {
   flex: 1;
-  padding: 0 0 56px;
 }
 
 [data-theme="light"] .app-main {
@@ -588,7 +592,7 @@ select {
     width: min(100% - 20px, 1180px);
   }
 
-  .app-main {
+  .app-main.auth-route-main {
     padding: 20px 0 40px;
   }
 

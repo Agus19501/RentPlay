@@ -92,7 +92,7 @@ const Resultados = ({ lang }) => {
   };
 
   return (
-    <div className="home-page" style={{ paddingBottom: '40px' }}>
+    <div className="home-page">
       <section className="home-section">
         <div className="section-header">
           <div className="section-info">

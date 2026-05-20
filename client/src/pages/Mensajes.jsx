@@ -21,6 +21,24 @@ function formatDate(value, lang = 'ES') {
   return new Date(value).toLocaleDateString(lang === 'EN' ? 'en-US' : 'es-ES', { day: '2-digit', month: 'short' });
 }
 
+function groupMessagesByDate(messageList, lang = 'ES') {
+  return messageList.reduce((groups, message) => {
+    const dateLabel = formatDate(message.createdAt, lang);
+    const lastGroup = groups[groups.length - 1];
+
+    if (!lastGroup || lastGroup.dateLabel !== dateLabel) {
+      groups.push({
+        dateLabel,
+        messages: [message]
+      });
+      return groups;
+    }
+
+    lastGroup.messages.push(message);
+    return groups;
+  }, []);
+}
+
 export default function Mensajes({ session, lang = 'ES' }) {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
@@ -261,6 +279,8 @@ export default function Mensajes({ session, lang = 'ES' }) {
     navigate(`/ver-juego/${gameId}`);
   };
 
+  const groupedMessages = groupMessagesByDate(messages, lang);
+
   return (
     <div className="messages-page container">
       <section className="messages-shell">
@@ -352,15 +372,20 @@ export default function Mensajes({ session, lang = 'ES' }) {
               </div>
             )}
 
-            {messages.map((message) => {
-              const isMine = message.senderId === session.user?.id;
-              return (
-                <article key={message.id} className={`message-bubble${isMine ? ' is-own' : ''}`}>
-                  <p>{message.text}</p>
-                  <span>{formatTime(message.createdAt, lang)}</span>
-                </article>
-              );
-            })}
+            {groupedMessages.map((group) => (
+              <div key={group.dateLabel} className="message-date-group">
+                <div className="message-date-header">{group.dateLabel}</div>
+                {group.messages.map((message) => {
+                  const isMine = message.senderId === session.user?.id;
+                  return (
+                    <article key={message.id} className={`message-bubble${isMine ? ' is-own' : ''}`}>
+                      <p>{message.text}</p>
+                      <span>{formatTime(message.createdAt, lang)}</span>
+                    </article>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           <form className="thread-composer" onSubmit={sendMessage}>

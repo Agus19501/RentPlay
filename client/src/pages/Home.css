@@ -1,10 +1,7 @@
 .home-page {
   --unit: 1px;
-  min-height: 100%;
   background-color: #222222;
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
+  overflow-x: hidden;
 }
 
 [data-theme="light"] .home-page {
@@ -89,32 +86,7 @@
 }
 
 .home-page .carousel-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #000000;
-  color: white;
-  border: none;
-  width: calc(50 * var(--unit));
-  height: calc(50 * var(--unit));
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  font-size: calc(20 * var(--unit));
-  z-index: 10;
-  box-shadow: 0 calc(4 * var(--unit)) calc(15 * var(--unit)) rgba(0,0,0,0.5);
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.home-page .carousel-nav:hover {
-  background-color: #FF6100;
-  transform: translateY(-50%) scale(1.1);
-}
-
-.home-page .carousel-nav.carousel-next {
-  right: calc(-70 * var(--unit));
+  display: none;
 }
 
 .home-page .game-item {
@@ -185,6 +157,21 @@
   font-size: calc(50 * var(--unit));
   transition: all 0.3s ease;
   border: 3px solid #555555;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-page .profile-avatar-fallback {
+  font-size: calc(50 * var(--unit));
+  color: #888888;
+}
+
+.home-page .profile-avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .home-page .profile-item:hover .profile-avatar {
@@ -216,11 +203,16 @@
   font-size: calc(16 * var(--unit));
 }
 
+.home-page .rating-value {
+  color: #FF6100;
+  font-weight: 700;
+  font-size: calc(14 * var(--unit));
+}
+
 .home-page .rating-count {
   color: #FF6100;
   font-weight: 700;
   font-size: calc(14 * var(--unit));
-  margin-left: calc(5 * var(--unit));
 }
 
 .home-page .profile-description {

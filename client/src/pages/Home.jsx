@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaChevronLeft, FaChevronRight, FaImage, FaStar, FaUserCircle } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaStar, FaUserCircle } from 'react-icons/fa';
 import { apiRequest, getSession } from '../api.js';
+import { notify } from '../utils/notify.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Home.css';
 
@@ -15,9 +16,10 @@ const Home = ({ lang }) => {
   const myGamesRef = useRef(null);
   const [showLeft, setShowLeft] = useState({ games: false, profiles: false, myGames: false });
   const [games, setGames] = useState([]);
+  const [sellerProfiles, setSellerProfiles] = useState([]);
   const [myRentals, setMyRentals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [profileUpdates, setProfileUpdates] = useState(0);
+  const [profilesLoading, setProfilesLoading] = useState(true);
 
   const t = {
     ES: {
@@ -29,6 +31,7 @@ const Home = ({ lang }) => {
       myRentalsDesc: "Gestiona y revisa los videojuegos que tienes alquilados actualmente",
       noRentals: "No tienes alquileres activos en este momento.",
       noGames: "No hay videojuegos disponibles en este momento.",
+      noProfiles: "No hay perfiles destacados disponibles en este momento.",
       loading: "Cargando contenido...",
       more: "Ver más",
       gameCount: "juegos"
@@ -42,6 +45,7 @@ const Home = ({ lang }) => {
       myRentalsDesc: "Manage and review the video games you are currently renting",
       noRentals: "You have no active rentals at the moment.",
       noGames: "No video games available at the moment.",
+      noProfiles: "No featured profiles available right now.",
       loading: "Loading content...",
       more: "View more",
       gameCount: "games"
@@ -56,6 +60,7 @@ const Home = ({ lang }) => {
       myRentalsDesc: "Gestiona y revisa los videojuegos que tienes alquilados actualmente",
       noRentals: "No tienes alquileres activos en este momento.",
       noGames: "No hay videojuegos disponibles en este momento.",
+      noProfiles: "No hay perfiles destacados disponibles en este momento.",
       loading: "Cargando contenido...",
       more: "Ver más",
       gameCount: "juegos"
@@ -98,7 +103,25 @@ const Home = ({ lang }) => {
         }
       });
 
-    // Cargar alquileres en paralelo, sin bloquear el render principal
+    setProfilesLoading(true);
+    apiRequest('/api/auth/top-rated?limit=10')
+      .then((profilesRes) => {
+        if (active) {
+          setSellerProfiles(profilesRes.users || []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSellerProfiles([]);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setProfilesLoading(false);
+        }
+      });
+
+    // Cargar alquileres y notificaciones del dueño en paralelo, sin bloquear el render principal
     if (session?.token) {
       apiRequest('/api/rentals/mine', { token: session.token })
         .then((rentalsRes) => {
@@ -111,6 +134,20 @@ const Home = ({ lang }) => {
             setMyRentals([]);
           }
         });
+
+      apiRequest('/api/rentals/owner-notifications', { token: session.token })
+        .then((notificationsRes) => {
+          if (!active) {
+            return;
+          }
+
+          (notificationsRes.notifications || []).forEach((item) => {
+            notify(item.message, 'success', 4500);
+          });
+        })
+        .catch(() => {
+          // Silent fail: notifications should not block Home rendering.
+        });
     }
 
     return () => {
@@ -118,59 +155,19 @@ const Home = ({ lang }) => {
     };
   }, []);
 
-  // Listen for storage events to update UI when profile changes
-  useEffect(() => {
-    const handleStorage = () => setProfileUpdates(prev => prev + 1);
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  const visibleGames = useMemo(() => games.slice(0, 15), [games]);
 
-  const sellerProfiles = useMemo(() => {
-    const map = new Map();
-    const session = getSession();
-
-    for (const game of games) {
-      const uploadedBy = game.uploadedBy;
-      const seller = game.seller;
-      let sellerName = typeof seller === 'string' ? seller : seller?.name;
-      let sellerAvatar = seller?.avatar;
-
-      // Override with session data if it's the logged-in user
-      if (session?.user?.id === uploadedBy) {
-        sellerName = session.user.name || sellerName;
-        sellerAvatar = session.user.avatar || sellerAvatar;
-      }
-
-      if (!uploadedBy || !sellerName || map.has(uploadedBy)) {
-        continue;
-      }
-
-      map.set(uploadedBy, {
-        userId: uploadedBy,
-        id: uploadedBy,
-        name: sellerName,
-        rating: seller?.rating ?? 0,
-        reviews: seller?.reviews ?? 0,
-        avatar: sellerAvatar,
-        gameCount: games.filter((item) => item.uploadedBy === uploadedBy).length
-      });
+  const resolveAssetUrl = (value) => {
+    if (!value || typeof value !== 'string') {
+      return '';
     }
 
-    return Array.from(map.values()).slice(0, 15);
-  }, [games, profileUpdates]);
-
-  const uniqueGames = useMemo(() => {
-    const map = new Map();
-    for (const game of games) {
-      const titleKey = game.title.toLowerCase().trim();
-      if (!map.has(titleKey)) {
-        map.set(titleKey, game);
-      }
+    if (value.startsWith('data:') || value.startsWith('http') || value.startsWith('/')) {
+      return value;
     }
-    return Array.from(map.values());
-  }, [games]);
 
-  const visibleGames = uniqueGames.slice(0, 12);
+    return `/${value}`;
+  };
 
   const handleScrollDetect = (key, ref) => {
     const isScrolled = (ref.current?.scrollLeft || 0) > 10;
@@ -218,7 +215,7 @@ const Home = ({ lang }) => {
                 <div className="game-image">
                   {game.image ? (
                     <img 
-                      src={game.image.startsWith('data:') || game.image.startsWith('http') || game.image.startsWith('/') ? game.image : `/${game.image}`} 
+                      src={resolveAssetUrl(game.image)} 
                       alt={game.title} 
                       loading="lazy"
                       decoding="async"
@@ -253,52 +250,51 @@ const Home = ({ lang }) => {
             </button>
           )}
           <div className="carousel-scroll" ref={profilesRef} onScroll={() => handleScrollDetect('profiles', profilesRef)}>
-            {!loading && sellerProfiles.map((profile) => (
+            {profilesLoading && <p className="section-description">{t.loading}</p>}
+            {!profilesLoading && sellerProfiles.length === 0 && <p className="section-description">{t.noProfiles}</p>}
+            {!profilesLoading && sellerProfiles.map((profile) => (
               <div 
-                key={profile.userId} 
+                key={profile.id} 
                 className="profile-item" 
                 role="button" 
                 tabIndex={0}
                 onClick={() => {
                   const session = getSession();
-                  if (session?.user?.id === profile.userId) {
+                  if (session?.user?.id === profile.id) {
                     navigate('/perfil');
                   } else {
-                    navigate(`/perfil-otro?id=${profile.userId}`);
+                    navigate(`/perfil-otro?id=${profile.id}`);
                   }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     const session = getSession();
-                    if (session?.user?.id === profile.userId) {
+                    if (session?.user?.id === profile.id) {
                       navigate('/perfil');
                     } else {
-                      navigate(`/perfil-otro?id=${profile.userId}`);
+                      navigate(`/perfil-otro?id=${profile.id}`);
                     }
                   }
                 }}
               >
                 <div className="profile-avatar">
+                  <FaUserCircle className="profile-avatar-fallback" />
                   {profile.avatar ? (
                     <img 
-                      src={profile.avatar.startsWith('data:') || profile.avatar.startsWith('http') || profile.avatar.startsWith('/') ? profile.avatar : `/${profile.avatar}`} 
+                      src={resolveAssetUrl(profile.avatar)} 
+                      className="profile-avatar-image"
                       alt={profile.name} 
-                      onError={(e) => { e.currentTarget.src = ''; e.currentTarget.parentElement.innerHTML = '👤'; }}
-                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
                     />
-                  ) : (
-                    <FaUserCircle />
-                  )}
+                  ) : null}
                 </div>
                 <h3 className="profile-name">{profile.name}</h3>
                 <div className="profile-rating">
+                  <span className="rating-value">{Number(profile.rating || 0).toFixed(1)}</span>
                   <FaStar style={{ color: '#FFD700' }} />
-                  <span className="rating-count" style={{ marginLeft: '4px', fontSize: '14px', fontWeight: 'bold' }}>
-                    {profile.rating.toFixed(1)}
-                  </span>
-                  <span className="rating-count" style={{ marginLeft: '4px', opacity: 0.7 }}>
-                    ({profile.reviews})
-                  </span>
+                  <span className="rating-count">{profile.reviews}</span>
                 </div>
                 <p className="profile-description">{profile.gameCount} {t.gameCount}</p>
               </div>
@@ -331,7 +327,7 @@ const Home = ({ lang }) => {
                   <div className="game-image">
                     {rental.game?.image ? (
                       <img 
-                        src={rental.game.image.startsWith('data:') || rental.game.image.startsWith('http') || rental.game.image.startsWith('/') ? rental.game.image : `/${rental.game.image}`} 
+                        src={resolveAssetUrl(rental.game.image)} 
                         alt={rental.game.title} 
                         onError={(event) => { event.currentTarget.src = cover1; }} 
                       />

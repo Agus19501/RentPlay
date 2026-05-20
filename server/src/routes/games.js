@@ -7,7 +7,7 @@ const router = Router();
 const GAMES_LIST_CACHE_TTL_MS = 15000;
 let gamesListCache = new Map();
 
-function clearGamesListCache() {
+export function clearGamesListCache() {
   gamesListCache = new Map();
 }
 
@@ -232,29 +232,38 @@ router.get('/', async (req, res) => {
       : [];
     const rentedGameIds = new Set(activeRentals.map((r) => r.gameId.toString()));
 
+    const uploaderIds = [...new Set(
+      catalog
+        .map((game) => game.uploadedBy?.toString())
+        .filter((id) => id && ObjectId.isValid(id))
+    )];
+
+    const uploaderUsers = uploaderIds.length
+      ? await users.find({ _id: { $in: uploaderIds.map((id) => new ObjectId(id)) } }).toArray()
+      : [];
+
+    const usersById = new Map(
+      uploaderUsers.map((user) => [user._id.toString(), user])
+    );
+
     let enrichedGames = [];
     if (isLiteListing) {
       enrichedGames = catalog.map((game) => {
         const normalized = normalizeGame(game, { includeBase64Image: false, includeMedia: false });
         if (rentedGameIds.has(normalized.id)) normalized.status = 'rented';
+        const user = normalized.uploadedBy ? usersById.get(normalized.uploadedBy) : null;
+        if (user) {
+          normalized.seller = {
+            id: user._id.toString(),
+            name: user.name,
+            avatar: user.avatar,
+            rating: user.rating || 0,
+            reviews: user.reviews || 0
+          };
+        }
         return normalized;
       });
     } else {
-      // Enriquecer juegos con datos actuales de usuarios en una sola consulta
-      const uploaderIds = [...new Set(
-        catalog
-          .map((game) => game.uploadedBy?.toString())
-          .filter((id) => id && ObjectId.isValid(id))
-      )];
-
-      const uploaderUsers = uploaderIds.length
-        ? await users.find({ _id: { $in: uploaderIds.map((id) => new ObjectId(id)) } }).toArray()
-        : [];
-
-      const usersById = new Map(
-        uploaderUsers.map((user) => [user._id.toString(), user])
-      );
-
       enrichedGames = catalog.map((game) => {
         const normalized = normalizeGame(game, { includeBase64Image: false });
         if (rentedGameIds.has(normalized.id)) normalized.status = 'rented';
@@ -342,9 +351,24 @@ router.post('/', authRequired, async (req, res) => {
     console.log('--- POST /api/games intent ---');
     console.log('User from JWT (payload):', req.user);
     const { title, description, releaseDate, genre, rentalDays, developers, price, image } = req.body || {};
+    const numericRentalDays = Number(rentalDays);
+    const numericPrice = Number(price);
+    const media = Array.isArray(req.body.media) ? req.body.media : [];
 
     if (!title || !String(title).trim()) {
       return res.status(422).json({ ok: false, message: 'El título es obligatorio.' });
+    }
+
+    if (!Number.isFinite(numericRentalDays) || numericRentalDays < 1 || numericRentalDays > 30) {
+      return res.status(422).json({ ok: false, message: 'La duración debe estar entre 1 y 30 días.' });
+    }
+
+    if (!Number.isFinite(numericPrice) || numericPrice < 1 || numericPrice > 50) {
+      return res.status(422).json({ ok: false, message: 'El precio debe estar entre 1 y 50 EUR.' });
+    }
+
+    if (media.length > 5) {
+      return res.status(422).json({ ok: false, message: 'Solo puedes subir un máximo de 5 archivos contando la portada.' });
     }
 
     const { games, users } = await getCollections();
@@ -370,11 +394,11 @@ router.post('/', authRequired, async (req, res) => {
       description: description || '',
       releaseDate: releaseDate || null,
       genre: genre || null,
-      rentalDays: Number(rentalDays) || 1,
+      rentalDays: numericRentalDays,
       developers: developers || null,
-      price: price || null,
+      price: numericPrice,
       image: image || null,
-      media: req.body.media || [], // Guardar todas las imágenes/videos subidos
+      media, // Guardar todas las imágenes/videos subidos
       uploadedBy: user._id,
       seller: {
         id: user._id.toString(),
@@ -402,9 +426,25 @@ router.put('/:gameId', authRequired, async (req, res) => {
   try {
     const { gameId } = req.params;
     const { title, description, releaseDate, genre, rentalDays, developers, price, image, media } = req.body;
+    const hasRentalDays = rentalDays !== undefined && rentalDays !== null && rentalDays !== '';
+    const hasPrice = price !== undefined && price !== null && price !== '';
+    const numericRentalDays = Number(rentalDays);
+    const numericPrice = Number(price);
 
     if (!ObjectId.isValid(gameId)) {
       return res.status(422).json({ ok: false, message: 'ID de juego inválido.' });
+    }
+
+    if (hasRentalDays && (!Number.isFinite(numericRentalDays) || numericRentalDays < 1 || numericRentalDays > 30)) {
+      return res.status(422).json({ ok: false, message: 'La duración debe estar entre 1 y 30 días.' });
+    }
+
+    if (hasPrice && (!Number.isFinite(numericPrice) || numericPrice < 1 || numericPrice > 50)) {
+      return res.status(422).json({ ok: false, message: 'El precio debe estar entre 1 y 50 EUR.' });
+    }
+
+    if (Array.isArray(media) && media.length > 5) {
+      return res.status(422).json({ ok: false, message: 'Solo puedes subir un máximo de 5 archivos contando la portada.' });
     }
 
     const { games, rentals } = await getCollections();
@@ -434,9 +474,9 @@ router.put('/:gameId', authRequired, async (req, res) => {
       description: typeof description === 'string' ? description : game.description,
       releaseDate: releaseDate || game.releaseDate,
       genre: genre || game.genre,
-      rentalDays: Number(rentalDays) || game.rentalDays,
+      rentalDays: hasRentalDays ? numericRentalDays : game.rentalDays,
       developers: developers || game.developers,
-      price: price || game.price,
+      price: hasPrice ? numericPrice : game.price,
       image: image || game.image,
       media: Array.isArray(media) ? media : (Array.isArray(game.media) ? game.media : [])
     };
@@ -468,6 +508,16 @@ router.delete('/:gameId', authRequired, async (req, res) => {
 
     if (game.uploadedBy.toString() !== req.user.sub) {
       return res.status(403).json({ ok: false, message: 'No tienes permiso para eliminar este juego.' });
+    }
+
+    const activeRental = await rentals.findOne({
+      gameId: new ObjectId(gameId),
+      status: 'active',
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (activeRental) {
+      return res.status(409).json({ ok: false, message: 'No puedes eliminar un juego que está alquilado actualmente.' });
     }
 
     // Eliminar el juego y sus posibles alquileres

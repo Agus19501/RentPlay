@@ -42,10 +42,11 @@ export default function VerJuego({ lang = 'ES' }) {
       rented: 'ALQUILADO',
       unavailableRented: 'NO DISPONIBLE (YA ALQUILADO)',
       rentNow: '¡ALQUILAR YA!',
+      edit: 'EDITAR',
       owner: 'PROPIETARIO',
       noSeller: 'Sin vendedor',
       rate: 'VALORAR',
-      contact: 'CONTACTAR VENDEDOR',
+      contact: 'CHATEAR',
       chatError: 'Error al iniciar el chat.',
       rentalOk: '¡Juego alquilado correctamente!',
       rentalFail: 'No se ha podido crear el alquiler.',
@@ -71,10 +72,11 @@ export default function VerJuego({ lang = 'ES' }) {
       rented: 'RENTED',
       unavailableRented: 'NOT AVAILABLE (ALREADY RENTED)',
       rentNow: 'RENT NOW!',
+      edit: 'EDIT',
       owner: 'OWNER',
       noSeller: 'No seller',
       rate: 'RATE',
-      contact: 'CONTACT SELLER',
+      contact: 'CHAT',
       chatError: 'Error starting chat.',
       rentalOk: 'Game rented successfully!',
       rentalFail: 'Rental could not be created.',
@@ -218,16 +220,26 @@ export default function VerJuego({ lang = 'ES' }) {
     const updateCountdown = () => {
       const total = Date.parse(rental.expiresAt) - Date.parse(new Date());
       if (total <= 0) {
-        setLocalTimeRemaining('00:00:00');
+        setLocalTimeRemaining('0 días 0 horas 0 seg');
         clearInterval(timerRef.current);
         return;
       }
-      
-      const hours = Math.floor(total / (1000 * 60 * 60));
-      const minutes = Math.floor((total / (1000 * 60)) % 60);
-      const seconds = Math.floor((total / 1000) % 60);
-      
-      setLocalTimeRemaining(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+
+      const days = Math.floor(total / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((total % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((total % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((total % (1000 * 60)) / 1000);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days} día${days !== 1 ? 's' : ''}`);
+      if (hours > 0 || days > 0) parts.push(`${hours} h`);
+      if (days > 0) {
+        parts.push(`${String(minutes).padStart(2, '0')}m`);
+      } else {
+        parts.push(`${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`);
+      }
+
+      setLocalTimeRemaining(parts.join(' '));
     };
 
     updateCountdown();
@@ -248,6 +260,16 @@ export default function VerJuego({ lang = 'ES' }) {
       .sort((left, right) => (right.rating || 0) - (left.rating || 0))
       .slice(0, 3);
   }, [games, selectedGame]);
+
+  const isOwner = useMemo(() => {
+    const session = getSession();
+    const sessionUserId = session?.user?.id || session?.userId || session?.sub;
+    return Boolean(
+      sessionUserId &&
+      selectedGame?.seller?.id &&
+      String(sessionUserId) === String(selectedGame.seller.id)
+    );
+  }, [selectedGame]);
 
   useEffect(() => {
     if (!selectedGame) {
@@ -365,6 +387,17 @@ export default function VerJuego({ lang = 'ES' }) {
     }
   };
 
+  const handleEditGame = async () => {
+    if (!selectedGame?.id) return;
+    try {
+      const res = await apiRequest(`/api/games/${selectedGame.id}`);
+      const fullGame = res.game || res;
+      navigate('/subir-juego', { state: { editGame: fullGame } });
+    } catch (e) {
+      notify('Error al cargar el juego para editar.', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="main-content">
@@ -443,15 +476,25 @@ export default function VerJuego({ lang = 'ES' }) {
             <div className="product-info">
               <div className="product-header">
                 <h1 className="product-title">{selectedGame.title}</h1>
-                <button className="wishlist-btn" type="button" onClick={toggleWishlist}>
-                  {wishlistActive ? <FaHeart /> : <FaRegHeart />}
-                </button>
+                {!isOwner && (
+                  <button className="wishlist-btn" type="button" onClick={toggleWishlist}>
+                    {wishlistActive ? <FaHeart /> : <FaRegHeart />}
+                  </button>
+                )}
               </div>
 
               <div className="description-section">
                 <h2 className="section-title">{t.gameDesc}</h2>
-                <p className="description-text">{selectedGame.description || t.noDesc}</p>
-                <p className="description-text">{selectedGame.genre ? `${t.genre}: ${selectedGame.genre}.` : ''} {selectedGame.developers ? `${t.devs}: ${selectedGame.developers}.` : ''}</p>
+                <p className="description-text">
+                  {(() => {
+                    const desc = selectedGame.description || t.noDesc;
+                    return desc.length > 300 ? desc.slice(0, 300) + '\u2026' : desc;
+                  })()}
+                </p>
+                <div className="game-meta-tags">
+                  {selectedGame.genre && <p className="game-meta-line"><span className="game-meta-label">{t.genre}:</span> {selectedGame.genre}</p>}
+                  {selectedGame.developers && <p className="game-meta-line"><span className="game-meta-label">{t.devs}:</span> {selectedGame.developers}</p>}
+                </div>
               </div>
 
               <div className="rental-details">
@@ -472,7 +515,14 @@ export default function VerJuego({ lang = 'ES' }) {
                 )}
               </div>
 
-              {isRented.isRentedByMe ? (
+              {isOwner && isRented.isRentedByAnyone ? (
+                <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: '#ff4444', fontWeight: '800', fontSize: '20px' }}>
+                  <FaTimes style={{ fontSize: '26px' }} />
+                  <span>{t.unavailableRented}</span>
+                </div>
+              ) : isOwner ? (
+                <button className="btn-rent" type="button" onClick={handleEditGame}>{t.edit}</button>
+              ) : isRented.isRentedByMe ? (
                 <div className="rental-status" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--orange)', fontWeight: '800', fontSize: '20px' }}>
                   <FaCheckCircle style={{ fontSize: '26px' }} />
                   <span>{t.rented}</span>
@@ -518,12 +568,16 @@ export default function VerJuego({ lang = 'ES' }) {
                   ))}
                   <span className="rating-value">{selectedGame.seller?.rating?.toFixed(1) || '0.0'}</span>
                 </div>
-                <button className="btn-valorar" type="button" onClick={handleOpenRatingModal}>
-                  {t.rate}
-                </button>
-                <button className="btn-contactar" type="button" onClick={handleContact}>
-                  {t.contact}
-                </button>
+                {!isOwner && (
+                  <>
+                    <button className="btn-valorar" type="button" onClick={handleOpenRatingModal}>
+                      {t.rate}
+                    </button>
+                    <button className="btn-contactar" type="button" onClick={handleContact}>
+                      {t.contact}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -562,19 +616,31 @@ export default function VerJuego({ lang = 'ES' }) {
               <div className="payment-methods">
                 <label className={`payment-option ${paymentMethod === 'paypal' ? 'active' : ''}`}>
                   <input type="radio" name="payment" value="paypal" checked={paymentMethod === 'paypal'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                  <div className="payment-icon"><i className="fab fa-paypal"></i></div>
+                  <div className="payment-icon">
+                    <span style={{ fontWeight: 900, fontSize: 18 }}>
+                      <span style={{ color: '#009cde' }}>Pay</span><span style={{ color: '#003087' }}>Pal</span>
+                    </span>
+                  </div>
                   <span className="payment-name">PayPal</span>
                   <div className="payment-dot"></div>
                 </label>
                 <label className={`payment-option ${paymentMethod === 'credit-card' ? 'active' : ''}`}>
                   <input type="radio" name="payment" value="credit-card" checked={paymentMethod === 'credit-card'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                  <div className="payment-icon"><i className="fas fa-credit-card"></i></div>
+                  <div className="payment-icon">
+                    <svg width="44" height="29" viewBox="0 0 52 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="52" height="34" rx="4" fill="#555"/>
+                      <rect y="8" width="52" height="8" fill="#888"/>
+                      <rect x="6" y="21" width="16" height="6" rx="2" fill="#f36b24"/>
+                    </svg>
+                  </div>
                   <span className="payment-name">{t.creditCard}</span>
                   <div className="payment-dot"></div>
                 </label>
                 <label className={`payment-option ${paymentMethod === 'applepay' ? 'active' : ''}`}>
                   <input type="radio" name="payment" value="applepay" checked={paymentMethod === 'applepay'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                  <div className="payment-icon"><i className="fab fa-apple"></i></div>
+                  <div className="payment-icon">
+                    <span style={{ fontWeight: 600, fontSize: 13, color: '#fff', fontFamily: 'system-ui,-apple-system,sans-serif', letterSpacing: '0.5px' }}>Apple Pay</span>
+                  </div>
                   <span className="payment-name">ApplePay</span>
                   <div className="payment-dot"></div>
                 </label>

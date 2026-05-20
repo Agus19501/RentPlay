@@ -8,6 +8,10 @@ import './Filtros.css'; // Importamos estilos de filtros
 
 const COMPARATIVA_CACHE_TTL_MS = 30000;
 
+function hasCompleteSellerRating(game) {
+  return game?.seller && typeof game.seller.rating !== 'undefined' && typeof game.seller.reviews !== 'undefined';
+}
+
 const Comparativa = ({ lang }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,7 +80,7 @@ const Comparativa = ({ lang }) => {
       const prefetchedFiltered = prefetchedGames.filter(
         (g) => (g.title || '').toLowerCase().trim() === titleQuery.toLowerCase().trim()
       );
-      if (prefetchedFiltered.length > 0) {
+      if (prefetchedFiltered.length > 0 && prefetchedFiltered.every(hasCompleteSellerRating)) {
         setGames(prefetchedFiltered);
         setFilteredGames(prefetchedFiltered);
         const prices = prefetchedFiltered.map((g) => Number(g.price) || 0);
@@ -91,7 +95,12 @@ const Comparativa = ({ lang }) => {
     if (prefetchedGames.length === 0) {
       try {
         const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-        if (cached?.ts && Array.isArray(cached.games) && (Date.now() - cached.ts) < COMPARATIVA_CACHE_TTL_MS) {
+        if (
+          cached?.ts &&
+          Array.isArray(cached.games) &&
+          cached.games.every(hasCompleteSellerRating) &&
+          (Date.now() - cached.ts) < COMPARATIVA_CACHE_TTL_MS
+        ) {
           setGames(cached.games);
           setFilteredGames(cached.games);
           if (cached.games.length > 0) {
@@ -101,6 +110,8 @@ const Comparativa = ({ lang }) => {
             setAlquilerMax(Math.ceil(Math.max(...durations)));
           }
           setLoading(false);
+        } else if (cached?.games) {
+          localStorage.removeItem(cacheKey);
         }
       } catch {
         // Ignore cache parse failures

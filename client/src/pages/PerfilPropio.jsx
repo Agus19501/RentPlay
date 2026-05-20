@@ -12,7 +12,7 @@ const tabs = [
   { key: 'favoritos' }
 ];
 
-function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, onRequestRemoveFavorite, type, navigate, t, isCurrentlyRented = false }) {
+function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onEdit, onRequestDelete, onRequestRemoveFavorite, type, navigate, t, isCurrentlyRented = false }) {
   if (isAddCard) {
     return (
       <button type="button" className="juego-card juego-card-add" aria-label={t.uploadGameAria} onClick={onAddClick}>
@@ -78,7 +78,7 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
       )}
 
       <div className="juego-overlay" aria-hidden="true">
-        {type === 'subido' && (
+        {type === 'subido' && !isCurrentlyRented && (
           <>
             <button 
               className="overlay-btn overlay-btn-close" 
@@ -86,9 +86,7 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
               title={t.deleteGame}
               onClick={(e) => {
                 e.stopPropagation();
-                if (window.confirm(t.deleteConfirm)) {
-                  onDelete(juego.id);
-                }
+                onRequestDelete?.(juego);
               }}
             >
               ×
@@ -136,6 +134,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const [ownerActiveRentalGameIds, setOwnerActiveRentalGameIds] = useState(new Set());
   const [mostrarModalDatos, setMostrarModalDatos] = useState(false);
   const [mostrarModalAvatar, setMostrarModalAvatar] = useState(false);
+  const [juegoPendienteEliminar, setJuegoPendienteEliminar] = useState(null);
   const [favoritoPendienteEliminar, setFavoritoPendienteEliminar] = useState(null);
   const [archivoAvatar, setArchivoAvatar] = useState('');
   const [formulario, setFormulario] = useState({
@@ -153,6 +152,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       remaining: 'restantes',
       expiringSoon: 'Expirando pronto',
       deleteGame: 'Borrar juego',
+      deleteGameTitle: 'Eliminar juego',
       deleteConfirm: '¿Estás seguro de que quieres borrar este juego por completo?',
       editGame: 'Editar juego',
       loading: 'Cargando...',
@@ -177,6 +177,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       removeFavoriteQuestion: '¿Quieres eliminar este juego de favoritos?',
       removeFavoriteTitle: 'Eliminar favorito',
       accept: 'Aceptar',
+      delete: 'Eliminar',
       rentedLabel: 'Alquilado'
     },
     EN: {
@@ -185,6 +186,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       remaining: 'left',
       expiringSoon: 'Expiring soon',
       deleteGame: 'Delete game',
+      deleteGameTitle: 'Delete game',
       deleteConfirm: 'Are you sure you want to fully delete this game?',
       editGame: 'Edit game',
       loading: 'Loading...',
@@ -209,6 +211,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       removeFavoriteQuestion: 'Do you want to remove this game from favorites?',
       removeFavoriteTitle: 'Remove favorite',
       accept: 'Accept',
+      delete: 'Delete',
       rentedLabel: 'Rented'
     }
   };
@@ -290,6 +293,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
       });
       if (res.ok) {
         setJuegosSubidos(prev => prev.filter(g => g.id !== gameId));
+        setJuegoPendienteEliminar(null);
       } else {
         notify(res.message || 'Error al borrar el juego', 'error');
       }
@@ -298,10 +302,24 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
     }
   }
 
-  function editarJuego(juego) {
-    // Verificar si el juego está alquilado (podemos intentar verlo en los datos que ya tenemos o dejar que el backend falle)
-    // Para mayor UX, navegamos y el componente de edición cargará los datos
-    navigate('/subir-juego', { state: { editGame: juego } });
+  function solicitarEliminarJuego(juego) {
+    setJuegoPendienteEliminar(juego);
+  }
+
+  function confirmarEliminarJuego() {
+    if (!juegoPendienteEliminar) return;
+    borrarJuego(juegoPendienteEliminar.id);
+  }
+
+  async function editarJuego(juego) {
+    try {
+      const gameRes = await apiRequest(`/api/games/${juego.id}`);
+      const editGame = gameRes.game || juego;
+      navigate('/subir-juego', { state: { editGame } });
+    } catch (e) {
+      console.error('Error cargando juego para editar:', e);
+      navigate('/subir-juego', { state: { editGame: juego } });
+    }
   }
 
   function solicitarEliminarFavorito(juego) {
@@ -554,6 +572,7 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
                 onAddClick={() => navigate('/subir-juego')}
                 onDelete={borrarJuego}
                 onEdit={editarJuego}
+                onRequestDelete={solicitarEliminarJuego}
                 onRequestRemoveFavorite={solicitarEliminarFavorito}
                 type={item.type}
                 isCurrentlyRented={item.isCurrentlyRented}
@@ -704,6 +723,42 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
                 </button>
                 <button type="button" className="perfil-modal-primary" onClick={confirmarEliminarFavorito}>
                   {t.accept}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {juegoPendienteEliminar && (
+        <div className="perfil-modal-backdrop" role="presentation" onClick={() => setJuegoPendienteEliminar(null)}>
+          <section
+            className="perfil-modal perfil-modal-small"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-borrar-juego-titulo"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="perfil-modal-header">
+              <h2 id="modal-borrar-juego-titulo">{t.deleteGameTitle}</h2>
+              <button
+                type="button"
+                className="perfil-modal-close"
+                onClick={() => setJuegoPendienteEliminar(null)}
+                aria-label={t.cancel}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="perfil-modal-form">
+              <p className="perfil-confirm-text">{t.deleteConfirm}</p>
+              <div className="perfil-modal-actions">
+                <button type="button" className="perfil-modal-secondary" onClick={() => setJuegoPendienteEliminar(null)}>
+                  {t.cancel}
+                </button>
+                <button type="button" className="perfil-modal-primary" onClick={confirmarEliminarJuego}>
+                  {t.delete}
                 </button>
               </div>
             </div>

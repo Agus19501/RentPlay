@@ -41,8 +41,8 @@
 
 /* center info */
 .product-info{padding-top:6px}
-.product-title{text-align:center;font-size:44px;color:var(--orange);letter-spacing:2px;margin:6px 0 12px}
-.product-header{display:flex;align-items:center;justify-content:center;gap:18px}
+.product-title{flex:1;text-align:left;font-size:44px;color:var(--orange);letter-spacing:2px;margin:6px 0 12px}
+.product-header{display:flex;align-items:center;justify-content:flex-start;gap:18px}
 .wishlist-btn{background:transparent;border:3px solid rgba(255,255,255,0.2);width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--white);cursor:pointer}
 .section-title{color:var(--orange);font-size:20px;margin:18px 0}
 .description-text{color:rgba(255,255,255,0.85);line-height:1.8;font-size:18px}
@@ -61,10 +61,15 @@
 .seller-name{font-size:22px;margin-top:8px}
 .seller-rating{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px}
 .seller-rating svg{color:var(--orange);font-size:22px}
-.btn-valorar{margin-top:12px;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:8px 18px;border-radius:6px;cursor:pointer;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
+.btn-valorar{margin-top:12px;width:100%;box-sizing:border-box;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:15px;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
 .btn-valorar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
-.btn-contactar{margin-top:10px;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:8px 18px;border-radius:6px;cursor:pointer;font-weight:700;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
+.btn-contactar{margin-top:10px;width:100%;box-sizing:border-box;background:transparent;border:2px solid var(--orange);color:var(--orange);padding:10px 18px;border-radius:6px;cursor:pointer;font-weight:700;font-size:15px;text-align:center;transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease}
 .btn-contactar:hover{background:var(--orange);color:#111;transform:scale(1.04)}
+
+/* game meta tags (genre, devs) */
+.game-meta-tags{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.game-meta-line{color:rgba(255,255,255,0.75);font-size:16px;margin:0}
+.game-meta-label{color:var(--orange);font-weight:700}
 
 /* recommended */
 .recommended-section{margin-top:28px}

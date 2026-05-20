@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 import { getCollections } from '../config/db.js';
+import { clearGamesListCache } from './games.js';
 
 const router = Router();
 
@@ -455,6 +456,8 @@ router.post('/:userId/rate', async (req, res) => {
         }
       }
     );
+
+    clearGamesListCache();
 
     return res.json({ 
       ok: true, 

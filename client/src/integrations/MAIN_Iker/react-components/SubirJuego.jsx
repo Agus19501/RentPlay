@@ -4,8 +4,6 @@ import { FaChevronLeft, FaChevronRight, FaCloudUploadAlt, FaPencilAlt } from 're
 import { apiRequest, getSession } from '../../../api.js';
 import { notify } from '../../../utils/notify.js';
 import '../assets/css/subir-juego.css';
-import cover1 from '../assets/images/cover1.svg';
-import cover2 from '../assets/images/cover2.svg';
 
 const INITIAL_FORM = {
   title: '',
@@ -18,6 +16,9 @@ const INITIAL_FORM = {
 };
 
 const RAWG_API_KEY = '2fd7395ed6044fd8aa568558be497b46';
+const MAX_MEDIA_FILES = 5;
+const MAX_PRICE = 50;
+const MAX_RENTAL_DAYS = 30;
 
 export default function SubirJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
@@ -63,12 +64,18 @@ export default function SubirJuego({ lang = 'ES' }) {
       mainCover: 'portada principal',
       mediaSelectorAria: 'Selector de archivo de imagen y video',
       removeFile: 'Eliminar archivo',
-      requiredMsg: 'Por favor, indica título, precio y fecha.',
+      requiredMsg: 'Por favor, indica título, precio, duración y fecha.',
       needLogin: 'Debes iniciar sesión para publicar/editar un juego.',
       updated: '¡Juego actualizado con éxito!',
       published: '¡Juego publicado correctamente!',
       saveError: 'Error al guardar el juego',
-      saveErrorPrefix: 'Error al guardar:'
+      saveErrorPrefix: 'Error al guardar:',
+      maxFiles: `Solo puedes subir ${MAX_MEDIA_FILES} archivos como máximo contando la portada.`,
+      durationRange: `La duración debe estar entre 1 y ${MAX_RENTAL_DAYS} días.`,
+      priceRange: `El precio debe estar entre 1 y ${MAX_PRICE} EUR.`,
+      daysUnit: 'DÍAS',
+      eurUnit: 'EUR',
+      uploadFilesHint: 'Máximo 5 archivos contando la portada.'
     },
     EN: {
       editSale: 'EDIT LISTING',
@@ -98,12 +105,18 @@ export default function SubirJuego({ lang = 'ES' }) {
       mainCover: 'main cover',
       mediaSelectorAria: 'Image and video file selector',
       removeFile: 'Remove file',
-      requiredMsg: 'Please provide title, price and date.',
+      requiredMsg: 'Please provide title, price, duration and date.',
       needLogin: 'You must log in to publish/edit a game.',
       updated: 'Game updated successfully!',
       published: 'Game published successfully!',
       saveError: 'Error while saving the game',
-      saveErrorPrefix: 'Save error:'
+      saveErrorPrefix: 'Save error:',
+      maxFiles: `You can upload a maximum of ${MAX_MEDIA_FILES} files including the cover.`,
+      durationRange: `Rental duration must be between 1 and ${MAX_RENTAL_DAYS} days.`,
+      priceRange: `Price must be between 1 and ${MAX_PRICE} EUR.`,
+      daysUnit: 'DAYS',
+      eurUnit: 'EUR',
+      uploadFilesHint: 'Maximum 5 files including the cover.'
     }
   };
   const t = texts[lang] || texts.ES;
@@ -140,6 +153,7 @@ export default function SubirJuego({ lang = 'ES' }) {
 
       if (existingMedia.length > 0) {
         setMediaFiles(existingMedia);
+        setCurrentMediaIndex(0);
       } else if (editGame.image) {
         setMediaFiles([{
           id: Date.now(),
@@ -149,6 +163,7 @@ export default function SubirJuego({ lang = 'ES' }) {
             ? editGame.image
             : `/${editGame.image}`
         }]);
+        setCurrentMediaIndex(0);
       }
     } else {
       setFormData(INITIAL_FORM);
@@ -162,12 +177,22 @@ export default function SubirJuego({ lang = 'ES' }) {
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setFormData((current) => ({ ...current, [name]: value }));
+    let nextValue = value;
+
+    if (name === 'duration') {
+      nextValue = value.replace(/\D/g, '').slice(0, 2);
+    }
+
+    if (name === 'price') {
+      nextValue = value.replace(/[^\d]/g, '').slice(0, 2);
+    }
+
+    setFormData((current) => ({ ...current, [name]: nextValue }));
 
     // Si es el campo del título, buscar en RAWG
     if (name === 'title') {
-      if (value.trim().length > 2) {
-        searchRAWG(value);
+      if (nextValue.trim().length > 2) {
+        searchRAWG(nextValue);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
@@ -272,8 +297,20 @@ export default function SubirJuego({ lang = 'ES' }) {
       return;
     }
 
+    const remainingSlots = MAX_MEDIA_FILES - mediaFiles.length;
+    if (remainingSlots <= 0) {
+      notify(t.maxFiles, 'info');
+      event.target.value = '';
+      return;
+    }
+
+    const filesToRead = acceptedFiles.slice(0, remainingSlots);
+    if (filesToRead.length < acceptedFiles.length) {
+      notify(t.maxFiles, 'info');
+    }
+
     Promise.all(
-      acceptedFiles.map(
+      filesToRead.map(
         (file) =>
           new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -322,7 +359,9 @@ export default function SubirJuego({ lang = 'ES' }) {
   const removeMedia = (id) => {
     const updatedMedia = mediaFiles.filter((m) => m.id !== id);
     setMediaFiles(updatedMedia);
-    if (updatedMedia.length > 0 && currentMediaIndex >= updatedMedia.length) {
+    if (updatedMedia.length === 0) {
+      setCurrentMediaIndex(0);
+    } else if (currentMediaIndex >= updatedMedia.length) {
       setCurrentMediaIndex(updatedMedia.length - 1);
     }
   };
@@ -334,8 +373,26 @@ export default function SubirJuego({ lang = 'ES' }) {
       return;
     }
 
-    if (!formData.title.trim() || !formData.price || !dateValue) {
+    if (!formData.title.trim() || !formData.price || !formData.duration || !dateValue) {
       notify(t.requiredMsg, 'info');
+      return;
+    }
+
+    const numericPrice = Number(formData.price);
+    const numericDuration = Number(formData.duration);
+
+    if (!Number.isFinite(numericDuration) || numericDuration < 1 || numericDuration > MAX_RENTAL_DAYS) {
+      notify(t.durationRange, 'error');
+      return;
+    }
+
+    if (!Number.isFinite(numericPrice) || numericPrice < 1 || numericPrice > MAX_PRICE) {
+      notify(t.priceRange, 'error');
+      return;
+    }
+
+    if (mediaFiles.length > MAX_MEDIA_FILES) {
+      notify(t.maxFiles, 'error');
       return;
     }
 
@@ -348,9 +405,9 @@ export default function SubirJuego({ lang = 'ES' }) {
       description: formData.description,
       releaseDate: dateValue,
       genre: formData.genre,
-      rentalDays: Number(formData.duration),
+      rentalDays: numericDuration,
       developers: formData.developers,
-      price: Number(formData.price),
+      price: numericPrice,
       image: primaryImage,
       media: mediaFiles.map((media) => ({
         type: media.type,
@@ -377,7 +434,7 @@ export default function SubirJuego({ lang = 'ES' }) {
 
       if (response.ok) {
         notify(editGame ? t.updated : t.published, 'success');
-        navigate('/perfil-propio');
+        navigate('/home');
       } else {
         notify(response.message || t.saveError, 'error');
       }
@@ -406,7 +463,9 @@ export default function SubirJuego({ lang = 'ES' }) {
 
             <form className="upload-form" id="upload-game-form" onSubmit={handlePublish} autoComplete="off">
               <div className="title-input-wrapper">
+                <label className="upload-field-label" htmlFor="upload-title">{t.title}</label>
                 <input 
+                  id="upload-title"
                   type="text" 
                   name="title" 
                   placeholder={t.title} 
@@ -450,11 +509,37 @@ export default function SubirJuego({ lang = 'ES' }) {
                   </div>
                 )}
               </div>
-              <input type="text" name="releaseDate" placeholder={t.dateLaunch} className="upload-input date-picker-input" title={t.dateTitle} value={dateValue} onChange={handleDateChange} />
-              <input type="text" name="genre" placeholder={t.genre} className="upload-input" value={formData.genre} onChange={handleInputChange} />
-              <input type="text" name="duration" placeholder={t.duration} className="upload-input" value={formData.duration} onChange={handleInputChange} />
-              <input type="text" name="developers" placeholder={t.devs} className="upload-input" value={formData.developers} onChange={handleInputChange} />
-              <input type="text" name="price" placeholder={t.price} className="upload-input" value={formData.price} onChange={handleInputChange} required />
+
+              <div className="upload-field-group">
+                <label className="upload-field-label" htmlFor="upload-release-date">{t.dateLaunch}</label>
+                <input id="upload-release-date" type="text" name="releaseDate" placeholder={t.dateLaunch} className="upload-input date-picker-input" title={t.dateTitle} value={dateValue} onChange={handleDateChange} />
+              </div>
+
+              <div className="upload-field-group">
+                <label className="upload-field-label" htmlFor="upload-genre">{t.genre}</label>
+                <input id="upload-genre" type="text" name="genre" placeholder={t.genre} className="upload-input" value={formData.genre} onChange={handleInputChange} />
+              </div>
+
+              <div className="upload-field-group">
+                <label className="upload-field-label" htmlFor="upload-duration">{t.duration}</label>
+                <div className="upload-input-with-suffix">
+                  <input id="upload-duration" type="text" inputMode="numeric" name="duration" placeholder={`1-${MAX_RENTAL_DAYS}`} className="upload-input" value={formData.duration} onChange={handleInputChange} />
+                  <span className="upload-input-suffix">{t.daysUnit}</span>
+                </div>
+              </div>
+
+              <div className="upload-field-group">
+                <label className="upload-field-label" htmlFor="upload-developers">{t.devs}</label>
+                <input id="upload-developers" type="text" name="developers" placeholder={t.devs} className="upload-input" value={formData.developers} onChange={handleInputChange} />
+              </div>
+
+              <div className="upload-field-group">
+                <label className="upload-field-label" htmlFor="upload-price">{t.price}</label>
+                <div className="upload-input-with-suffix">
+                  <input id="upload-price" type="text" inputMode="numeric" name="price" placeholder={`1-${MAX_PRICE}`} className="upload-input" value={formData.price} onChange={handleInputChange} required />
+                  <span className="upload-input-suffix">{t.eurUnit}</span>
+                </div>
+              </div>
             </form>
 
               <button
@@ -486,9 +571,10 @@ export default function SubirJuego({ lang = 'ES' }) {
                     {mediaFiles.length > 1 && <div className="media-counter">{currentMediaIndex + 1} / {mediaFiles.length}</div>}
                   </>
                 ) : (
-                  <div className="cover-stack" id="upload-placeholder">
-                    <img src={cover2} alt={t.secondaryCover} className="cover-stack-back" />
-                    <img src={cover1} alt={t.mainCover} className="cover-stack-front" />
+                  <div className="upload-placeholder-content" id="upload-placeholder">
+                    <FaCloudUploadAlt className="upload-placeholder-icon" />
+                    <span>{t.changeCover}</span>
+                    <small>{t.uploadFilesHint}</small>
                   </div>
                 )}
               </div>
@@ -507,7 +593,7 @@ export default function SubirJuego({ lang = 'ES' }) {
                       <img src={media.data} alt={`Media ${index + 1}`} />
                     ) : (
                       <div className="video-thumbnail">
-                        <span>🎥</span>
+                        <span>VIDEO</span>
                       </div>
                     )}
                     <button
@@ -526,10 +612,12 @@ export default function SubirJuego({ lang = 'ES' }) {
               </div>
             )}
 
-            <div className="upload-image-nav">
-              <button className="upload-nav-btn" type="button" onClick={goToPreviousMedia}><div className="nav-icon-circle"><FaChevronLeft /></div><span>{t.prev}</span></button>
-              <button className="upload-nav-btn" type="button" onClick={goToNextMedia}><div className="nav-icon-circle"><FaChevronRight /></div><span>{t.next}</span></button>
-            </div>
+            {mediaFiles.length > 1 && (
+              <div className="upload-image-nav">
+                <button className="upload-nav-btn" type="button" onClick={goToPreviousMedia}><div className="nav-icon-circle"><FaChevronLeft /></div><span>{t.prev}</span></button>
+                <button className="upload-nav-btn" type="button" onClick={goToNextMedia}><div className="nav-icon-circle"><FaChevronRight /></div><span>{t.next}</span></button>
+              </div>
+            )}
           </div>
         </div>
       </div>

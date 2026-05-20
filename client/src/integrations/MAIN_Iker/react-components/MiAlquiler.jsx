@@ -181,16 +181,26 @@ export default function MiAlquiler({ lang = 'ES' }) {
     const updateCountdown = () => {
       const total = Date.parse(latestRental.expiresAt) - Date.parse(new Date());
       if (total <= 0) {
-        setLocalTimeRemaining('00:00:00');
+        setLocalTimeRemaining('0 días 0 horas 0 seg');
         clearInterval(timerRef.current);
         return;
       }
-      
-      const hours = Math.floor(total / (1000 * 60 * 60));
-      const minutes = Math.floor((total / (1000 * 60)) % 60);
-      const seconds = Math.floor((total / 1000) % 60);
-      
-      setLocalTimeRemaining(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+
+      const days = Math.floor(total / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((total % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((total % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((total % (1000 * 60)) / 1000);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days} día${days !== 1 ? 's' : ''}`);
+      if (hours > 0 || days > 0) parts.push(`${hours} h`);
+      if (days > 0) {
+        parts.push(`${String(minutes).padStart(2, '0')}m`);
+      } else {
+        parts.push(`${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`);
+      }
+
+      setLocalTimeRemaining(parts.join(' '));
     };
 
     updateCountdown();
@@ -240,7 +250,7 @@ export default function MiAlquiler({ lang = 'ES' }) {
                     {mediaFiles.length > 0 ? (
                       <>
                         {mediaFiles[currentMediaIndex]?.type === 'image' ? (
-                          <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview main-image" id="preview-img" crossOrigin="anonymous" onError={(event) => { event.currentTarget.src = cover1; }} />
+                          <img src={mediaFiles[currentMediaIndex].data} alt="Vista previa" className="upload-image-preview main-image" id="preview-img" onError={(event) => { event.currentTarget.src = cover1; }} />
                         ) : (
                           <video src={mediaFiles[currentMediaIndex].data} controls className="upload-image-preview main-image" id="preview-video" />
                         )}

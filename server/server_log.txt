@@ -1,0 +1,120 @@
+
+> rentplay-server@1.0.0 start
+> node src/index.js
+
+RentPlay API listening on http://localhost:4000
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8185ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8183ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=48ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8178ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=48ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8184ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=81ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8193ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=9425ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=49ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=49ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8168ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=46ms resultado=true error=null
+Final Mongo Filter: {}
+Final Mongo Filter: {}
+Final Mongo Filter: {"title":{}}
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=412ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=98ms resultado=true error=null
+Final Mongo Filter: {"title":{}}
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=67ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=117ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=63ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=62ms resultado=true error=null
+Final Mongo Filter: {}
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8200ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8210ms resultado=true error=null
+Final Mongo Filter: {"title":{}}
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=52ms resultado=true error=null
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=80ms resultado=true error=null
+Final Mongo Filter: {}
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0de46ae6e42707f3a71f93 tiempo=54ms resultado=true error=null
+[VerJuego] findOne _id=6a0de4a01a3f78ed2788f6e2 tiempo=48ms resultado=true error=null
+[VerJuego] findOne _id=6a0de5161a3f78ed2788f6e5 tiempo=50ms resultado=true error=null
+[VerJuego] findOne _id=6a0de46ae6e42707f3a71f93 tiempo=53ms resultado=true error=null
+[VerJuego] findOne _id=6a0de46ae6e42707f3a71f93 tiempo=54ms resultado=true error=null
+Final Mongo Filter: {}
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=53ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8205ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8178ms resultado=true error=null
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=53ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=542ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8285ms resultado=true error=null
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=45ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5072ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=660ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5428ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=49ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=225ms resultado=true error=null
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=94ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8219ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5275ms resultado=true error=null
+[VerJuego] findOne error: connection 5 to 65.62.36.156:27017 timed out
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=60086ms resultado=false error=connection 5 to 65.62.36.156:27017 timed out
+[VerJuego] findOne error: connection 4 to 65.62.36.156:27017 timed out
+[VerJuego] findOne _id=6a0e131840fbd4c509f37763 tiempo=60227ms resultado=false error=connection 4 to 65.62.36.156:27017 timed out
+Final Mongo Filter: {}
+Final Mongo Filter: {}
+Final Mongo Filter: {"title":{}}
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=45ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=46ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5207ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5024ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=46ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=123ms resultado=true error=null
+Final Mongo Filter: {}
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=49ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5030ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=44ms resultado=true error=null
+Final Mongo Filter: {"title":{}}
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=47ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5027ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=449ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8222ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=5063ms resultado=true error=null
+[VerJuego] findOne _id=6a0e67f2ef0bcbe26a669f31 tiempo=8565ms resultado=true error=null
+[VerJuego] findOne _id=6a0e6c1bef0bcbe26a669f36 tiempo=17592ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0de46ae6e42707f3a71f93 tiempo=53ms resultado=true error=null
+Final Mongo Filter: {}
+[VerJuego] findOne _id=6a0de46ae6e42707f3a71f93 tiempo=3625ms resultado=true error=null
+Final Mongo Filter: {}
+--- POST /api/games intent ---
+User from JWT (payload): {
+  sub: '6a0de4e0e6e42707f3a71f98',
+  email: 'steven@gmail.com',
+  name: 'steven_98',
+  iat: 1779328288,
+  exp: 1779933088
+}
+Searching user with ID: 6a0de4e0e6e42707f3a71f98
+Inserting game document...
+Game inserted successfully: new ObjectId('6a0e6f1a55ad9af8d1fe0d56')
+Final Mongo Filter: {}

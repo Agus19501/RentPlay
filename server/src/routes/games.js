@@ -454,8 +454,6 @@ router.get('/:gameId', async (req, res) => {
 
 router.post('/', authRequired, async (req, res) => {
   try {
-    console.log('--- POST /api/games intent ---');
-    console.log('User from JWT (payload):', req.user);
     const { title, description, releaseDate, genre, rentalDays, developers, price, image } = req.body || {};
     const numericRentalDays = Number(rentalDays);
     const numericPrice = Number(price);
@@ -481,17 +479,14 @@ router.post('/', authRequired, async (req, res) => {
 
     // Obtener datos del usuario actual usando req.user.sub (del JWT)
     const userIdStr = req.user.sub || req.user.id || req.user._id;
-    console.log('Searching user with ID:', userIdStr);
 
     if (!userIdStr || !ObjectId.isValid(userIdStr)) {
-      console.error('Invalid ID format in JWT:', userIdStr);
       return res.status(401).json({ ok: false, message: 'Token de sesión corrupto o incompleto.' });
     }
 
     const user = await users.findOne({ _id: new ObjectId(userIdStr) });
 
     if (!user) {
-      console.error('User not found in DB for ID:', userIdStr);
       return res.status(401).json({ ok: false, message: 'Usuario no encontrado en la base de datos.' });
     }
 
@@ -515,13 +510,15 @@ router.post('/', authRequired, async (req, res) => {
       createdAt: new Date()
     };
 
-    console.log('Inserting game document...');
     const result = await games.insertOne(doc);
-    console.log('Game inserted successfully:', result.insertedId);
 
     clearGamesListCache();
 
-    return res.json({ ok: true, game: normalizeGame({ ...doc, _id: result.insertedId }) });
+    return res.json({
+      ok: true,
+      message: 'Juego publicado correctamente.',
+      gameId: result.insertedId.toString()
+    });
   } catch (error) {
     console.error('CRITICAL ERROR POST /api/games:', error);
     return res.status(500).json({ ok: false, message: 'Error interno al crear el juego.', error: error.message });
@@ -591,7 +588,7 @@ router.put('/:gameId', authRequired, async (req, res) => {
 
     clearGamesListCache();
 
-    return res.json({ ok: true, message: 'Juego actualizado correctamente.' });
+    return res.json({ ok: true, message: 'Juego actualizado correctamente.', gameId });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al actualizar el juego.' });
   }

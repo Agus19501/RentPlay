@@ -320,7 +320,8 @@ function AuthPage({ mode, onAuth, session, lang, setLang }) {
         : { email: form.email, password: form.password };
       const result = await apiRequest(`/api/auth/${mode}`, {
         method: 'POST',
-        body: payload
+        body: payload,
+        timeoutMs: mode === 'login' ? 7000 : 12000
       });
 
       onAuth(result.session);

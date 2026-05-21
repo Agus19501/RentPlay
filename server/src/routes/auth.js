@@ -189,13 +189,40 @@ router.post('/login', async (req, res) => {
     }
 
     const { users } = await getCollections();
-    const user = await users.findOne({ email });
+    const user = await users.findOne(
+      { email },
+      {
+        projection: { _id: 1, name: 1, email: 1, passwordHash: 1, password: 1 },
+        maxTimeMS: 1200
+      }
+    );
 
     if (!user) {
       return res.status(401).json({ ok: false, message: 'Credenciales incorrectas.' });
     }
 
-    const validPassword = await bcrypt.compare(password, user.passwordHash);
+    let validPassword = false;
+
+    if (typeof user.passwordHash === 'string' && user.passwordHash.length > 0) {
+      validPassword = await bcrypt.compare(password, user.passwordHash);
+    } else if (typeof user.password === 'string' && user.password.length > 0) {
+      // Compatibilidad con cuentas legacy que guardaron password en texto plano.
+      validPassword = password === user.password;
+
+      if (validPassword) {
+        const migratedHash = await bcrypt.hash(password, 10);
+        users.updateOne(
+          { _id: user._id },
+          {
+            $set: { passwordHash: migratedHash },
+            $unset: { password: '' }
+          }
+        ).catch(() => {
+          // La migracion es best-effort y no debe bloquear el login.
+        });
+      }
+    }
+
     if (!validPassword) {
       return res.status(401).json({ ok: false, message: 'Credenciales incorrectas.' });
     }

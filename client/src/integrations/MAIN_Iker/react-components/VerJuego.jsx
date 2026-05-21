@@ -130,6 +130,19 @@ export default function VerJuego({ lang = 'ES' }) {
       if (active) setLoading(false);
     });
 
+    // Hydrate the full game payload in background so media carousel and richer
+    // fields appear without delaying the first paint.
+    apiRequest(`/api/games/${selectedGameId}`)
+      .then((r) => {
+        if (active && r?.game) {
+          setSelectedGame((current) => ({ ...(current || {}), ...r.game }));
+          sessionStorage.setItem(cacheKey, JSON.stringify(r.game));
+        }
+      })
+      .catch(() => {
+        // Best-effort hydration; compact data already rendered.
+      });
+
     // --- 2. Cargar recomendaciones (en paralelo, lazy, con caché) ---
     const recKey = 'verjuego_recommendations';
     const cachedRecs = sessionStorage.getItem(recKey);
@@ -179,12 +192,28 @@ export default function VerJuego({ lang = 'ES' }) {
   // Lazy load: solo la imagen principal al principio, el resto bajo demanda
   const mediaFiles = useMemo(() => {
     if (!selectedGame) return [];
-    // Solo la primera imagen/media para carga inicial
+
     const media = Array.isArray(selectedGame.media) ? selectedGame.media : [];
     if (media.length > 0) {
-      // Solo la primera media para el primer render
-      return [media[0]];
+      return media
+        .map((item, index) => {
+          if (!item) return null;
+          const type = item.type || (String(item.data || item).startsWith('data:video') ? 'video' : 'image');
+          const rawData = item.data || item.url || item;
+          if (!rawData) return null;
+          const data = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
+            ? String(rawData)
+            : `/${String(rawData)}`;
+          return {
+            id: item.id || `${type}-${index}`,
+            type,
+            name: item.name || `media-${index + 1}`,
+            data
+          };
+        })
+        .filter(Boolean);
     }
+
     if (selectedGame.image) {
       const data = selectedGame.image.startsWith('data:') || selectedGame.image.startsWith('/') || selectedGame.image.startsWith('http')
         ? selectedGame.image
@@ -409,15 +438,22 @@ export default function VerJuego({ lang = 'ES' }) {
     }
   };
 
-  const handleEditGame = async () => {
+  const handleEditGame = () => {
     if (!selectedGame?.id) return;
-    try {
-      const res = await apiRequest(`/api/games/${selectedGame.id}`);
-      const fullGame = res.game || res;
-      navigate('/subir-juego', { state: { editGame: fullGame } });
-    } catch (e) {
-      notify('Error al cargar el juego para editar.', 'error');
+    navigate('/subir-juego', { state: { editGame: selectedGame } });
+  };
+
+  const handleOpenSellerProfile = () => {
+    if (!selectedGame?.seller?.id) {
+      return;
     }
+
+    if (isOwner) {
+      navigate('/perfil');
+      return;
+    }
+
+    navigate(`/perfil-otro?id=${selectedGame.seller.id}`);
   };
 
   if (loading) {
@@ -568,7 +604,7 @@ export default function VerJuego({ lang = 'ES' }) {
                 <button 
                   type="button"
                   className="seller-avatar-placeholder seller-avatar-button" 
-                  onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}
+                  onClick={handleOpenSellerProfile}
                   aria-label={selectedGame.seller?.id ? `${lang === 'EN' ? 'Open profile of' : 'Abrir perfil de'} ${selectedGame.seller?.name || t.noSeller}` : undefined}
                 >
                   {selectedGame.seller?.avatar ? (
@@ -589,7 +625,7 @@ export default function VerJuego({ lang = 'ES' }) {
                         color: num <= Math.round(selectedGame.seller?.rating || 0) ? '#ff6100' : '#ccc',
                         cursor: 'pointer'
                       }} 
-                      onClick={() => selectedGame.seller?.id && navigate(`/perfil-otro?id=${selectedGame.seller.id}`)}
+                      onClick={handleOpenSellerProfile}
                     />
                   ))}
                   <span className="rating-value">{selectedGame.seller?.rating?.toFixed(1) || '0.0'}</span>

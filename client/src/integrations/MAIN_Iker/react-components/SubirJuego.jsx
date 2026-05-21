@@ -175,6 +175,81 @@ export default function SubirJuego({ lang = 'ES' }) {
     setShowSuggestions(false);
   }, [editGame]);
 
+  useEffect(() => {
+    let active = true;
+
+    if (!editGame?.id) {
+      return () => {
+        active = false;
+      };
+    }
+
+    // When arriving from fast routes like VerJuego we render immediately with the
+    // data already in memory and hydrate full media/details in the background.
+    apiRequest(`/api/games/${editGame.id}`)
+      .then((res) => {
+        if (!active) {
+          return;
+        }
+
+        const fullGame = res?.game || res;
+        if (!fullGame) {
+          return;
+        }
+
+        setFormData({
+          title: fullGame.title || '',
+          description: fullGame.description || '',
+          releaseDate: fullGame.releaseDate || '',
+          genre: fullGame.genre || '',
+          duration: fullGame.rentalDays || '',
+          developers: fullGame.developers || '',
+          price: fullGame.price || ''
+        });
+        setDateValue(fullGame.releaseDate || '');
+
+        const existingMedia = Array.isArray(fullGame.media)
+          ? fullGame.media
+            .map((item, index) => {
+              if (!item || !item.data) return null;
+              const rawData = String(item.data);
+              const data = rawData.startsWith('data:') || rawData.startsWith('http') || rawData.startsWith('/')
+                ? rawData
+                : `/${rawData}`;
+              return {
+                id: item.id || `${Date.now()}-${index}`,
+                type: item.type || (rawData.startsWith('data:video') ? 'video' : 'image'),
+                name: item.name || `media-${index + 1}`,
+                data
+              };
+            })
+            .filter(Boolean)
+          : [];
+
+        if (existingMedia.length > 0) {
+          setMediaFiles(existingMedia);
+          setCurrentMediaIndex(0);
+        } else if (fullGame.image) {
+          setMediaFiles([{
+            id: Date.now(),
+            type: 'image',
+            name: 'current-cover',
+            data: fullGame.image.startsWith('data:') || fullGame.image.startsWith('http') || fullGame.image.startsWith('/')
+              ? fullGame.image
+              : `/${fullGame.image}`
+          }]);
+          setCurrentMediaIndex(0);
+        }
+      })
+      .catch(() => {
+        // Best-effort hydration: the instant form already rendered with available data.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [editGame?.id]);
+
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     let nextValue = value;

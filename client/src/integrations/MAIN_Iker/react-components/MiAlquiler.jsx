@@ -8,6 +8,53 @@ import { apiRequest, getSession } from '../../../api.js';
 import { notify } from '../../../utils/notify.js';
 import RatingModal from '../../../components/RatingModal.jsx';
 
+const MI_ALQUILER_CACHE_PREFIX = 'rentplay_mialquiler_cache_v1';
+const MI_ALQUILER_CACHE_TTL_MS = 15000;
+
+function readCachedRentals(cacheKey) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached?.ts && Array.isArray(cached.rentals) && (Date.now() - cached.ts) < MI_ALQUILER_CACHE_TTL_MS) {
+      return cached.rentals;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeCachedRentals(cacheKey, rentals) {
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), rentals }));
+  } catch {
+    // Best-effort cache.
+  }
+}
+
+function mergeRentals(currentRentals, incomingRentals) {
+  if (!Array.isArray(incomingRentals) || incomingRentals.length === 0) {
+    return Array.isArray(currentRentals) ? currentRentals : [];
+  }
+
+  const byId = new Map((Array.isArray(currentRentals) ? currentRentals : []).map((rental) => [rental.id, rental]));
+  for (const rental of incomingRentals) {
+    const previous = byId.get(rental.id);
+    byId.set(rental.id, previous
+      ? {
+          ...previous,
+          ...rental,
+          game: {
+            ...(previous.game || {}),
+            ...(rental.game || {})
+          }
+        }
+      : rental);
+  }
+
+  return Array.from(byId.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
+
 export default function MiAlquiler({ lang = 'ES' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -75,16 +122,27 @@ export default function MiAlquiler({ lang = 'ES' }) {
 
   useEffect(() => {
     let active = true;
+    const session = getSession();
+    const userKey = session?.user?.id || session?.userId || session?.sub || 'guest';
+    const rentalsCacheKey = `${MI_ALQUILER_CACHE_PREFIX}_${userKey}`;
 
-    apiRequest('/api/rentals/mine')
+    const cachedRentals = readCachedRentals(rentalsCacheKey);
+    if (Array.isArray(cachedRentals) && cachedRentals.length > 0) {
+      setRentals(cachedRentals);
+      setLoading(false);
+    }
+
+    apiRequest('/api/rentals/mine?lite=1', { token: session?.token })
       .then((rentalsRes) => {
         if (active) {
-          setRentals(rentalsRes.rentals || []);
+          const nextRentals = mergeRentals(cachedRentals, rentalsRes.rentals || []);
+          setRentals(nextRentals);
+          writeCachedRentals(rentalsCacheKey, nextRentals);
         }
       })
       .catch(() => {
         if (active) {
-          setRentals([]);
+          setRentals(cachedRentals || []);
         }
       })
       .finally(() => {
@@ -117,6 +175,58 @@ export default function MiAlquiler({ lang = 'ES' }) {
   }, [rentals, requestedGameId]);
 
   const rentalGame = useMemo(() => latestRental?.game || null, [latestRental]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!latestRental?.id || !rentalGame?.id) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const selectedGameCacheKey = `rentplay_mialquiler_game_${rentalGame.id}`;
+
+    try {
+      const cachedGame = JSON.parse(sessionStorage.getItem(selectedGameCacheKey) || 'null');
+      if (cachedGame && active) {
+        setRentals((current) => current.map((rental) => rental.id === latestRental.id
+          ? { ...rental, game: { ...(rental.game || {}), ...cachedGame } }
+          : rental));
+      }
+    } catch {
+      // Ignore cache parse errors.
+    }
+
+    apiRequest(`/api/games/${rentalGame.id}`)
+      .then((gameRes) => {
+        if (!active) {
+          return;
+        }
+
+        const fullGame = gameRes?.game || null;
+        if (!fullGame) {
+          return;
+        }
+
+        setRentals((current) => current.map((rental) => rental.id === latestRental.id
+          ? { ...rental, game: { ...(rental.game || {}), ...fullGame } }
+          : rental));
+
+        try {
+          sessionStorage.setItem(selectedGameCacheKey, JSON.stringify(fullGame));
+        } catch {
+          // Best-effort cache.
+        }
+      })
+      .catch(() => {
+        // Background hydration should not block the page.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [latestRental?.id, rentalGame?.id]);
 
   const mediaFiles = useMemo(() => {
     if (!rentalGame) return [];
@@ -302,8 +412,16 @@ export default function MiAlquiler({ lang = 'ES' }) {
 
               <div className="description-section">
                 <h2 className="section-title">{t.desc}</h2>
-                <p className="description-text">{rentalGame.description || t.noDesc}</p>
-                <p className="description-text">{rentalGame.genre ? `${t.genre}: ${rentalGame.genre}.` : ''} {rentalGame.developers ? `${t.devs}: ${rentalGame.developers}.` : ''}</p>
+                <p className="description-text">
+                  {(() => {
+                    const desc = rentalGame.description || t.noDesc;
+                    return desc.length > 300 ? desc.slice(0, 300) + '\u2026' : desc;
+                  })()}
+                </p>
+                <div className="game-meta-tags">
+                  {rentalGame.genre && <p className="game-meta-line"><span className="game-meta-label">{t.genre}:</span> {rentalGame.genre}</p>}
+                  {rentalGame.developers && <p className="game-meta-line"><span className="game-meta-label">{t.devs}:</span> {rentalGame.developers}</p>}
+                </div>
               </div>
 
               <div className="rental-details">

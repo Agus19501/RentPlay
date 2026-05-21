@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaChevronDown, FaPaperPlane, FaStar, FaUserCircle } from 'react-icons/fa';
-import { apiRequest, getSession } from '../api.js';
+import { apiRequest, clearSession, getSession } from '../api.js';
 import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Chats.css';
 import UnreadSyncer from '../hooks/UnreadSyncer.js';
@@ -40,6 +40,132 @@ function formatMessageDateLabel(value, lang = 'ES') {
   });
 }
 
+const CHATS_CACHE_KEY = 'rentplay_chats_cache_v1';
+const CHATS_CACHE_TTL_MS = 15000;
+const CHAT_MESSAGES_REFRESH_MS = 30000;
+const CHAT_THREAD_CACHE_PREFIX = 'rentplay_chat_thread_cache_v1';
+
+function readChatsCache(key) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(key) || 'null');
+    if (cached?.ts && Array.isArray(cached.chats) && (Date.now() - cached.ts) < CHATS_CACHE_TTL_MS) {
+      return cached.chats;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function readChatsCacheStale(key) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(key) || 'null');
+    if (Array.isArray(cached?.chats)) {
+      return cached.chats;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeChatsCache(key, chats) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), chats }));
+  } catch {
+    // cache best-effort
+  }
+}
+
+function readThreadCache(key) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(key) || 'null');
+    if (cached?.ts && Array.isArray(cached.messages) && (Date.now() - cached.ts) < CHATS_CACHE_TTL_MS) {
+      return cached.messages;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeThreadCache(key, messages) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), messages }));
+  } catch {
+    // cache best-effort
+  }
+}
+
+function mergeChatsById(currentChats, incomingChats) {
+  if (!Array.isArray(incomingChats) || incomingChats.length === 0) {
+    return Array.isArray(currentChats) ? currentChats : [];
+  }
+
+  const byId = new Map((Array.isArray(currentChats) ? currentChats : []).map((chat) => [chat.id, chat]));
+  for (const chat of incomingChats) {
+    const previous = byId.get(chat.id);
+    byId.set(chat.id, previous ? { ...previous, ...chat, user: { ...(previous.user || {}), ...(chat.user || {}) }, game: { ...(previous.game || {}), ...(chat.game || {}) } } : chat);
+  }
+
+  return Array.from(byId.values()).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+}
+
+function isUnauthorizedError(error) {
+  return Number(error?.status) === 401;
+}
+
+function pickBestInitialChatId(chats) {
+  if (!Array.isArray(chats) || chats.length === 0) {
+    return null;
+  }
+
+  const withMessage = chats.find((chat) => String(chat?.lastMessage || '').trim().length > 0);
+  return withMessage?.id || chats[0]?.id || null;
+}
+
+function toLegacyChat(conversation) {
+  const counterpartId = conversation?.counterpartId;
+  return {
+    id: `legacy-${counterpartId}`,
+    counterpartId,
+    participants: [],
+    gameId: null,
+    lastMessage: conversation?.lastMessage?.text || '',
+    updatedAt: conversation?.lastMessage?.createdAt || new Date().toISOString(),
+    user: {
+      id: conversation?.counterpart?.id || counterpartId,
+      name: conversation?.counterpart?.name || 'Usuario',
+      avatar: null,
+      rating: 0
+    },
+    game: null
+  };
+}
+
+function isLegacyChatId(chatId) {
+  return String(chatId || '').startsWith('legacy-');
+}
+
+function getLegacyCounterpartId(chat) {
+  if (!chat) {
+    return null;
+  }
+
+  if (chat.counterpartId) {
+    return chat.counterpartId;
+  }
+
+  if (isLegacyChatId(chat.id)) {
+    return String(chat.id).replace('legacy-', '');
+  }
+
+  return chat?.user?.id || null;
+}
+
 export default function Chats({ lang }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,6 +185,7 @@ export default function Chats({ lang }) {
       loadingChats: 'Cargando chats...',
       writeMessage: 'Escribe un mensaje...',
       selectConversation: 'Selecciona una conversación para empezar',
+      emptyThread: 'Aun no hay mensajes en esta conversacion',
       conversations: 'Conversaciones',
       rental: 'Alquiler',
       days: 'días',
@@ -68,6 +195,7 @@ export default function Chats({ lang }) {
       loadingChats: 'Loading chats...',
       writeMessage: 'Write a message...',
       selectConversation: 'Select a conversation to start',
+      emptyThread: 'No messages yet in this conversation',
       conversations: 'Conversations',
       rental: 'Rental',
       days: 'days',
@@ -92,50 +220,246 @@ export default function Chats({ lang }) {
 
   // Cargar conversaciones desde la API
   useEffect(() => {
+    let active = true;
+
     async function loadData() {
       if (!session?.token) {
         navigate('/login');
         return;
       }
+
+      const userKey = session?.user?.id || session?.userId || session?.sub || 'guest';
+      const chatsCacheKey = `${CHATS_CACHE_KEY}_${userKey}`;
+      let hydratedFromCache = false;
+
       try {
+        const cachedChats = readChatsCache(chatsCacheKey);
+        if (Array.isArray(cachedChats) && cachedChats.length > 0) {
+          setConversations(cachedChats);
+          hydratedFromCache = true;
+          if (!activeChatId) {
+            const bestId = pickBestInitialChatId(cachedChats);
+            if (bestId) {
+              setSearchParams({ id: bestId });
+            }
+          }
+          setLoading(false);
+        }
+      } catch {
+        // Ignore cache parse failures.
+      }
+
+      // If fresh cache is not available, allow stale cache so the inbox is never blank.
+      if (!hydratedFromCache) {
+        const staleChats = readChatsCacheStale(chatsCacheKey);
+        if (Array.isArray(staleChats) && staleChats.length > 0) {
+          setConversations(staleChats);
+          hydratedFromCache = true;
+          if (!activeChatId) {
+            const bestId = pickBestInitialChatId(staleChats);
+            if (bestId) {
+              setSearchParams({ id: bestId });
+            }
+          }
+          setLoading(false);
+        }
+      }
+
+      // Never block the page on a slow network response.
+      if (!hydratedFromCache) {
+        setLoading(false);
+      }
+
+      try {
+        // First pass: lightweight payload for instant inbox paint.
+        try {
+          const compactRes = await apiRequest('/api/chats?compact=1', { token: session.token });
+          if (active && compactRes.ok) {
+            const compactChats = compactRes.chats || [];
+            setConversations((prev) => mergeChatsById(prev, compactChats));
+
+            if (!activeChatId && compactChats.length > 0) {
+              const bestId = pickBestInitialChatId(compactChats);
+              if (bestId) {
+                setSearchParams({ id: bestId });
+              }
+            }
+          }
+        } catch (compactErr) {
+          if (isUnauthorizedError(compactErr)) {
+            clearSession();
+            navigate('/login');
+            return;
+          }
+
+          // Compact fetch is best-effort.
+        }
+
+        // Second pass: full payload with user/game enrichment in background (same strategy as Home).
         const res = await apiRequest('/api/chats', { token: session.token });
-        if (res.ok) {
-          setConversations(res.chats || []);
+
+        if (active && res.ok) {
+          const nextChats = res.chats || [];
+          if (nextChats.length > 0) {
+            setConversations((prev) => mergeChatsById(prev, nextChats));
+            writeChatsCache(chatsCacheKey, nextChats);
+          } else {
+            try {
+              const inboxRes = await apiRequest('/api/messages/inbox', { token: session.token });
+              if (active && inboxRes?.ok && Array.isArray(inboxRes.conversations) && inboxRes.conversations.length > 0) {
+                const legacyChats = inboxRes.conversations.map((conversation) => toLegacyChat(conversation));
+                setConversations((prev) => mergeChatsById(prev, legacyChats));
+                writeChatsCache(chatsCacheKey, legacyChats);
+
+                if (!activeChatId) {
+                  const bestId = pickBestInitialChatId(legacyChats);
+                  if (bestId) {
+                    setSearchParams({ id: bestId });
+                  }
+                }
+              }
+            } catch {
+              // Keep UI responsive even if legacy fallback fails.
+            }
+          }
           
-          if (!activeChatId && res.chats?.length > 0) {
-            setSearchParams({ id: res.chats[0].id });
+          if (!activeChatId && nextChats.length > 0) {
+            const bestId = pickBestInitialChatId(nextChats);
+            if (bestId) {
+              setSearchParams({ id: bestId });
+            }
           }
         }
       } catch (err) {
+        if (!active) {
+          return;
+        }
+
+        if (isUnauthorizedError(err)) {
+          clearSession();
+          navigate('/login');
+          return;
+        }
+
+        const message = String(err?.message || '');
+        if (message.includes('Failed to fetch')) {
+          return;
+        }
+
         console.error("Error loading chat data:", err);
       } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, [session?.token, activeChatId, setSearchParams, navigate]);
-
-  // Cargar mensajes del chat activo
-  useEffect(() => {
-    async function loadMessages() {
-      if (activeChatId && session?.token) {
-        try {
-          const res = await apiRequest(`/api/chats/${activeChatId}/messages`, { 
-            token: session.token 
-          });
-          if (res.ok) {
-            setMessages(res.messages || []);
-          }
-        } catch (err) {
-          console.error("Error loading messages:", err);
+        if (active) {
+          setLoading(false);
         }
       }
     }
-    loadMessages();
-    
-    // Polling opcional para nuevos mensajes
-    const interval = setInterval(loadMessages, 5000);
-    return () => clearInterval(interval);
+    loadData();
+
+    return () => {
+      active = false;
+    };
+  }, [session?.token, setSearchParams, navigate]);
+
+  // Cargar mensajes del chat activo
+  useEffect(() => {
+    let active = true;
+    let timerId = null;
+
+    const userKey = session?.user?.id || session?.userId || session?.sub || 'guest';
+    const threadCacheKey = `${CHAT_THREAD_CACHE_PREFIX}_${userKey}_${activeChatId}`;
+
+    const cachedThread = readThreadCache(threadCacheKey);
+    if (Array.isArray(cachedThread)) {
+      setMessages(cachedThread);
+    }
+
+    async function loadMessages() {
+      if (activeChatId && session?.token) {
+        try {
+          const currentChat = conversations.find((chat) => chat.id === activeChatId) || null;
+          let nextMessages = [];
+
+          if (isLegacyChatId(activeChatId)) {
+            const counterpartId = getLegacyCounterpartId(currentChat);
+            if (counterpartId) {
+              const legacyRes = await apiRequest(`/api/messages/${counterpartId}`, { token: session.token });
+              if (legacyRes.ok && Array.isArray(legacyRes.messages)) {
+                nextMessages = legacyRes.messages.map((message) => ({
+                  id: message.id,
+                  text: message.text,
+                  senderId: message.senderId,
+                  createdAt: message.createdAt
+                }));
+              }
+            }
+          } else {
+            const res = await apiRequest(`/api/chats/${activeChatId}/messages`, {
+              token: session.token
+            });
+            if (res.ok) {
+              nextMessages = res.messages || [];
+
+              // Fallback for legacy threads that store data in /api/messages/:counterpartId.
+              if (nextMessages.length === 0) {
+                const counterpartId = currentChat?.user?.id || currentChat?.userId || currentChat?.counterpartId;
+                if (counterpartId) {
+                  try {
+                    const legacyRes = await apiRequest(`/api/messages/${counterpartId}`, { token: session.token });
+                    if (legacyRes?.ok && Array.isArray(legacyRes.messages) && legacyRes.messages.length > 0) {
+                      nextMessages = legacyRes.messages.map((message) => ({
+                        id: message.id,
+                        text: message.text,
+                        senderId: message.senderId,
+                        createdAt: message.createdAt
+                      }));
+                    }
+                  } catch {
+                    // Best-effort fallback.
+                  }
+                }
+              }
+            }
+          }
+
+          if (active) {
+            setMessages(nextMessages);
+            writeThreadCache(threadCacheKey, nextMessages);
+          }
+        } catch (err) {
+          if (!active) {
+            return;
+          }
+
+          if (isUnauthorizedError(err)) {
+            clearSession();
+            navigate('/login');
+            return;
+          }
+
+          const message = String(err?.message || '');
+          if (message.includes('Failed to fetch')) {
+            return;
+          }
+
+          console.error("Error loading messages:", err);
+        }
+      }
+
+      if (active) {
+        timerId = setTimeout(loadMessages, CHAT_MESSAGES_REFRESH_MS);
+      }
+    }
+
+    if (activeChatId && session?.token) {
+      loadMessages();
+    }
+
+    return () => {
+      active = false;
+      if (timerId) {
+        clearTimeout(timerId);
+      }
+    };
   }, [activeChatId, session?.token]);
 
   const activeChat = useMemo(() => {
@@ -179,17 +503,36 @@ export default function Chats({ lang }) {
     setNewMessage(''); // Limpiar input inmediatamente
 
     try {
-      const res = await apiRequest(`/api/chats/${activeChatId}/messages`, {
-        method: 'POST',
-        token: session.token,
-        body: { text }
-      });
+      const currentChat = conversations.find((chat) => chat.id === activeChatId) || null;
+      let res;
+
+      if (isLegacyChatId(activeChatId)) {
+        const counterpartId = getLegacyCounterpartId(currentChat);
+        if (!counterpartId) {
+          return;
+        }
+
+        res = await apiRequest('/api/messages', {
+          method: 'POST',
+          token: session.token,
+          body: { counterpartId, text }
+        });
+      } else {
+        res = await apiRequest(`/api/chats/${activeChatId}/messages`, {
+          method: 'POST',
+          token: session.token,
+          body: { text }
+        });
+      }
       
       if (res.ok) {
+        const outgoingMessage = res.message || res.conversation;
+
         // Solo añadimos el mensaje si no está ya en la lista (evita duplicados por polling)
         setMessages(prev => {
-          if (prev.find(m => m.id === res.message.id)) return prev;
-          return [...prev, res.message];
+          if (!outgoingMessage) return prev;
+          if (prev.find(m => m.id === outgoingMessage.id)) return prev;
+          return [...prev, outgoingMessage];
         });
       }
     } catch (err) {
@@ -291,6 +634,9 @@ export default function Chats({ lang }) {
               </header>
 
               <div className="chat-messages">
+                {groupedMessages.length === 0 && (
+                  <div className="no-chat-selected">{t.emptyThread}</div>
+                )}
                 {groupedMessages.map((group) => (
                   <React.Fragment key={group.dateKey}>
                     <div className="chat-date-separator">

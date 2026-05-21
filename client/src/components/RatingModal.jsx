@@ -1,10 +1,54 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FaPaperPlane, FaStar, FaTimes, FaUserCircle } from 'react-icons/fa';
-import { apiRequest } from '../api.js';
+import { apiRequest, getSession } from '../api.js';
 import { notify } from '../utils/notify.js';
 import './RatingModal.css';
 
 const MAX_COMMENT_LENGTH = 140;
+const RATINGS_CACHE_PREFIX = 'rentplay_rating_modal_cache_v1';
+const RATINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+const ratingsInFlight = new Map();
+
+function getRatingsCacheKey(targetUserId) {
+  const session = getSession();
+  const viewerId = session?.user?.id || session?.userId || session?.sub || 'guest';
+  return `${RATINGS_CACHE_PREFIX}_${targetUserId}_${viewerId}`;
+}
+
+function readRatingsCache(key) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(key) || 'null');
+    if (cached?.ts && (Date.now() - cached.ts) < RATINGS_CACHE_TTL_MS) {
+      return cached;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeRatingsCache(key, payload) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
+  } catch {
+    // cache best-effort
+  }
+}
+
+async function fetchRatingsDeduped(targetUserId, cacheKey, options = {}) {
+  if (ratingsInFlight.has(cacheKey)) {
+    return ratingsInFlight.get(cacheKey);
+  }
+
+  const request = apiRequest(`/api/auth/${targetUserId}/ratings`, options)
+    .finally(() => {
+      ratingsInFlight.delete(cacheKey);
+    });
+
+  ratingsInFlight.set(cacheKey, request);
+  return request;
+}
 
 function StarRow({ value }) {
   return (
@@ -61,24 +105,47 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
   }), [lang]);
 
   useEffect(() => {
-    if (!isOpen || !targetUserId) return;
+    if (!targetUserId) return;
 
     let cancelled = false;
+    const cacheKey = getRatingsCacheKey(targetUserId);
+
+    const cached = readRatingsCache(cacheKey);
+    if (cached?.payload && isOpen) {
+      setRatings(cached.payload.ratings || []);
+      setCanRate(cached.payload.canRate || false);
+      setLoadingRatings(false);
+    }
+
+    const shouldFetch = !cached?.payload;
+    if (!shouldFetch) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     async function loadRatings() {
-      setLoadingRatings(true);
+      if (isOpen) {
+        setLoadingRatings(true);
+      }
       try {
-        const response = await apiRequest(`/api/auth/${targetUserId}/ratings`);
+        const response = await fetchRatingsDeduped(targetUserId, cacheKey, { timeoutMs: 5000 });
         if (!cancelled) {
-          setRatings(response.ratings || []);
-          setCanRate(response.canRate || false);
+          writeRatingsCache(cacheKey, response);
+          if (isOpen) {
+            setRatings(response.ratings || []);
+            setCanRate(response.canRate || false);
+          }
         }
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && isOpen) {
           setRatings([]);
-          notify(error.message || 'Error al cargar valoraciones.', 'error');
+          if (error.message !== 'Request timeout') {
+            notify(error.message || 'Error al cargar valoraciones.', 'error');
+          }
         }
       } finally {
-        if (!cancelled) setLoadingRatings(false);
+        if (!cancelled && isOpen) setLoadingRatings(false);
       }
     }
 
@@ -123,9 +190,10 @@ export default function RatingModal({ isOpen, onClose, targetUserId, targetUserN
       setHoverRating(0);
       onRated?.({ rating: response.rating, reviews: response.reviews });
 
-      const listResponse = await apiRequest(`/api/auth/${targetUserId}/ratings`);
+      const listResponse = await apiRequest(`/api/auth/${targetUserId}/ratings`, { timeoutMs: 5000 });
       setRatings(listResponse.ratings || []);
       setCanRate(false); // ya valoró, ocultar form
+      writeRatingsCache(getRatingsCacheKey(targetUserId), { ...listResponse, canRate: false });
     } catch (error) {
       notify(error.message || 'Error al enviar valoracion.', 'error');
     } finally {

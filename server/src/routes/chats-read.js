@@ -3,21 +3,27 @@ import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import { authRequired } from '../middleware/auth.js';
 import { getCollections } from '../config/db.js';
+import { clearMessageCaches } from './messages.js';
 
 const router = Router();
 
 router.post('/:chatId/read', authRequired, async (req, res) => {
-  const { messages } = await getCollections();
-  const chatId = req.params.chatId;
-  const userId = req.user.sub;
+  try {
+    const { messages } = await getCollections();
+    const chatId = req.params.chatId;
+    const userId = req.user.sub;
 
-  // Marcar como leídos todos los mensajes recibidos en este chat
-  await messages.updateMany(
-    { chatId, recipientId: userId, readAt: null },
-    { $set: { readAt: new Date() } }
-  );
+    await messages.updateMany(
+      { chatId, recipientId: userId, readAt: null },
+      { $set: { readAt: new Date() } }
+    );
 
-  res.json({ ok: true });
+    clearMessageCaches();
+
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error.message });
+  }
 });
 
 export default router;

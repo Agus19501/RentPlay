@@ -8,6 +8,18 @@ import { apiRequest, getSession } from '../../../api.js';
 import { notify } from '../../../utils/notify.js';
 import RatingModal from '../../../components/RatingModal.jsx';
 
+function resolveAvatarSrc(value) {
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  if (value.startsWith('data:') || value.startsWith('http') || value.startsWith('/')) {
+    return value;
+  }
+
+  return `/${value}`;
+}
+
 export default function VerJuego({ lang = 'ES' }) {
   const navigate = useNavigate();
   const { gameId: paramGameId } = useParams();
@@ -15,6 +27,8 @@ export default function VerJuego({ lang = 'ES' }) {
   const [games, setGames] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [rentalsLoading, setRentalsLoading] = useState(false);
   const [isRentalModalOpen, setRentalModalOpen] = useState(false);
   const [isRatingModalOpen, setRatingModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('paypal');
@@ -91,84 +105,92 @@ export default function VerJuego({ lang = 'ES' }) {
   const selectedGameId = paramGameId || searchParams.get('id') || searchParams.get('gameId');
   const [selectedGame, setSelectedGame] = useState(null);
 
+  // Ultra-fast: cache game and recommendations in memory/localStorage
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setRecommendationsLoading(true);
+    setRentalsLoading(true);
 
-    const session = getSession();
+    // --- 1. Cargar juego principal primero (con caché local) ---
+    const cacheKey = `verjuego_game_${selectedGameId}`;
+    const cachedGame = sessionStorage.getItem(cacheKey);
+    if (cachedGame) {
+      setSelectedGame(JSON.parse(cachedGame));
+      setLoading(false);
+    }
+    apiRequest(`/api/games/${selectedGameId}?compact=1`).then(r => {
+      if (active && r?.game) {
+        setSelectedGame(r.game);
+        sessionStorage.setItem(cacheKey, JSON.stringify(r.game));
+      }
+    }).catch(() => {
+      if (active) setSelectedGame(null);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
 
-    const gamePromise = selectedGameId
-      ? apiRequest(`/api/games/${selectedGameId}?compact=1`).then(r => r.game || null)
-      : apiRequest('/api/games?lite=1').then(r => (r.games || [])[0] || null);
-
-    gamePromise
-      .then((game) => {
-        if (active) {
-          setSelectedGame(game);
+    // --- 2. Cargar recomendaciones (en paralelo, lazy, con caché) ---
+    const recKey = 'verjuego_recommendations';
+    const cachedRecs = sessionStorage.getItem(recKey);
+    if (cachedRecs) {
+      setGames(JSON.parse(cachedRecs));
+      setRecommendationsLoading(false);
+    } else {
+      apiRequest('/api/games?lite=1').then(r => {
+        if (active && r?.games) {
+          setGames(r.games);
+          sessionStorage.setItem(recKey, JSON.stringify(r.games));
         }
-
-        return Promise.all([
-          apiRequest('/api/games?lite=1').catch(() => ({ games: [] })),
-          session?.token
-            ? apiRequest('/api/rentals/mine', { token: session.token }).catch(() => ({ rentals: [] }))
-            : Promise.resolve({ rentals: [] })
-        ]);
-      })
-      .then((results) => {
-        if (!active || !results) {
-          return;
-        }
-        const [gamesRes, rentalsRes] = results;
-        setGames(gamesRes.games || []);
-        setRentals(rentalsRes.rentals || []);
-      })
-      .catch(() => {
-        if (active) {
-          setSelectedGame(null);
-          setGames([]);
-          setRentals([]);
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+      }).catch(() => {
+        if (active) setGames([]);
+      }).finally(() => {
+        if (active) setRecommendationsLoading(false);
       });
+    }
+
+    // --- 3. Cargar alquileres del usuario (en paralelo, lazy, con caché corta) ---
+    const session = getSession();
+    if (session?.token) {
+      const rentalsKey = `verjuego_rentals_${session.user?.id || session.userId || session.sub}`;
+      const cachedRentals = sessionStorage.getItem(rentalsKey);
+      if (cachedRentals) {
+        setRentals(JSON.parse(cachedRentals));
+        setRentalsLoading(false);
+      }
+      apiRequest('/api/rentals/mine', { token: session.token }).then(r => {
+        if (active && r?.rentals) {
+          setRentals(r.rentals);
+          sessionStorage.setItem(rentalsKey, JSON.stringify(r.rentals));
+        }
+      }).catch(() => {
+        if (active) setRentals([]);
+      }).finally(() => {
+        if (active) setRentalsLoading(false);
+      });
+    } else {
+      setRentals([]);
+      setRentalsLoading(false);
+    }
 
     return () => { active = false; };
   }, [selectedGameId]);
 
+  // Lazy load: solo la imagen principal al principio, el resto bajo demanda
   const mediaFiles = useMemo(() => {
     if (!selectedGame) return [];
-
+    // Solo la primera imagen/media para carga inicial
     const media = Array.isArray(selectedGame.media) ? selectedGame.media : [];
-    const normalizedMedia = media
-      .map((item) => {
-        if (!item) return null;
-        const type = item.type || (String(item.data || item).startsWith('data:video') ? 'video' : 'image');
-        const rawData = item.data || item.url || item;
-        if (!rawData) return null;
-        const data = String(rawData).startsWith('data:') || String(rawData).startsWith('http') || String(rawData).startsWith('/')
-          ? String(rawData)
-          : `/${String(rawData)}`;
-        return {
-          id: item.id || `${type}-${String(rawData).slice(0, 20)}`,
-          type,
-          name: item.name || 'media',
-          data
-        };
-      })
-      .filter(Boolean);
-
-    if (normalizedMedia.length > 0) {
-      return normalizedMedia;
+    if (media.length > 0) {
+      // Solo la primera media para el primer render
+      return [media[0]];
     }
-
     if (selectedGame.image) {
       const data = selectedGame.image.startsWith('data:') || selectedGame.image.startsWith('/') || selectedGame.image.startsWith('http')
         ? selectedGame.image
         : `/${selectedGame.image}`;
       return [{ id: 'main-image', type: 'image', name: 'image', data }];
     }
-
     return [{ id: 'fallback-image', type: 'image', name: 'image', data: cover1 }];
   }, [selectedGame]);
 
@@ -551,7 +573,7 @@ export default function VerJuego({ lang = 'ES' }) {
                 >
                   {selectedGame.seller?.avatar ? (
                     <img 
-                      src={selectedGame.seller.avatar.startsWith('data:') ? selectedGame.seller.avatar : `/${selectedGame.seller.avatar}`} 
+                      src={resolveAvatarSrc(selectedGame.seller.avatar)} 
                       alt="avatar" 
                     />
                   ) : (

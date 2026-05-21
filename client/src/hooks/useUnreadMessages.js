@@ -22,7 +22,7 @@ export default function useUnreadMessages(session) {
       }
     }
     fetchUnread();
-    const interval = setInterval(fetchUnread, 10000); // refresca cada 10s
+    const interval = setInterval(fetchUnread, 30000); // refresca cada 30s
     return () => { cancelled = true; clearInterval(interval); };
   }, [session?.token]);
 

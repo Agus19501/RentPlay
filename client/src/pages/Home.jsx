@@ -7,7 +7,11 @@ import cover1 from '../integrations/MAIN_Iker/assets/images/cover1.svg';
 import './Home.css';
 
 const HOME_GAMES_CACHE_KEY = 'rentplay_home_games_cache_v1';
+const HOME_PROFILES_CACHE_KEY = 'rentplay_home_profiles_cache_v1';
+const HOME_RENTALS_CACHE_PREFIX = 'rentplay_home_rentals_cache_v1';
 const HOME_GAMES_CACHE_TTL_MS = 20000;
+const HOME_PROFILES_CACHE_TTL_MS = 20000;
+const HOME_RENTALS_CACHE_TTL_MS = 15000;
 
 const Home = ({ lang }) => {
   const navigate = useNavigate();
@@ -83,6 +87,28 @@ const Home = ({ lang }) => {
       // Ignore cache parse failures
     }
 
+    try {
+      const cachedProfiles = JSON.parse(localStorage.getItem(HOME_PROFILES_CACHE_KEY) || 'null');
+      if (cachedProfiles?.ts && Array.isArray(cachedProfiles.users) && (Date.now() - cachedProfiles.ts) < HOME_PROFILES_CACHE_TTL_MS) {
+        setSellerProfiles(cachedProfiles.users);
+        setProfilesLoading(false);
+      }
+    } catch {
+      // Ignore cache parse failures
+    }
+
+    const rentalsCacheKey = session?.user?.id ? `${HOME_RENTALS_CACHE_PREFIX}_${session.user.id}` : null;
+    if (rentalsCacheKey) {
+      try {
+        const cachedRentals = JSON.parse(localStorage.getItem(rentalsCacheKey) || 'null');
+        if (Array.isArray(cachedRentals?.rentals)) {
+          setMyRentals(cachedRentals.rentals);
+        }
+      } catch {
+        // Ignore cache parse failures
+      }
+    }
+
     // Cargar juegos primero para pintar Home cuanto antes
     apiRequest('/api/games?lite=1')
       .then((gamesRes) => {
@@ -111,7 +137,13 @@ const Home = ({ lang }) => {
     apiRequest('/api/auth/top-rated?limit=10')
       .then((profilesRes) => {
         if (active) {
-          setSellerProfiles(profilesRes.users || []);
+          const nextProfiles = profilesRes.users || [];
+          setSellerProfiles(nextProfiles);
+          try {
+            localStorage.setItem(HOME_PROFILES_CACHE_KEY, JSON.stringify({ ts: Date.now(), users: nextProfiles }));
+          } catch {
+            // Ignore cache write failures.
+          }
         }
       })
       .catch(() => {
@@ -127,10 +159,18 @@ const Home = ({ lang }) => {
 
     // Cargar alquileres y notificaciones del dueño en paralelo, sin bloquear el render principal
     if (session?.token) {
-      apiRequest('/api/rentals/mine', { token: session.token })
+      apiRequest('/api/rentals/mine?lite=1', { token: session.token })
         .then((rentalsRes) => {
           if (active) {
-            setMyRentals(rentalsRes.rentals || []);
+            const nextRentals = rentalsRes.rentals || [];
+            setMyRentals(nextRentals);
+            if (rentalsCacheKey) {
+              try {
+                localStorage.setItem(rentalsCacheKey, JSON.stringify({ ts: Date.now(), rentals: nextRentals }));
+              } catch {
+                // Ignore cache write failures.
+              }
+            }
           }
         })
         .catch(() => {

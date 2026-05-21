@@ -6,8 +6,45 @@ import { getCollections } from '../config/db.js';
 import { clearGamesListCache } from './games.js';
 
 const router = Router();
-const TOP_RATED_CACHE_TTL_MS = 15000;
+const TOP_RATED_CACHE_TTL_MS = 5 * 60 * 1000;
+const TOP_RATED_STALE_TTL_MS = 30 * 60 * 1000;
 let topRatedCache = null;
+let topRatedRefreshPromise = null;
+const ratingsCache = new Map();
+const RATINGS_CACHE_TTL_MS = 30 * 1000;
+
+function getRatingsCacheKey(targetUserId, reviewerId) {
+  return `${targetUserId}:${reviewerId || 'guest'}`;
+}
+
+function getCachedRatingsPayload(targetUserId, reviewerId) {
+  const key = getRatingsCacheKey(targetUserId, reviewerId);
+  const cached = ratingsCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.payload;
+  }
+
+  if (cached) {
+    ratingsCache.delete(key);
+  }
+
+  return null;
+}
+
+function setCachedRatingsPayload(targetUserId, reviewerId, payload) {
+  ratingsCache.set(getRatingsCacheKey(targetUserId, reviewerId), {
+    expiresAt: Date.now() + RATINGS_CACHE_TTL_MS,
+    payload
+  });
+}
+
+function clearRatingsCacheForUser(targetUserId) {
+  for (const key of ratingsCache.keys()) {
+    if (key.startsWith(`${targetUserId}:`)) {
+      ratingsCache.delete(key);
+    }
+  }
+}
 
 function isBase64Image(str) {
   return typeof str === 'string' && str.startsWith('data:image/');
@@ -27,6 +64,49 @@ function toPublicAvatar(userId, avatar) {
 
 function clearTopRatedCache() {
   topRatedCache = null;
+}
+
+async function refreshTopRatedCache(limit = 10, { maxTimeMs = 1500 } = {}) {
+  if (topRatedRefreshPromise) {
+    return topRatedRefreshPromise;
+  }
+
+  topRatedRefreshPromise = (async () => {
+    const { users } = await getCollections();
+    const topUsers = await users
+      .find({}, { projection: { name: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1 } })
+      .sort({ rating: -1, reviews: -1, createdAt: -1 })
+      .hint('users_top_rated_desc_idx')
+      .limit(limit)
+      .maxTimeMS(maxTimeMs)
+      .toArray();
+
+    const payload = {
+      ok: true,
+      users: topUsers.map((user) => ({
+        id: user._id.toString(),
+        name: user.name,
+        avatar: toPublicAvatar(user._id.toString(), user.avatar),
+        rating: Number(user.rating || 0),
+        reviews: Number(user.reviews || 0),
+        gameCount: 0,
+        createdAt: user.createdAt || null
+      }))
+    };
+
+    topRatedCache = {
+      cacheKey: String(limit),
+      expiresAt: Date.now() + TOP_RATED_CACHE_TTL_MS,
+      staleUntil: Date.now() + TOP_RATED_STALE_TTL_MS,
+      payload
+    };
+
+    return payload;
+  })().finally(() => {
+    topRatedRefreshPromise = null;
+  });
+
+  return topRatedRefreshPromise;
 }
 
 function createSession(user) {
@@ -145,7 +225,10 @@ router.get('/me', async (req, res) => {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET || 'rentplay-dev-secret');
     const { users } = await getCollections();
-    const user = await users.findOne({ _id: new ObjectId(payload.sub) });
+    const user = await users.findOne(
+      { _id: new ObjectId(payload.sub) },
+      { projection: { name: 1, email: 1, avatar: 1, birthDate: 1, rating: 1, reviews: 1 } }
+    );
 
     if (!user) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
@@ -157,7 +240,7 @@ router.get('/me', async (req, res) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
+        avatar: toPublicAvatar(user._id.toString(), user.avatar),
         birthDate: user.birthDate,
         rating: user.rating || 0,
         reviews: user.reviews || 0
@@ -238,6 +321,8 @@ router.put('/update', async (req, res) => {
       { returnDocument: 'after', returnOriginal: false }
     );
 
+
+    clearTopRatedCache();
     const updatedUser = result.value || result;
 
     if (!updatedUser) {
@@ -274,34 +359,27 @@ router.get('/top-rated', async (req, res) => {
       return res.json(topRatedCache.payload);
     }
 
-    const { users, games } = await getCollections();
-    const topUsers = await users
-      .find({}, { projection: { name: 1, email: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1 } })
-      .sort({ rating: -1, reviews: -1, createdAt: 1 })
-      .limit(limit)
-      .toArray();
+    if (topRatedCache?.payload && topRatedCache.cacheKey === cacheKey && topRatedCache.staleUntil > Date.now()) {
+      if (!topRatedRefreshPromise) {
+        refreshTopRatedCache(limit).catch((error) => {
+          console.warn('Top-rated background refresh failed:', error.message);
+        });
+      }
 
-    const payload = {
-      ok: true,
-      users: topUsers.map((user) => ({
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        avatar: toPublicAvatar(user._id.toString(), user.avatar),
-        rating: Number(user.rating || 0),
-        reviews: Number(user.reviews || 0),
-        gameCount: 0,
-        createdAt: user.createdAt || null
-      }))
-    };
+      return res.json(topRatedCache.payload);
+    }
 
-    topRatedCache = {
-      cacheKey,
-      expiresAt: Date.now() + TOP_RATED_CACHE_TTL_MS,
-      payload
-    };
+    if (!topRatedRefreshPromise) {
+      refreshTopRatedCache(limit, { maxTimeMs: 10000 }).catch((error) => {
+        console.warn('Top-rated refresh failed:', error.message);
+      });
+    }
 
-    return res.json(payload);
+    if (topRatedCache?.payload && topRatedCache.cacheKey === cacheKey) {
+      return res.json(topRatedCache.payload);
+    }
+
+    return res.json({ ok: true, users: [] });
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener perfiles destacados.', error: error.message });
   }
@@ -310,20 +388,29 @@ router.get('/top-rated', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
+    const lite = req.query.lite === '1' || req.query.lite === 'true';
     
     if (!ObjectId.isValid(userId)) {
       return res.status(422).json({ ok: false, message: 'ID de usuario invalido.' });
     }
 
     const { users, games } = await getCollections();
-    const user = await users.findOne({ _id: new ObjectId(userId) });
+    const user = await users.findOne(
+      { _id: new ObjectId(userId) },
+      { projection: lite ? { name: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1, birthDate: 1 } : { name: 1, email: 1, avatar: 1, rating: 1, reviews: 1, createdAt: 1, birthDate: 1 } }
+    );
 
     if (!user) {
       return res.status(404).json({ ok: false, message: 'Usuario no encontrado.' });
     }
 
     // Obtener juegos del usuario
-    const userGames = await games.find({ uploadedBy: new ObjectId(userId) }).sort({ createdAt: -1 }).toArray();
+    const userGames = await games.find(
+      { uploadedBy: new ObjectId(userId) },
+      lite
+        ? { projection: { title: 1, image: 1, price: 1, platform: 1, available: 1, createdAt: 1 } }
+        : undefined
+    ).sort({ createdAt: -1 }).toArray();
 
     function normalizeGame(game) {
       return {
@@ -343,9 +430,10 @@ router.get('/:userId', async (req, res) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
-        avatar: user.avatar,
+        avatar: toPublicAvatar(user._id.toString(), user.avatar),
         rating: user.rating || 0,
         reviews: user.reviews || 0,
+        birthDate: user.birthDate || null,
         createdAt: user.createdAt || null
       },
       games: userGames.map(normalizeGame)
@@ -364,6 +452,24 @@ router.get('/:userId/ratings', async (req, res) => {
     }
 
     const { users, games, rentals } = await getCollections();
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    let reviewerId = null;
+
+    if (token) {
+      try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET || 'rentplay-dev-secret');
+        reviewerId = payload.sub;
+      } catch {
+        reviewerId = null;
+      }
+    }
+
+    const cachedPayload = getCachedRatingsPayload(targetUserId, reviewerId);
+    if (cachedPayload) {
+      return res.json(cachedPayload);
+    }
+
     const user = await users.findOne(
       { _id: new ObjectId(targetUserId) },
       { projection: { ratingComments: 1, voters: 1 } }
@@ -391,33 +497,25 @@ router.get('/:userId/ratings', async (req, res) => {
 
     // Determine if the requesting user can rate (has rented from target and hasn't rated yet)
     let canRate = false;
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-    if (token) {
-      try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET || 'rentplay-dev-secret');
-        const reviewerId = payload.sub;
-        if (reviewerId !== targetUserId) {
-          const alreadyRated = Array.isArray(user.voters) && user.voters.includes(reviewerId);
-          if (!alreadyRated && ObjectId.isValid(reviewerId)) {
-            const targetGames = await games
-              .find({ uploadedBy: new ObjectId(targetUserId) }, { projection: { _id: 1 } })
-              .toArray();
-            if (targetGames.length > 0) {
-              const rental = await rentals.findOne({
-                userId: new ObjectId(reviewerId),
-                gameId: { $in: targetGames.map((g) => g._id) }
-              });
-              canRate = !!rental;
-            }
-          }
+    if (reviewerId && reviewerId !== targetUserId) {
+      const alreadyRated = Array.isArray(user.voters) && user.voters.includes(reviewerId);
+      if (!alreadyRated && ObjectId.isValid(reviewerId)) {
+        const targetGames = await games
+          .find({ uploadedBy: new ObjectId(targetUserId) }, { projection: { _id: 1 } })
+          .toArray();
+        if (targetGames.length > 0) {
+          const rental = await rentals.findOne({
+            userId: new ObjectId(reviewerId),
+            gameId: { $in: targetGames.map((g) => g._id) }
+          });
+          canRate = !!rental;
         }
-      } catch {
-        // invalid token — canRate stays false
       }
     }
 
-    return res.json({ ok: true, ratings, canRate });
+    const payload = { ok: true, ratings, canRate };
+    setCachedRatingsPayload(targetUserId, reviewerId, payload);
+    return res.json(payload);
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error al obtener valoraciones.', error: error.message });
   }
@@ -524,6 +622,7 @@ router.post('/:userId/rate', async (req, res) => {
 
     clearGamesListCache();
     clearTopRatedCache();
+    clearRatingsCacheForUser(targetUserId);
 
     return res.json({ 
       ok: true, 

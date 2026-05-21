@@ -5,6 +5,29 @@ import { FaPaperPlane, FaSearch, FaUserCircle, FaDotCircle, FaChevronRight } fro
 import { apiRequest } from '../api.js';
 import './Mensajes.css';
 
+const MENSAJES_CACHE_TTL_MS = 30 * 1000;
+
+function readMensajesCache(key) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(key) || 'null');
+    if (cached?.ts && (Date.now() - cached.ts) < MENSAJES_CACHE_TTL_MS) {
+      return cached.payload ?? cached;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeMensajesCache(key, payload) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
+  } catch {
+    // cache best-effort
+  }
+}
+
 function formatTime(value, lang = 'ES') {
   if (!value) {
     return '';
@@ -129,33 +152,53 @@ export default function Mensajes({ session, lang = 'ES' }) {
       return;
     }
 
+    const userId = session?.user?.id || session?.userId || session?.sub || 'guest';
+    const inboxCacheKey = `rentplay_mensajes_inbox_${userId}`;
+    const rentalCacheKey = `rentplay_mensajes_rental_${userId}`;
+
+    const cachedInbox = readMensajesCache(inboxCacheKey);
+    if (cachedInbox?.conversations) {
+      const list = cachedInbox.conversations || [];
+      setConversations(list);
+      if (list.length > 0) {
+        setSelectedId((current) => current || list[0].counterpartId);
+      }
+      setInboxLoading(false);
+    }
+
+    const cachedRental = readMensajesCache(rentalCacheKey);
+    if (cachedRental?.selectedRental) {
+      setSelectedRental(cachedRental.selectedRental);
+    }
+
     const loadInbox = async () => {
       setInboxLoading(true);
       try {
-        const inboxResponse = await apiRequest('/api/messages/inbox', { token: session.token });
+        const [inboxResponse, rentalsResponse] = await Promise.all([
+          apiRequest('/api/messages/inbox', { token: session.token, timeoutMs: 5000 }),
+          apiRequest('/api/rentals/mine?lite=1', { token: session.token, timeoutMs: 5000 }).catch(() => ({ rentals: [] }))
+        ]);
+
         const list = inboxResponse.conversations || [];
         setConversations(list);
+        writeMensajesCache(inboxCacheKey, { conversations: list });
+
         if (list.length > 0) {
           setSelectedId((current) => current || list[0].counterpartId);
         }
+
+        const nextSelectedRental = rentalsResponse.rentals?.[0] || null;
+        setSelectedRental(nextSelectedRental);
+        writeMensajesCache(rentalCacheKey, { selectedRental: nextSelectedRental });
       } catch (error) {
         setStatus(error.message);
       } finally {
         setInboxLoading(false);
       }
-
-      // Cargar contexto de alquileres en paralelo, sin bloquear bandeja
-      apiRequest('/api/rentals/mine', { token: session.token })
-        .then((rentalsResponse) => {
-          setSelectedRental(rentalsResponse.rentals?.[0] || null);
-        })
-        .catch(() => {
-          setSelectedRental(null);
-        });
     };
 
     loadInbox();
-  }, [session]);
+  }, [session?.token, session?.user?.id]);
 
   useEffect(() => {
     if (!session?.token || !selectedId) {
@@ -164,12 +207,25 @@ export default function Mensajes({ session, lang = 'ES' }) {
       return;
     }
 
+    const userId = session?.user?.id || session?.userId || session?.sub || 'guest';
+    const threadCacheKey = `rentplay_mensajes_thread_${userId}_${selectedId}`;
+    const cachedThread = readMensajesCache(threadCacheKey);
+    if (cachedThread?.messages || cachedThread?.counterpart) {
+      setCounterpart(cachedThread.counterpart || null);
+      setMessages(cachedThread.messages || []);
+      setThreadLoading(false);
+    }
+
     const loadThread = async () => {
       setThreadLoading(true);
       try {
-        const response = await apiRequest(`/api/messages/${selectedId}`, { token: session.token });
+        const response = await apiRequest(`/api/messages/${selectedId}`, { token: session.token, timeoutMs: 5000 });
         setCounterpart(response.counterpart || null);
         setMessages(response.messages || []);
+        writeMensajesCache(threadCacheKey, {
+          counterpart: response.counterpart || null,
+          messages: response.messages || []
+        });
       } catch (error) {
         setStatus(error.message);
       } finally {
@@ -178,7 +234,7 @@ export default function Mensajes({ session, lang = 'ES' }) {
     };
 
     loadThread();
-  }, [session, selectedId]);
+  }, [session?.token, session?.user?.id, selectedId]);
 
   useEffect(() => {
     if (!session?.token) {
@@ -197,7 +253,10 @@ export default function Mensajes({ session, lang = 'ES' }) {
 
     const timer = setTimeout(async () => {
       try {
-        const response = await apiRequest(`/api/messages/users/search?query=${encodeURIComponent(query)}`, { token: session.token });
+        const response = await apiRequest(`/api/messages/users/search?query=${encodeURIComponent(query)}`, {
+          token: session.token,
+          timeoutMs: 4000
+        });
         if (active) {
           setResults(response.users || []);
         }
@@ -241,24 +300,46 @@ export default function Mensajes({ session, lang = 'ES' }) {
     }
 
     try {
+      const optimisticMessage = {
+        id: `tmp-${Date.now()}`,
+        text: trimmedDraft,
+        senderId: session.user?.id,
+        recipientId: selectedId,
+        createdAt: new Date().toISOString(),
+        readAt: null
+      };
+
+      setDraft('');
+      setMessages((prev) => [...prev, optimisticMessage]);
+
       const response = await apiRequest('/api/messages', {
         method: 'POST',
         token: session.token,
         body: {
           counterpartId: selectedId,
           text: trimmedDraft
-        }
+        },
+        timeoutMs: 5000
       });
 
-      setDraft('');
       setStatus(response.message || t.sent);
 
-      const refreshedThread = await apiRequest(`/api/messages/${selectedId}`, { token: session.token });
-      setCounterpart(refreshedThread.counterpart || counterpart);
-      setMessages(refreshedThread.messages || []);
+      apiRequest(`/api/messages/${selectedId}`, { token: session.token, timeoutMs: 5000 })
+        .then((refreshedThread) => {
+          setCounterpart(refreshedThread.counterpart || counterpart);
+          setMessages(refreshedThread.messages || []);
+        })
+        .catch(() => {
+          // optimistic state is already visible
+        });
 
-      const refreshedInbox = await apiRequest('/api/messages/inbox', { token: session.token });
-      setConversations(refreshedInbox.conversations || []);
+      apiRequest('/api/messages/inbox', { token: session.token, timeoutMs: 5000 })
+        .then((refreshedInbox) => {
+          setConversations(refreshedInbox.conversations || []);
+        })
+        .catch(() => {
+          // inbox refresh is best-effort
+        });
     } catch (error) {
       setStatus(error.message);
     }

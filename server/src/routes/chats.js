@@ -4,25 +4,123 @@ import { authRequired } from '../middleware/auth.js';
 import { getCollections } from '../config/db.js';
 
 const router = Router();
+const CHATS_CACHE_TTL_MS = 15000;
+const chatsCache = new Map();
+
+function getChatsCache(userId) {
+  const entry = chatsCache.get(userId);
+  if (!entry || entry.expiresAt <= Date.now()) {
+    if (entry) chatsCache.delete(userId);
+    return null;
+  }
+  return entry.payload;
+}
+
+function setChatsCache(userId, payload) {
+  chatsCache.set(userId, { payload, expiresAt: Date.now() + CHATS_CACHE_TTL_MS });
+}
+
+function clearChatsCache() {
+  chatsCache.clear();
+}
+
+function toCompactChat(chat, userId) {
+  const otherUserId = chat.participants?.find((p) => p !== userId) || null;
+
+  return {
+    id: chat._id.toString(),
+    participants: chat.participants || [],
+    gameId: chat.gameId || null,
+    lastMessage: chat.lastMessage || '',
+    updatedAt: chat.updatedAt,
+    user: {
+      id: otherUserId,
+      name: 'Usuario',
+      avatar: null,
+      rating: 0
+    },
+    game: {
+      id: chat.gameId ? chat.gameId.toString() : null,
+      title: '',
+      image: null,
+      price: null,
+      rentalDays: null
+    }
+  };
+}
 
 // Obtener todas las conversaciones del usuario autenticado
 router.get('/', authRequired, async (req, res) => {
   try {
     const { chats, games, users } = await getCollections();
     const userId = req.user.sub;
+    const compact = req.query.compact === '1' || req.query.lite === '1';
+    const cacheKey = `${userId}:${compact ? 'compact' : 'full'}`;
+
+    const cached = getChatsCache(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    if (compact) {
+      const compactChats = await chats.find(
+        { participants: userId },
+        { projection: { participants: 1, gameId: 1, lastMessage: 1, updatedAt: 1 } }
+      ).sort({ updatedAt: -1 }).toArray();
+
+      const payload = {
+        ok: true,
+        chats: compactChats.map((chat) => toCompactChat(chat, userId))
+      };
+
+      setChatsCache(cacheKey, payload);
+      return res.json(payload);
+    }
 
     // Buscamos chats donde el usuario sea participante
     const userChats = await chats.find({
       participants: userId
     }).sort({ updatedAt: -1 }).toArray();
 
+    if (userChats.length === 0) {
+      return res.json({ ok: true, chats: [] });
+    }
+
+    const otherUserIds = [...new Set(
+      userChats
+        .map((chat) => chat.participants.find((p) => p !== userId))
+        .filter(Boolean)
+    )];
+
+    const gameIds = [...new Set(
+      userChats
+        .map((chat) => chat.gameId?.toString())
+        .filter(Boolean)
+    )];
+
+    const [otherUsers, gamesDocs] = await Promise.all([
+      otherUserIds.length
+        ? users.find(
+            { _id: { $in: otherUserIds.map((id) => new ObjectId(id)) } },
+            { projection: { name: 1, avatar: 1, rating: 1 } }
+          ).toArray()
+        : Promise.resolve([]),
+      gameIds.length
+        ? games.find(
+            { _id: { $in: gameIds.map((id) => new ObjectId(id)) } },
+            { projection: { title: 1, image: 1, price: 1, rentalDays: 1 } }
+          ).toArray()
+        : Promise.resolve([])
+    ]);
+
+    const userById = new Map(otherUsers.map((user) => [user._id.toString(), user]));
+    const gameById = new Map(gamesDocs.map((game) => [game._id.toString(), game]));
+
     // Enriquecer chats con datos de usuario y juego
-    const enrichedChats = await Promise.all(userChats.map(async (chat) => {
+    const enrichedChats = userChats.map((chat) => {
       const otherUserId = chat.participants.find(p => p !== userId);
-      const [otherUser, game] = await Promise.all([
-        users.findOne({ _id: new ObjectId(otherUserId) }),
-        games.findOne({ _id: new ObjectId(chat.gameId) })
-      ]);
+      const otherUser = otherUserId ? userById.get(otherUserId) : null;
+      const game = chat.gameId ? gameById.get(chat.gameId.toString()) : null;
 
       return {
         id: chat._id.toString(),
@@ -44,9 +142,11 @@ router.get('/', authRequired, async (req, res) => {
           rentalDays: game.rentalDays
         } : null
       };
-    }));
+    });
 
-    res.json({ ok: true, chats: enrichedChats });
+    const payload = { ok: true, chats: enrichedChats };
+    setChatsCache(cacheKey, payload);
+    return res.json(payload);
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message });
   }
@@ -86,6 +186,8 @@ router.post('/', authRequired, async (req, res) => {
       chat = { ...newChat, _id: result.insertedId };
     }
 
+    clearChatsCache();
+
     res.json({ ok: true, chatId: chat._id.toString() });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message });
@@ -95,21 +197,38 @@ router.post('/', authRequired, async (req, res) => {
 // Obtener mensajes de un chat
 router.get('/:chatId/messages', authRequired, async (req, res) => {
   try {
-    const { messages } = await getCollections();
+    const { messages, chats } = await getCollections();
     const chatId = req.params.chatId;
+    const userId = req.user.sub;
 
     const chatMessages = await messages.find({
       chatId: chatId
     }).sort({ createdAt: 1 }).toArray();
 
+    let normalizedMessages = chatMessages.map(m => ({
+      id: m._id.toString(),
+      text: m.text,
+      senderId: m.senderId,
+      createdAt: m.createdAt
+    }));
+
+    // Legacy chats may have only lastMessage in chat doc and no rows in messages collection.
+    if (normalizedMessages.length === 0) {
+      const chatDoc = await chats.findOne({ _id: new ObjectId(chatId) });
+      if (chatDoc?.lastMessage) {
+        const counterpartId = (chatDoc.participants || []).find((p) => p !== userId) || userId;
+        normalizedMessages = [{
+          id: `fallback-${chatDoc._id.toString()}`,
+          text: chatDoc.lastMessage,
+          senderId: counterpartId,
+          createdAt: chatDoc.updatedAt || chatDoc.createdAt || new Date()
+        }];
+      }
+    }
+
     res.json({ 
       ok: true, 
-      messages: chatMessages.map(m => ({
-        id: m._id.toString(),
-        text: m.text,
-        senderId: m.senderId,
-        createdAt: m.createdAt
-      }))
+      messages: normalizedMessages
     });
   } catch (error) {
     res.status(500).json({ ok: false, message: error.message });
@@ -146,6 +265,7 @@ router.post('/:chatId/messages', authRequired, async (req, res) => {
         } 
       }
     );
+    clearChatsCache();
 
     res.json({
       ok: true,

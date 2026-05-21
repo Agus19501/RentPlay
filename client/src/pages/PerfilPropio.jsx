@@ -6,6 +6,12 @@ import { notify } from '../utils/notify.js';
 import RatingModal from '../components/RatingModal.jsx';
 import './PerfilPropio.css';
 
+const PROFILE_CACHE_PREFIX = 'rentplay_profile_cache_v1';
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
+const PROFILE_FAVORITES_CACHE_PREFIX = 'rentplay_profile_favorites_cache_v1';
+const PROFILE_CATALOG_CACHE_KEY = 'rentplay_profile_catalog_cache_v1';
+const PROFILE_RATINGS_CACHE_PREFIX = 'rentplay_rating_modal_cache_v1';
+
 const tabs = [
   { key: 'alquilados' },
   { key: 'subidos' },
@@ -122,10 +128,30 @@ function JuegoCard({ juego, rental, isAddCard = false, onAddClick, onDelete, onE
   );
 }
 
+function resolveAvatarSrc(avatar) {
+  if (!avatar || typeof avatar !== 'string') {
+    return '';
+  }
+
+  if (avatar.startsWith('data:') || avatar.startsWith('http') || avatar.startsWith('/')) {
+    return avatar;
+  }
+
+  return `/${avatar}`;
+}
+
 export default function PerfilPropio({ session, lang = 'ES' }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('alquilados');
-  const [usuario, setUsuario] = useState(null);
+  const [usuario, setUsuario] = useState(session?.user ? {
+    id: session.user.id,
+    name: session.user.name || '',
+    email: session.user.email || '',
+    avatar: null,
+    birthDate: '',
+    rating: 0,
+    reviews: 0
+  } : null);
   const [showRatingsModal, setShowRatingsModal] = useState(false);
   const [juegosSubidos, setJuegosSubidos] = useState([]);
   const [alquileres, setAlquileres] = useState([]);
@@ -138,10 +164,10 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const [favoritoPendienteEliminar, setFavoritoPendienteEliminar] = useState(null);
   const [archivoAvatar, setArchivoAvatar] = useState('');
   const [formulario, setFormulario] = useState({
-    apodo: '',
-    nombre: '',
+    apodo: session?.user?.name || '',
+    nombre: session?.user?.name || '',
     fechaNacimiento: '',
-    correo: '',
+    correo: session?.user?.email || '',
     contrasena: ''
   });
 
@@ -219,6 +245,28 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   const ratingValue = Number(usuario?.rating || 0);
   const reviewsValue = Number(usuario?.reviews || 0);
 
+  const getCacheKey = (suffix) => `${PROFILE_CACHE_PREFIX}_${session?.user?.id || session?.userId || session?.sub || 'guest'}_${suffix}`;
+
+  const readCachedPayload = (key) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(key) || 'null');
+      if (cached?.ts && (Date.now() - cached.ts) < PROFILE_CACHE_TTL_MS) {
+        return cached.payload ?? cached;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const writeCachedPayload = (key, payload) => {
+    try {
+      localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
+    } catch {
+      // cache best-effort
+    }
+  };
+
   const syncFavoritos = (catalogo = catalogoJuegos) => {
     const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
     const ids = new Set(savedWishlist.map((id) => String(id)));
@@ -227,63 +275,173 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
   };
 
   useEffect(() => {
-    async function cargarDatos() {
-      if (!session?.token) return;
+    let active = true;
+
+    if (!session?.token) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const sessionUser = session?.user || {};
+    if (sessionUser.id) {
+      setUsuario((prev) => prev || {
+        id: sessionUser.id,
+        name: sessionUser.name || '',
+        email: sessionUser.email || '',
+        avatar: null,
+        birthDate: '',
+        rating: 0,
+        reviews: 0
+      });
+      setFormulario((prev) => ({
+        ...prev,
+        apodo: prev.apodo || sessionUser.name || '',
+        nombre: prev.nombre || sessionUser.name || '',
+        correo: prev.correo || sessionUser.email || ''
+      }));
+    }
+
+    const cachedUser = readCachedPayload(getCacheKey('me'));
+    if (cachedUser?.user) {
+      setUsuario(cachedUser.user);
+      setFormulario({
+        apodo: cachedUser.user.name || '',
+        nombre: cachedUser.user.name || '',
+        fechaNacimiento: cachedUser.user.birthDate || '',
+        correo: cachedUser.user.email || '',
+        contrasena: ''
+      });
+    }
+
+    if (sessionUser.id) {
+      const viewerId = session?.user?.id || session?.userId || session?.sub || 'guest';
+      const ratingsCacheKey = `${PROFILE_RATINGS_CACHE_PREFIX}_${sessionUser.id}_${viewerId}`;
+      let hasFreshRatingsCache = false;
       try {
-        const userData = await apiRequest('/api/auth/me', { token: session.token });
-        if (userData.user) {
-          setUsuario(userData.user);
-          setFormulario({
-            apodo: userData.user.name || '',
-            nombre: userData.user.name || '',
-            fechaNacimiento: userData.user.birthDate || '',
-            correo: userData.user.email || '',
-            contrasena: ''
+        const cachedRatings = JSON.parse(localStorage.getItem(ratingsCacheKey) || 'null');
+        hasFreshRatingsCache = !!(cachedRatings?.ts && (Date.now() - cachedRatings.ts) < PROFILE_CACHE_TTL_MS);
+      } catch {
+        hasFreshRatingsCache = false;
+      }
+
+      if (!hasFreshRatingsCache) {
+        apiRequest(`/api/auth/${sessionUser.id}/ratings`, { timeoutMs: 5000 })
+          .then((ratingsData) => {
+            if (!active || !ratingsData) {
+              return;
+            }
+
+            localStorage.setItem(ratingsCacheKey, JSON.stringify({ ts: Date.now(), payload: ratingsData }));
+          })
+          .catch(() => {
+            // Silent prefetch; no bloquea ni ensucia UX.
           });
-
-          const [gamesJson, rentalsData, ownerRentalsData, gamesCatalogData] = await Promise.all([
-            apiRequest(`/api/games/user/${userData.user.id}?lite=1`).catch(() => ({ games: [] })),
-            apiRequest('/api/rentals/mine', { token: session.token }).catch(() => ({ rentals: [] })),
-            apiRequest('/api/rentals/owner-active', { token: session.token }).catch(() => ({ ok: false, activeRentals: [] })),
-            apiRequest('/api/games?lite=1').catch(() => ({ games: [] }))
-          ]);
-
-          if (gamesJson.games) {
-            setJuegosSubidos(gamesJson.games);
-          }
-
-          if (rentalsData.rentals) {
-            setAlquileres(rentalsData.rentals);
-          }
-
-          if (ownerRentalsData.ok && Array.isArray(ownerRentalsData.activeRentals)) {
-            setOwnerActiveRentalGameIds(new Set(ownerRentalsData.activeRentals.map((rental) => String(rental.gameId)).filter(Boolean)));
-          }
-
-          const catalogo = gamesCatalogData.games || [];
-          setCatalogoJuegos(catalogo);
-          const savedWishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
-          const ids = new Set(savedWishlist.map((id) => String(id)));
-          setJuegosFavoritos(catalogo.filter((game) => ids.has(String(game.id))));
-        }
-      } catch (e) {
-        console.error('Error cargando datos:', e);
       }
     }
 
-    cargarDatos();
-  }, [session]);
+    apiRequest('/api/auth/me', { token: session.token })
+      .then((userData) => {
+        if (!active || !userData?.user) {
+          return;
+        }
 
-  useEffect(() => {
-    const onStorage = () => syncFavoritos();
-    const onFocus = () => syncFavoritos();
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('focus', onFocus);
+        setUsuario(userData.user);
+        setFormulario((prev) => ({
+          ...prev,
+          apodo: userData.user.name || prev.apodo || '',
+          nombre: userData.user.name || prev.nombre || '',
+          fechaNacimiento: userData.user.birthDate || prev.fechaNacimiento || '',
+          correo: userData.user.email || prev.correo || '',
+          contrasena: ''
+        }));
+        writeCachedPayload(getCacheKey('me'), userData);
+      })
+      .catch(() => {
+        // Si falla, mantenemos la versión de sesión/caché para no bloquear el perfil.
+      });
+
+    const cachedUploaded = readCachedPayload(getCacheKey('uploaded'));
+    if (Array.isArray(cachedUploaded?.games)) {
+      setJuegosSubidos(cachedUploaded.games);
+    }
+
+    const cachedRentals = readCachedPayload(getCacheKey('rentals'));
+    if (Array.isArray(cachedRentals?.rentals)) {
+      setAlquileres(cachedRentals.rentals);
+    }
+
+    const cachedOwnerActive = readCachedPayload(getCacheKey('owner-active'));
+    if (Array.isArray(cachedOwnerActive?.activeRentals)) {
+      setOwnerActiveRentalGameIds(new Set(cachedOwnerActive.activeRentals.map((rental) => String(rental.gameId)).filter(Boolean)));
+    }
+
+    const bootstrapUserId = sessionUser.id || cachedUser?.user?.id || usuario?.id;
+    if (bootstrapUserId) {
+      apiRequest(`/api/games/user/${bootstrapUserId}?lite=1`)
+        .then((gamesJson) => {
+          if (!active || !gamesJson?.games) {
+            return;
+          }
+
+          setJuegosSubidos(gamesJson.games);
+          writeCachedPayload(getCacheKey('uploaded'), gamesJson);
+        })
+        .catch(() => {
+          // No bloquea el resto del perfil.
+        });
+
+      apiRequest('/api/rentals/owner-active', { token: session.token })
+        .then((ownerRentalsData) => {
+          if (!active || !ownerRentalsData?.ok || !Array.isArray(ownerRentalsData.activeRentals)) {
+            return;
+          }
+
+          setOwnerActiveRentalGameIds(new Set(ownerRentalsData.activeRentals.map((rental) => String(rental.gameId)).filter(Boolean)));
+          writeCachedPayload(getCacheKey('owner-active'), ownerRentalsData);
+        })
+        .catch(() => {
+          // No bloquea el resto del perfil.
+        });
+
+      apiRequest('/api/rentals/mine', { token: session.token })
+        .then((rentalsData) => {
+          if (!active || !rentalsData?.rentals) {
+            return;
+          }
+
+          setAlquileres(rentalsData.rentals);
+          writeCachedPayload(getCacheKey('rentals'), rentalsData);
+        })
+        .catch(() => {
+          // No bloquea el resto del perfil.
+        });
+    }
+
+    const cachedCatalog = readCachedPayload(PROFILE_CATALOG_CACHE_KEY);
+    if (Array.isArray(cachedCatalog?.games) && cachedCatalog.games.length > 0) {
+      setCatalogoJuegos(cachedCatalog.games);
+      syncFavoritos(cachedCatalog.games);
+    } else {
+      apiRequest('/api/games?lite=1')
+        .then((res) => {
+          if (!active || !Array.isArray(res?.games)) {
+            return;
+          }
+
+          setCatalogoJuegos(res.games);
+          writeCachedPayload(PROFILE_CATALOG_CACHE_KEY, { games: res.games });
+          syncFavoritos(res.games);
+        })
+        .catch(() => {
+          // No bloquea la vista principal.
+        });
+    }
+
     return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('focus', onFocus);
+      active = false;
     };
-  }, [catalogoJuegos]);
+  }, [session?.token, session?.user?.id]);
 
   async function borrarJuego(gameId) {
     try {
@@ -474,8 +632,9 @@ export default function PerfilPropio({ session, lang = 'ES' }) {
               <div className="perfil-avatar">
                 {usuario.avatar ? (
                   <img 
-                    src={usuario.avatar.startsWith('data:') ? usuario.avatar : `/${usuario.avatar}`} 
-                    alt={usuario.name} 
+                    src={resolveAvatarSrc(usuario.avatar)} 
+                    alt="" 
+                    aria-hidden="true"
                     style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
                   />
                 ) : (

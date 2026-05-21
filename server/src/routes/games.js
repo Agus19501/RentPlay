@@ -28,6 +28,20 @@ function getPublicAvatarValue(user) {
   return user.avatar;
 }
 
+function buildSellerSummary(user) {
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    avatar: getPublicAvatarValue(user),
+    rating: user.rating || 0,
+    reviews: user.reviews || 0
+  };
+}
+
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -103,7 +117,7 @@ router.get('/:gameId/cover', async (req, res) => {
     if (!ObjectId.isValid(gameId)) {
       return res.status(422).send('ID de juego inválido.');
     }
-    const { games } = await getCollections();
+    const { games, users } = await getCollections();
     const game = await games.findOne({ _id: new ObjectId(gameId) });
     if (!game || !game.image) {
       return res.status(404).send('Portada no encontrada.');
@@ -141,7 +155,7 @@ router.get('/:gameId/media/:mediaIndex', async (req, res) => {
       return res.status(422).send('Índice de media inválido.');
     }
 
-    const { games } = await getCollections();
+    const { games, users } = await getCollections();
     const game = await games.findOne({ _id: new ObjectId(gameId) });
     const media = Array.isArray(game?.media) ? game.media : [];
     const item = media[index];
@@ -339,7 +353,7 @@ router.get('/user/:userId', async (req, res) => {
       return res.status(422).json({ ok: false, message: 'ID de usuario invalido.' });
     }
 
-    const { games } = await getCollections();
+    const { games, users } = await getCollections();
     const userGames = await games.find(
       { uploadedBy: new ObjectId(userId) },
       lite
@@ -368,22 +382,73 @@ router.get('/:gameId', async (req, res) => {
       return res.status(422).json({ ok: false, message: 'Juego invalido.' });
     }
 
-    const { games } = await getCollections();
-    const game = await games.findOne({ _id: new ObjectId(gameId) });
+    const { games, users } = await getCollections();
+    const query = { _id: new ObjectId(gameId) };
+    const findOptions = compact
+      ? {
+          maxTimeMS: 3000,
+          projection: {
+            title: 1,
+            description: 1,
+            price: 1,
+            rentalDays: 1,
+            rating: 1,
+            platform: 1,
+            image: 1,
+            features: 1,
+            seller: 1,
+            releaseDate: 1,
+            genre: 1,
+            developers: 1,
+            uploadedBy: 1,
+            available: 1,
+            status: 1,
+            createdAt: 1
+          }
+        }
+      : { maxTimeMS: 3000 };
+    const start = Date.now();
+    let game = null;
+    let errorMsg = null;
+    try {
+      game = await games.findOne(query, findOptions);
+    } catch (err) {
+      errorMsg = err && err.message ? err.message : String(err);
+      console.error('[VerJuego] findOne error:', errorMsg);
+    }
+    const elapsed = Date.now() - start;
+    console.log(`[VerJuego] findOne _id=${gameId} tiempo=${elapsed}ms resultado=${!!game} error=${errorMsg}`);
 
+    if (errorMsg) {
+      return res.status(500).json({ ok: false, message: 'Error en la consulta de juego.', error: errorMsg });
+    }
     if (!game) {
       return res.status(404).json({ ok: false, message: 'Juego no encontrado.' });
     }
 
+    const sellerUser = game.uploadedBy && ObjectId.isValid(String(game.uploadedBy))
+      ? await users.findOne(
+          { _id: new ObjectId(String(game.uploadedBy)) },
+          { projection: { name: 1, avatar: 1, rating: 1, reviews: 1 } }
+        )
+      : null;
+
+    const normalizedGame = normalizeGame(game, {
+      includeBase64Image: !compact,
+      includeMedia: !compact
+    });
+
+    if (normalizedGame && sellerUser) {
+      normalizedGame.seller = buildSellerSummary(sellerUser);
+    }
+
     return res.json({
       ok: true,
-      game: normalizeGame(game, {
-        includeBase64Image: !compact,
-        includeMedia: true
-      })
+      game: normalizedGame
     });
   } catch (error) {
-    return res.status(500).json({ ok: false, message: 'Error al obtener juego.' });
+    console.error('[VerJuego] handler error:', error);
+    return res.status(500).json({ ok: false, message: 'Error al obtener juego.', error: error.message });
   }
 });
 

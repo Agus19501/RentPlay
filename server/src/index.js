@@ -82,6 +82,7 @@ app.listen(port, () => {
       try {
         await Promise.all([
           fetch(`http://localhost:${port}/api/games?lite=1`),
+          fetch(`http://localhost:${port}/api/auth/top-rated?limit=10`),
           fetch(`http://localhost:${port}/api/games`)
         ]);
         console.log('Games listing cache warmed.');

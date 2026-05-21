@@ -6,6 +6,9 @@ import { notify } from '../utils/notify.js';
 import RatingModal from '../components/RatingModal.jsx';
 import './PerfilOtro.css';
 
+const PROFILE_OTHER_CACHE_PREFIX = 'rentplay_profile_other_cache_v1';
+const PROFILE_OTHER_CACHE_TTL_MS = 20000;
+
 const usuarioOtroFallback = {
   apodo: 'Cargando...',
   nombre: 'Cargando...',
@@ -16,6 +19,18 @@ const usuarioOtroFallback = {
   avatar: null,
 };
 
+function resolveAvatarSrc(avatar) {
+  if (!avatar || typeof avatar !== 'string') {
+    return '';
+  }
+
+  if (avatar.startsWith('data:') || avatar.startsWith('http') || avatar.startsWith('/')) {
+    return avatar;
+  }
+
+  return `/${avatar}`;
+}
+
 export default function PerfilOtro({ lang = 'ES' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -23,6 +38,31 @@ export default function PerfilOtro({ lang = 'ES' }) {
   const [juegosOtro, setJuegosOtro] = useState([]);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const loginRequiredMessage = 'Debes iniciar sesión para realizar esta accion';
+  const userId = searchParams.get('id') || searchParams.get('userId');
+
+  const cacheKey = userId ? `${PROFILE_OTHER_CACHE_PREFIX}_${userId}` : null;
+
+  const readCache = () => {
+    if (!cacheKey) return null;
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+      if (cached?.ts && (Date.now() - cached.ts) < PROFILE_OTHER_CACHE_TTL_MS) {
+        return cached.payload || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const writeCache = (payload) => {
+    if (!cacheKey) return;
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), payload }));
+    } catch {
+      // cache best-effort
+    }
+  };
 
   const texts = {
     ES: {
@@ -69,10 +109,24 @@ export default function PerfilOtro({ lang = 'ES' }) {
 
   async function cargarOtro() {
     try {
-      const userId = searchParams.get('id') || searchParams.get('userId');
       if (!userId) return;
 
-      const data = await apiRequest(`/api/auth/${userId}`);
+      const cached = readCache();
+      if (cached?.user) {
+        setUsuarioOtro({
+          id: cached.user.id,
+          apodo: cached.user.name,
+          nombre: cached.user.name,
+          birthDate: cached.user.birthDate || null,
+          fechaUnion: cached.user.createdAt ? new Date(cached.user.createdAt).toLocaleDateString(lang === 'EN' ? 'en-US' : 'es-ES') : t.recently,
+          rating: cached.user.rating || 0,
+          reviews: cached.user.reviews || 0,
+          avatar: cached.user.avatar || null
+        });
+        setJuegosOtro(cached.games || []);
+      }
+
+      const data = await apiRequest(`/api/auth/${userId}?lite=1`);
       if (data.user) {
         setUsuarioOtro({
           id: data.user.id,
@@ -85,6 +139,7 @@ export default function PerfilOtro({ lang = 'ES' }) {
           avatar: data.user.avatar || null
         });
         setJuegosOtro(data.games || []);
+        writeCache(data);
       }
     } catch (e) {
       console.error('Error cargando perfil otro:', e);
@@ -103,8 +158,9 @@ export default function PerfilOtro({ lang = 'ES' }) {
             <div className="otro-avatar">
               {usuarioOtro.avatar ? (
                 <img 
-                  src={usuarioOtro.avatar.startsWith('data:') ? usuarioOtro.avatar : `/${usuarioOtro.avatar}`} 
-                  alt={usuarioOtro.nombre} 
+                  src={resolveAvatarSrc(usuarioOtro.avatar)} 
+                  alt="" 
+                  aria-hidden="true"
                   style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (

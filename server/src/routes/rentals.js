@@ -109,44 +109,79 @@ router.get('/owner-notifications', authRequired, async (req, res) => {
 });
 
 router.get('/mine', authRequired, async (req, res) => {
-  const { rentals, games, users } = await getCollections();
-  const userId = new ObjectId(req.user.sub);
-  const rawRentals = await rentals.find({ userId }).sort({ createdAt: -1 }).toArray();
+  try {
+    const { rentals, games, users } = await getCollections();
+    const userId = new ObjectId(req.user.sub);
+    const lite = req.query.lite === '1' || req.query.lite === 'true';
+    const rawRentals = await rentals.find({ userId }).sort({ createdAt: -1 }).toArray();
 
-  const rentalsWithGame = await Promise.all(rawRentals.map(async (rental) => {
-    let game = null;
-    if (ObjectId.isValid(rental.gameId)) {
-      const rawGame = await games.findOne({ _id: new ObjectId(rental.gameId) });
-      if (rawGame) {
-        game = normalizeGame(rawGame);
-        // Enriquecer con vendedor actual
+    if (rawRentals.length === 0) {
+      return res.json({ ok: true, rentals: [] });
+    }
+
+    const gameIds = [...new Set(
+      rawRentals
+        .map((rental) => rental.gameId?.toString())
+        .filter((gameId) => gameId && ObjectId.isValid(gameId))
+    )];
+
+    const rawGames = gameIds.length
+      ? await games.find(
+          { _id: { $in: gameIds.map((gameId) => new ObjectId(gameId)) } },
+          lite
+            ? { projection: { title: 1, price: 1, rentalDays: 1, rating: 1, platform: 1, image: 1, uploadedBy: 1, available: 1, createdAt: 1 } }
+            : { projection: { title: 1, description: 1, price: 1, rentalDays: 1, rating: 1, platform: 1, image: 1, media: 1, seller: 1, uploadedBy: 1, available: 1, createdAt: 1 } }
+        ).toArray()
+      : [];
+
+    const gameById = new Map(rawGames.map((game) => [game._id.toString(), game]));
+    const sellerById = !lite
+      ? new Map((await users.find(
+          {
+            _id: {
+              $in: [...new Set(
+                rawGames
+                  .map((game) => game.uploadedBy?.toString())
+                  .filter((sellerId) => sellerId && ObjectId.isValid(sellerId))
+              )].map((sellerId) => new ObjectId(sellerId))
+            }
+          },
+          { projection: { name: 1, avatar: 1, rating: 1, reviews: 1 } }
+        ).toArray()).map((seller) => [seller._id.toString(), seller]))
+      : new Map();
+
+    const rentalsWithGame = rawRentals.map((rental) => {
+      const rawGame = gameById.get(rental.gameId?.toString());
+      const game = rawGame ? normalizeGame(rawGame) : null;
+
+      if (game && !lite) {
         const sellerId = game.uploadedBy || game.seller?.id || null;
-        if (sellerId && ObjectId.isValid(sellerId)) {
-          const seller = await users.findOne({ _id: new ObjectId(sellerId) });
-          if (seller) {
-            game.seller = {
-              id: seller._id.toString(),
-              name: seller.name,
-              avatar: seller.avatar,
-              rating: seller.rating || 0,
-              reviews: seller.reviews || 0
-            };
-          }
+        const seller = sellerId ? sellerById.get(String(sellerId)) : null;
+        if (seller) {
+          game.seller = {
+            id: seller._id.toString(),
+            name: seller.name,
+            avatar: seller.avatar,
+            rating: seller.rating || 0,
+            reviews: seller.reviews || 0
+          };
         }
       }
-    }
-    
-    return {
-      id: rental._id.toString(),
-      status: rental.status,
-      paymentMethod: rental.paymentMethod,
-      createdAt: rental.createdAt,
-      expiresAt: rental.expiresAt,
-      game
-    };
-  }));
 
-  return res.json({ ok: true, rentals: rentalsWithGame });
+      return {
+        id: rental._id.toString(),
+        status: rental.status,
+        paymentMethod: rental.paymentMethod,
+        createdAt: rental.createdAt,
+        expiresAt: rental.expiresAt,
+        game
+      };
+    });
+
+    return res.json({ ok: true, rentals: rentalsWithGame });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: 'Error al obtener alquileres del usuario.', error: error.message });
+  }
 });
 
 router.get('/owner-active', authRequired, async (req, res) => {

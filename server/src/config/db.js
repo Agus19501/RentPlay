@@ -101,11 +101,14 @@ export async function ensureIndexes() {
     games.createIndex({ developers: 1 }, { name: 'games_developers_idx' }),
 
     rentals.createIndex({ userId: 1, createdAt: -1 }, { name: 'rentals_user_createdAt_idx' }),
+    rentals.createIndex({ userId: 1, gameId: 1 }, { name: 'rentals_user_game_idx' }),
     rentals.createIndex({ gameId: 1, status: 1, expiresAt: -1 }, { name: 'rentals_game_status_expiresAt_idx' }),
     rentals.createIndex({ ownerHomeNotifiedAt: 1, gameId: 1 }, { name: 'rentals_owner_notification_idx' }),
 
+    chats.createIndex({ participants: 1, updatedAt: -1 }, { name: 'chats_participants_updatedAt_idx' }),
     chats.createIndex({ participants: 1, gameId: 1 }, { name: 'chats_participants_game_idx' }),
-    messages.createIndex({ chatId: 1, createdAt: -1 }, { name: 'messages_chat_createdAt_idx' })
+    messages.createIndex({ chatId: 1, createdAt: -1 }, { name: 'messages_chat_createdAt_idx' }),
+    messages.createIndex({ chatId: 1, recipientId: 1, readAt: 1 }, { name: 'messages_chat_recipient_read_idx' })
   ]);
 
   indexesEnsured = true;
